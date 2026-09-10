@@ -70,6 +70,11 @@ class Settings(BaseSettings):
     lora_bridge_default_client_secret: str = ""
     lora_gateway_status_ttl_seconds: int = 30
 
+    tile_server_url: str = "http://tile-server:8080"
+    tile_server_service: str = "offline-map"
+    tile_server_port: int = 8080
+    tile_proxy_timeout_seconds: float = 5.0
+
     @property
     def cors_origins_list(self) -> list[str]:
         raw = self.cors_allow_origins.strip()

@@ -67,6 +67,18 @@ services:
     networks:
       - next-iot-net
 
+  tile-server:
+    image: ghcr.io/consbio/mbtileserver:latest
+    container_name: next-iot-tile-server
+    restart: unless-stopped
+    ports:
+      - "${TILE_SERVER_PORT:-8080}:8080"
+    volumes:
+      - ./infra/tiles:/data:ro
+    command: ["--dir", "/data", "--port", "8080", "--enable-index", "--verbose"]
+    networks:
+      - next-iot-net
+
   lora-bridge:
     build:
       context: ./apps/api

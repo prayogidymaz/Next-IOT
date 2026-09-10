@@ -12,7 +12,9 @@ import '../../mission/widgets/waypoint_marker.dart';
 import '../widgets/tactical_tile_layer.dart' show TacticalTileLayer, isFlutterTestEnvironment;
 import '../../devices/providers/device_provider.dart';
 import '../models/device_map_models.dart';
+import '../config/tile_url_resolver.dart';
 import '../providers/map_provider.dart';
+import '../providers/map_tile_provider.dart';
 import '../utils/gps_utils.dart';
 import '../widgets/device_map_marker_widget.dart';
 import '../widgets/telemetry_map_overlay.dart';
@@ -89,6 +91,7 @@ class _TacticalMapScreenState extends ConsumerState<TacticalMapScreen> {
   Widget build(BuildContext context) {
     final mapState = ref.watch(tacticalMapProvider);
     final mission = ref.watch(missionPlannerProvider);
+    final tileMode = ref.watch(mapTileModeProvider);
     final selected = mapState.selected;
 
     ref.listen(tacticalMapProvider.select((s) => s.selectedDeviceId), (prev, next) {
@@ -114,6 +117,18 @@ class _TacticalMapScreenState extends ConsumerState<TacticalMapScreen> {
               onSelected: (_) => ref.read(missionPlannerProvider.notifier).togglePlannerMode(),
               selectedColor: TacticalColors.cyan.withOpacity(0.2),
               checkmarkColor: TacticalColors.borderNeon,
+            ),
+            FilterChip(
+              label: Text(tileMode == MapTileMode.offline ? 'Offline Map' : 'Online Map'),
+              selected: tileMode == MapTileMode.offline,
+              onSelected: (_) => ref.read(mapTileModeProvider.notifier).toggle(),
+              selectedColor: TacticalColors.warning.withOpacity(0.2),
+              checkmarkColor: TacticalColors.warning,
+              avatar: Icon(
+                tileMode == MapTileMode.offline ? Icons.offline_bolt : Icons.public,
+                size: 16,
+                color: tileMode == MapTileMode.offline ? TacticalColors.warning : TacticalColors.borderNeon,
+              ),
             ),
             if (selected != null && !mission.plannerMode)
               OutlinedButton.icon(

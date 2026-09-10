@@ -25,6 +25,7 @@ from app.devices.worker import offline_checker_loop
 from app.notifications.router import router as notifications_router
 from app.notifications.worker import notification_dispatcher_loop
 from app.hardware.router import router as hardware_router
+from app.tiles.router import router as tiles_router
 from app.seed_hardware import run_hardware_seed
 
 logger = logging.getLogger(__name__)
@@ -73,7 +74,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.app_name,
-    version="0.9.0",
+    version="0.10.0",
     description="Next-IOT Platform API",
     lifespan=lifespan,
 )
@@ -94,6 +95,7 @@ app.include_router(rules_router)
 app.include_router(alerts_router)
 app.include_router(notifications_router)
 app.include_router(hardware_router)
+app.include_router(tiles_router)
 
 
 @app.get("/health")
