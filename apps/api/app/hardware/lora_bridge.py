@@ -18,6 +18,7 @@ from app.devices.liveness import touch_liveness
 from app.devices.state_machine import should_emit_online
 from app.devices.events import emit_device_event
 from app.hardware.events import get_gateway_status, publish_lora_telemetry, update_gateway_status
+from app.hardware.lora_crypto import parse_aes128_key
 from app.hardware.parser import LoRaPacket, normalize_serial_line, packet_to_metrics, parse_serial_line
 from app.models.device import Device, DeviceStatus
 from app.models.device_credential import DeviceCredential
@@ -45,6 +46,7 @@ class LoRaBridge:
         self._last_node_id: str | None = None
         self._last_rssi: float | None = None
         self._last_snr: float | None = None
+        self._encryption_key = parse_aes128_key(settings.lora_encryption_key)
 
     async def run_forever(self) -> None:
         await self._publish_status(serial_connected=False, lora_link="starting")
@@ -74,10 +76,22 @@ class LoRaBridge:
                     await asyncio.sleep(0.05)
                     continue
                 line = normalize_serial_line(raw)
-                packet = parse_serial_line(line, default_node_id=settings.lora_bridge_default_node_id)
+                packet = self._parse_incoming_line(line)
                 if packet is None:
                     continue
                 await self.process_packet(packet)
+
+    def _parse_incoming_line(self, line: str) -> LoRaPacket | None:
+        key = self._encryption_key
+        try:
+            return parse_serial_line(
+                line,
+                default_node_id=settings.lora_bridge_default_node_id,
+                encryption_key=key,
+            )
+        except ValueError:
+            logger.warning("Failed to decrypt LoRa payload")
+            return None
 
     async def process_packet(self, packet: LoRaPacket) -> None:
         self._packets_received += 1

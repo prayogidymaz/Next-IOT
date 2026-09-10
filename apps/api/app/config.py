@@ -69,6 +69,10 @@ class Settings(BaseSettings):
     lora_bridge_default_client_id: str = ""
     lora_bridge_default_client_secret: str = ""
     lora_gateway_status_ttl_seconds: int = 30
+    lora_encryption_key: str = ""
+    lora_encryption_enabled: bool = False
+    lora_encryption_mode: str = "AES-128-CBC"
+    drone_simulator_lora_encrypt_mock: bool = False
 
     tile_server_url: str = "http://tile-server:8080"
     tile_server_service: str = "offline-map"

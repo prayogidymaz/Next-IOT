@@ -49,3 +49,38 @@ class TelemetryHistoryResponse(BaseModel):
     device_id: uuid.UUID
     count: int
     items: list[TelemetryHistoryItem]
+
+
+class SignalHeatmapPoint(BaseModel):
+    lat: float
+    lon: float
+    rssi: float
+    snr: float | None = None
+    signal_score: int
+    signal_strength: str
+    recorded_at: datetime
+
+
+class SignalHeatmapResponse(BaseModel):
+    device_id: uuid.UUID
+    hours: int
+    count: int
+    points: list[SignalHeatmapPoint]
+
+
+class TelemetryAnomalyItem(BaseModel):
+    id: uuid.UUID
+    device_id: uuid.UUID
+    severity: str
+    anomaly_type: str
+    message: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    recorded_at: datetime
+    detected_at: datetime
+
+
+class TelemetryAnomalyResponse(BaseModel):
+    device_id: uuid.UUID
+    hours: int
+    count: int
+    items: list[TelemetryAnomalyItem]

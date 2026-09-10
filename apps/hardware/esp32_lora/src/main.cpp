@@ -1,13 +1,13 @@
 /**
  * ESP32 LoRa Gateway — reads GPS NMEA + telemetry, emits compact JSON over LoRa TX.
- * Target boards: Heltec WiFi LoRa 32 V3 / LilyGO T-Beam (SX1262 or SX127x).
- *
- * USB serial output mirrors each LoRa payload for the Python lora_bridge worker.
+ * Optional AES-128-CBC encryption via mbedtls (matches Python lora_bridge ENC: format).
  */
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <TinyGPSPlus.h>
+
+#include "aes_helper.h"
 
 #ifndef NODE_ID
 #define NODE_ID "DRONE-01"
@@ -27,7 +27,6 @@ static const uint8_t GPS_TX_PIN = 12;
 HardwareSerial GPSSerial(1);
 TinyGPSPlus gps;
 
-// Placeholder radio hooks — replace with RadioLib / Heltec LoRa API for your board.
 static float lastRssi = -90.0f;
 static float lastSnr = 8.0f;
 
@@ -73,7 +72,6 @@ static String buildJsonPayload(const TelemetryFrame& frame) {
 
 static void transmitLoRa(const String& payload) {
   // TODO: integrate RadioLib / Heltec LoRaWan for SX1262/SX1276 on your board.
-  // Example: radio.transmit((uint8_t*)payload.c_str(), payload.length());
   lastRssi += 0.1f;
   if (lastRssi > -60.0f) lastRssi = -90.0f;
 }
@@ -88,12 +86,15 @@ void setup() {
   Serial.begin(115200);
   delay(200);
   GPSSerial.begin(9600, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
+  loraAesInit();
 
   Serial.println("# ESP32 LoRa Gateway starting");
   Serial.print("# node_id=");
   Serial.println(NODE_ID);
   Serial.print("# lora_freq_mhz=");
   Serial.println(LORA_FREQ_MHZ);
+  Serial.print("# aes_encryption=");
+  Serial.println(ENABLE_AES_ENCRYPTION ? "enabled" : "disabled");
 }
 
 void loop() {
@@ -107,8 +108,9 @@ void loop() {
   lastTx = now;
 
   const TelemetryFrame frame = readTelemetry();
-  const String payload = buildJsonPayload(frame);
+  const String jsonPayload = buildJsonPayload(frame);
+  const String wirePayload = loraMaybeEncryptPayload(jsonPayload);
 
-  transmitLoRa(payload);
-  Serial.println(payload);
+  transmitLoRa(wirePayload);
+  Serial.println(wirePayload);
 }

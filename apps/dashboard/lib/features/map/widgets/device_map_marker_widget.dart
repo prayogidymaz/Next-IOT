@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../devices/models/device_models.dart';
+import '../../telemetry/widgets/anomaly_alert_badge.dart';
 import '../models/device_map_models.dart';
 
 class DeviceMapMarkerWidget extends StatelessWidget {
@@ -10,12 +11,16 @@ class DeviceMapMarkerWidget extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     this.compact = false,
+    this.anomalyCount = 0,
+    this.hasCriticalAnomaly = false,
   });
 
   final DeviceMapMarker marker;
   final bool isSelected;
   final VoidCallback onTap;
   final bool compact;
+  final int anomalyCount;
+  final bool hasCriticalAnomaly;
 
   IconData get _icon {
     switch (DeviceType.fromApiValue(marker.device.deviceType)) {
@@ -43,22 +48,37 @@ class DeviceMapMarkerWidget extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color.withOpacity(0.2),
-              border: Border.all(color: color, width: isSelected ? 3 : 2),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withOpacity(marker.status.pulse ? 0.55 : 0.35),
-                  blurRadius: isSelected ? 14 : 10,
-                  spreadRadius: marker.status.pulse ? 2 : 1,
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: size,
+                height: size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: color.withOpacity(0.2),
+                  border: Border.all(color: color, width: isSelected ? 3 : 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withOpacity(marker.status.pulse ? 0.55 : 0.35),
+                      blurRadius: isSelected ? 14 : 10,
+                      spreadRadius: marker.status.pulse ? 2 : 1,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: Icon(_icon, color: color, size: isSelected ? 20 : 16),
+                child: Icon(_icon, color: color, size: isSelected ? 20 : 16),
+              ),
+              if (anomalyCount > 0)
+                Positioned(
+                  top: -4,
+                  right: -4,
+                  child: AnomalyAlertBadge(
+                    count: anomalyCount,
+                    hasCritical: hasCriticalAnomaly,
+                    compact: true,
+                  ),
+                ),
+            ],
           ),
           if (!compact) ...[
             const SizedBox(height: 4),

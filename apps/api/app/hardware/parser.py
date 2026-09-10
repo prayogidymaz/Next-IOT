@@ -109,9 +109,26 @@ def parse_json_packet(line: str) -> LoRaPacket | None:
     )
 
 
-def parse_serial_line(line: str, *, default_node_id: str = "DRONE-01") -> LoRaPacket | None:
-    """Parse one serial line as JSON or NMEA GPGGA."""
+def prepare_serial_line(line: str, *, encryption_key: bytes | None = None) -> str:
+    """Decrypt encrypted LoRa serial payloads before parsing."""
+    from app.hardware.lora_crypto import is_encrypted_line, maybe_decrypt_serial_line
+
     stripped = line.strip()
+    if not stripped or stripped.startswith("#"):
+        return stripped
+    if is_encrypted_line(stripped):
+        return maybe_decrypt_serial_line(stripped, encryption_key)
+    return stripped
+
+
+def parse_serial_line(
+    line: str,
+    *,
+    default_node_id: str = "DRONE-01",
+    encryption_key: bytes | None = None,
+) -> LoRaPacket | None:
+    """Parse one serial line as JSON or NMEA GPGGA (optional AES decrypt first)."""
+    stripped = prepare_serial_line(line, encryption_key=encryption_key)
     if not stripped or stripped.startswith("#"):
         return None
 

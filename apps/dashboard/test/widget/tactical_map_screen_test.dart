@@ -91,6 +91,16 @@ void main() {
     await tester.pump();
   });
 
+  testWidgets('TacticalMapScreen shows signal heatmap toggle', (tester) async {
+    await tester.pumpWidget(buildApp(TacticalMapState(markers: [marker])));
+    await tester.pump();
+
+    expect(find.text('Signal Heatmap'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
+
   testWidgets('TacticalMapScreen shows mission planner toggle', (tester) async {
     await tester.pumpWidget(buildApp(TacticalMapState(markers: [marker])));
     await tester.pump();

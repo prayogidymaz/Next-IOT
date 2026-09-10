@@ -43,6 +43,9 @@ class Device(Base):
     telemetry_readings: Mapped[list["TelemetryReading"]] = relationship(  # noqa: F821
         "TelemetryReading", back_populates="device", cascade="all, delete-orphan"
     )
+    telemetry_anomalies: Mapped[list["TelemetryAnomaly"]] = relationship(  # noqa: F821
+        "TelemetryAnomaly", back_populates="device", cascade="all, delete-orphan"
+    )
     rules: Mapped[list["Rule"]] = relationship(  # noqa: F821
         "Rule", back_populates="device", cascade="all, delete-orphan"
     )

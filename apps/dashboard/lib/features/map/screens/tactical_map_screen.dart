@@ -15,9 +15,15 @@ import '../models/device_map_models.dart';
 import '../config/tile_url_resolver.dart';
 import '../providers/map_provider.dart';
 import '../providers/map_tile_provider.dart';
+import '../providers/signal_heatmap_provider.dart';
+import '../widgets/signal_heatmap_layer.dart';
+import '../widgets/signal_heatmap_legend.dart';
 import '../utils/gps_utils.dart';
 import '../widgets/device_map_marker_widget.dart';
 import '../widgets/telemetry_map_overlay.dart';
+import '../../telemetry/providers/telemetry_anomaly_provider.dart';
+import '../../telemetry/widgets/anomaly_alert_badge.dart';
+import '../../telemetry/widgets/anomaly_alert_panel.dart';
 
 class TacticalMapScreen extends ConsumerStatefulWidget {
   const TacticalMapScreen({super.key});
@@ -59,6 +65,10 @@ class _TacticalMapScreenState extends ConsumerState<TacticalMapScreen> {
       await ref.read(deviceProvider.notifier).loadDevices();
     }
     await ref.read(tacticalMapProvider.notifier).refreshMarkersSilent();
+    final deviceId = ref.read(tacticalMapProvider).selectedDeviceId;
+    if (deviceId != null) {
+      await ref.read(telemetryAnomalyProvider.notifier).loadForDevice(deviceId);
+    }
   }
 
   void _centerOnSelected() {
@@ -92,11 +102,17 @@ class _TacticalMapScreenState extends ConsumerState<TacticalMapScreen> {
     final mapState = ref.watch(tacticalMapProvider);
     final mission = ref.watch(missionPlannerProvider);
     final tileMode = ref.watch(mapTileModeProvider);
+    final heatmap = ref.watch(signalHeatmapProvider);
+    final anomalies = ref.watch(telemetryAnomalyProvider);
     final selected = mapState.selected;
 
     ref.listen(tacticalMapProvider.select((s) => s.selectedDeviceId), (prev, next) {
       if (next != null) {
         ref.read(missionPlannerProvider.notifier).setTargetDevice(next);
+        if (ref.read(signalHeatmapProvider).enabled) {
+          ref.read(signalHeatmapProvider.notifier).loadForDevice(next);
+        }
+        ref.read(telemetryAnomalyProvider.notifier).loadForDevice(next);
       }
     });
 
@@ -128,6 +144,31 @@ class _TacticalMapScreenState extends ConsumerState<TacticalMapScreen> {
                 tileMode == MapTileMode.offline ? Icons.offline_bolt : Icons.public,
                 size: 16,
                 color: tileMode == MapTileMode.offline ? TacticalColors.warning : TacticalColors.borderNeon,
+              ),
+            ),
+            if (anomalies.hasAnomalies)
+              AnomalyAlertBadge(
+                count: anomalies.count,
+                hasCritical: anomalies.hasCritical,
+              ),
+            FilterChip(
+              label: const Text('Signal Heatmap'),
+              selected: heatmap.enabled,
+              onSelected: (_) async {
+                await ref.read(signalHeatmapProvider.notifier).toggle();
+                if (!ref.read(signalHeatmapProvider).enabled) return;
+                final targetId = mapState.selectedDeviceId ??
+                    (mapState.markers.isNotEmpty ? mapState.markers.first.device.id : null);
+                if (targetId != null) {
+                  await ref.read(signalHeatmapProvider.notifier).loadForDevice(targetId);
+                }
+              },
+              selectedColor: TacticalColors.success.withOpacity(0.2),
+              checkmarkColor: TacticalColors.success,
+              avatar: Icon(
+                Icons.cell_tower,
+                size: 16,
+                color: heatmap.enabled ? TacticalColors.success : TacticalColors.textSecondary,
               ),
             ),
             if (selected != null && !mission.plannerMode)
@@ -175,6 +216,8 @@ class _TacticalMapScreenState extends ConsumerState<TacticalMapScreen> {
                     ),
                     children: [
                       const TacticalTileLayer(),
+                      if (heatmap.enabled && heatmap.points.isNotEmpty)
+                        ...SignalHeatmapLayer.buildMapLayers(heatmap.points),
                       if (mission.waypoints.length >= 2)
                         PolylineLayer(
                           polylines: [
@@ -201,6 +244,8 @@ class _TacticalMapScreenState extends ConsumerState<TacticalMapScreen> {
                                 marker: marker,
                                 isSelected: isSelected,
                                 compact: true,
+                                anomalyCount: isSelected ? anomalies.count : 0,
+                                hasCriticalAnomaly: isSelected && anomalies.hasCritical,
                                 onTap: () => ref
                                     .read(tacticalMapProvider.notifier)
                                     .selectDevice(marker.device.id),
@@ -231,6 +276,24 @@ class _TacticalMapScreenState extends ConsumerState<TacticalMapScreen> {
                     child: TelemetryMapOverlay(
                       marker: selected,
                       onCenter: _centerOnSelected,
+                    ),
+                  ),
+                if (anomalies.hasAnomalies)
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    child: AnomalyAlertPanel(
+                      anomalies: anomalies.items,
+                      isLoading: anomalies.isLoading,
+                    ),
+                  ),
+                if (heatmap.enabled)
+                  Positioned(
+                    left: 12,
+                    bottom: selected != null && !mission.plannerMode ? 120 : 12,
+                    child: SignalHeatmapLegend(
+                      pointCount: heatmap.points.length,
+                      hours: heatmap.hours,
                     ),
                   ),
                 Positioned(

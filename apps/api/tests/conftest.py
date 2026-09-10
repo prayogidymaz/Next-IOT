@@ -58,14 +58,22 @@ def truncate_auth_tables() -> None:
     conn.autocommit = True
     with conn.cursor() as cur:
         cur.execute(
-            "TRUNCATE device_commands, rules, telemetry_readings, device_metadata, device_credentials, devices, users, tenants RESTART IDENTITY CASCADE"
+            "TRUNCATE telemetry_anomalies, device_commands, rules, telemetry_readings, device_metadata, device_credentials, devices, users, tenants RESTART IDENTITY CASCADE"
         )
     conn.close()
 
 
 async def _clear_redis_keys() -> None:
     redis = aioredis.from_url(settings.redis_url, decode_responses=True)
-    for pattern in ("refresh:*", "ratelimit:*", "provision:*", "device:liveness:*", "device:telemetry:latest:*", "device:alerts*", "hardware:*"):
+    for pattern in (
+        "refresh:*",
+        "ratelimit:*",
+        "provision:*",
+        "device:liveness:*",
+        "device:telemetry:latest:*",
+        "device:alerts*",
+        "hardware:*",
+    ):
         keys = [k async for k in redis.scan_iter(pattern)]
         if keys:
             await redis.delete(*keys)

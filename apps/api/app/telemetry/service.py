@@ -13,6 +13,7 @@ from app.devices.service import _get_device_for_user
 from app.models.device import DeviceStatus
 from app.models.telemetry_reading import TelemetryReading
 from app.rules.evaluator import evaluate_rules_for_telemetry
+from app.telemetry.anomaly_detector import detect_and_persist_anomalies
 from app.telemetry.cache import cache_latest_telemetry, get_latest_telemetry
 from app.telemetry.schemas import (
     TelemetryHistoryItem,
@@ -87,6 +88,15 @@ async def ingest_telemetry(
         device_id=device.device_id,
         tenant_id=device.tenant_id,
         metrics=metrics,
+        reading_id=reading.id,
+    )
+
+    await detect_and_persist_anomalies(
+        db,
+        device_id=device.device_id,
+        tenant_id=device.tenant_id,
+        metrics=metrics,
+        recorded_at=recorded_at,
         reading_id=reading.id,
     )
 

@@ -16,6 +16,7 @@ from app.commands.events import DEVICE_COMMANDS_CHANNEL
 from app.config import settings
 from app.database import async_session
 from app.drone_simulator.interpolation import GeoPoint, build_mission_path, heading_to, segment_speed_mps
+from app.drone_simulator.lora_mock import build_lora_json_payload, publish_encrypted_lora_mock
 from app.drone_simulator.telemetry import ensure_device_online, publish_simulated_telemetry
 from app.models.device import Device
 from app.seed_telemetry import DEMO_DEVICE_NAME
@@ -156,6 +157,14 @@ class DroneSimulator:
                             "flight_mode": flight_mode,
                         }
                         await publish_simulated_telemetry(step_db, self.redis, device=step_device, metrics=metrics)
+                        await self._maybe_publish_encrypted_lora_mock(
+                            node_id=settings.lora_bridge_default_node_id,
+                            latitude=point.latitude,
+                            longitude=point.longitude,
+                            altitude_m=point.altitude_m,
+                            rssi=metrics.get("rssi") if isinstance(metrics.get("rssi"), (int, float)) else -80.0,
+                            snr=8.5,
+                        )
                         prev = point
 
                     await asyncio.sleep(self.tick_seconds)
@@ -215,6 +224,28 @@ class DroneSimulator:
             settings.drone_simulator_default_longitude,
             28.0,
         )
+
+    async def _maybe_publish_encrypted_lora_mock(
+        self,
+        *,
+        node_id: str,
+        latitude: float,
+        longitude: float,
+        altitude_m: float,
+        rssi: float,
+        snr: float,
+    ) -> None:
+        if not settings.drone_simulator_lora_encrypt_mock:
+            return
+        plaintext = build_lora_json_payload(
+            node_id=node_id,
+            latitude=latitude,
+            longitude=longitude,
+            altitude_m=altitude_m,
+            rssi=rssi,
+            snr=snr,
+        )
+        await publish_encrypted_lora_mock(self.redis, plaintext)
 
     @staticmethod
     def _parse_waypoints(params: dict[str, Any]) -> list[tuple[float, float]]:
