@@ -1,0 +1,1 @@
+"""Next-IOT API application."""

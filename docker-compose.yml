@@ -1,0 +1,122 @@
+networks:
+  next-iot-net:
+    driver: bridge
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: next-iot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-next_iot}
+      POSTGRES_USER: ${POSTGRES_USER:-next_iot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-next_iot} -d ${POSTGRES_DB:-next_iot}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - next-iot-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: next-iot-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - next-iot-net
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: next-iot-api
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-8000}:8000"
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./apps/api:/app
+    command: >
+      sh -c "alembic upgrade head &&
+             python -m app.seed &&
+             python -m app.seed_telemetry &&
+             python -m app.seed_hardware &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    networks:
+      - next-iot-net
+
+  lora-bridge:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: next-iot-lora-bridge
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+      LORA_BRIDGE_API_BASE_URL: http://api:8000
+      LORA_BRIDGE_SERIAL_PORT: ${LORA_BRIDGE_SERIAL_PORT:-/dev/ttyUSB0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_started
+    volumes:
+      - ./apps/api:/app
+    command: python -m app.hardware
+    networks:
+      - next-iot-net
+
+  drone-simulator:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: next-iot-drone-simulator
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_started
+    volumes:
+      - ./apps/api:/app
+    command: python -m app.drone_simulator
+    networks:
+      - next-iot-net
+
+volumes:
+  postgres_data:
+  redis_data:
