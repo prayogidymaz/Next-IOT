@@ -21,10 +21,16 @@ from app.drone_simulator.telemetry import ensure_device_online, publish_simulate
 from app.models.device import Device
 from app.seed_telemetry import DEMO_DEVICE_NAME
 from app.telemetry.cache import get_latest_telemetry
+from app.telemetry.weather_generator import weather_metrics_for_telemetry
+from app.telemetry.video_feed.events import publish_video_frame
+from app.telemetry.video_feed.generator import MockVideoFrameGenerator
+from app.telemetry.video_feed.parser import serialize_video_frame
 
 logger = logging.getLogger(__name__)
 
-SUPPORTED_COMMANDS = frozenset({"GO_TO_MISSION", "TAKEOFF", "RTL"})
+SUPPORTED_COMMANDS = frozenset(
+    {"GO_TO_MISSION", "TAKEOFF", "RTL", "RETURN_TO_HOME", "EMERGENCY_LAND"}
+)
 
 
 @dataclass
@@ -40,6 +46,7 @@ class DroneSimulator:
     tick_seconds: float = 1.0
     _sessions: dict[str, FlightSession] = field(default_factory=dict)
     _tasks: dict[str, asyncio.Task[None]] = field(default_factory=dict)
+    _video_generators: dict[str, MockVideoFrameGenerator] = field(default_factory=dict)
 
     async def run_forever(self) -> None:
         pubsub = self.redis.pubsub()
@@ -101,7 +108,7 @@ class DroneSimulator:
                 await ensure_device_online(db, self.redis, device)
                 await db.commit()
 
-                if command_type == "RTL":
+                if command_type in {"RTL", "RETURN_TO_HOME"}:
                     path = build_mission_path(
                         origin,
                         [(session.home.latitude, session.home.longitude)],
@@ -109,7 +116,17 @@ class DroneSimulator:
                         min_steps=settings.drone_simulator_min_steps,
                         max_steps=settings.drone_simulator_max_steps,
                     )
-                    flight_mode = "rtl"
+                    flight_mode = "fail_safe_rth" if command_type == "RETURN_TO_HOME" else "rtl"
+                elif command_type == "EMERGENCY_LAND":
+                    land_point = GeoPoint(origin.latitude, origin.longitude, session.home.altitude_m)
+                    path = build_mission_path(
+                        origin,
+                        [(land_point.latitude, land_point.longitude)],
+                        cruise_altitude_m=session.home.altitude_m,
+                        min_steps=settings.drone_simulator_min_steps,
+                        max_steps=max(3, settings.drone_simulator_min_steps),
+                    )
+                    flight_mode = "fail_safe_land"
                 elif command_type == "TAKEOFF":
                     takeoff_point = GeoPoint(origin.latitude, origin.longitude, cruise_alt)
                     path = build_mission_path(
@@ -155,8 +172,10 @@ class DroneSimulator:
                             "yaw": round(yaw, 1),
                             "speed": round(speed, 2),
                             "flight_mode": flight_mode,
+                            **weather_metrics_for_telemetry(point.latitude, point.longitude),
                         }
                         await publish_simulated_telemetry(step_db, self.redis, device=step_device, metrics=metrics)
+                        await self._publish_mock_video_frame(device_id)
                         await self._maybe_publish_encrypted_lora_mock(
                             node_id=settings.lora_bridge_default_node_id,
                             latitude=point.latitude,
@@ -174,7 +193,11 @@ class DroneSimulator:
                     if final_device is None:
                         return
 
-                    final_mode = "hovering" if command_type != "RTL" else "landed"
+                    final_mode = (
+                        "landed"
+                        if command_type in {"RTL", "RETURN_TO_HOME", "EMERGENCY_LAND"}
+                        else "hovering"
+                    )
                     metrics = {
                         "latitude": round(prev.latitude, 6),
                         "longitude": round(prev.longitude, 6),
@@ -223,6 +246,15 @@ class DroneSimulator:
             settings.drone_simulator_default_latitude,
             settings.drone_simulator_default_longitude,
             28.0,
+        )
+
+    async def _publish_mock_video_frame(self, device_id: str) -> None:
+        generator = self._video_generators.setdefault(device_id, MockVideoFrameGenerator(device_id=device_id))
+        frame = generator.next_frame()
+        await publish_video_frame(
+            self.redis,
+            device_id=device_id,
+            frame_payload=serialize_video_frame(frame),
         )
 
     async def _maybe_publish_encrypted_lora_mock(

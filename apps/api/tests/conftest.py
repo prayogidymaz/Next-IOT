@@ -58,7 +58,7 @@ def truncate_auth_tables() -> None:
     conn.autocommit = True
     with conn.cursor() as cur:
         cur.execute(
-            "TRUNCATE telemetry_anomalies, device_commands, rules, telemetry_readings, device_metadata, device_credentials, devices, users, tenants RESTART IDENTITY CASCADE"
+            "TRUNCATE sar_incidents, telemetry_anomalies, geofence_zones, device_commands, rules, telemetry_readings, device_metadata, device_credentials, devices, users, tenants RESTART IDENTITY CASCADE"
         )
     conn.close()
 
@@ -73,6 +73,7 @@ async def _clear_redis_keys() -> None:
         "device:telemetry:latest:*",
         "device:alerts*",
         "hardware:*",
+        "hardware:mavlink:status:*",
     ):
         keys = [k async for k in redis.scan_iter(pattern)]
         if keys:

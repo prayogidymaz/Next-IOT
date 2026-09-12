@@ -13,6 +13,8 @@ from app.devices.service import _get_device_for_user
 from app.models.device import DeviceStatus
 from app.models.telemetry_reading import TelemetryReading
 from app.rules.evaluator import evaluate_rules_for_telemetry
+from app.commands.fail_safe import fail_safe_protocol
+from app.mission.sar_emergency_service import sar_emergency_service
 from app.telemetry.anomaly_detector import detect_and_persist_anomalies
 from app.telemetry.cache import cache_latest_telemetry, get_latest_telemetry
 from app.telemetry.schemas import (
@@ -91,7 +93,7 @@ async def ingest_telemetry(
         reading_id=reading.id,
     )
 
-    await detect_and_persist_anomalies(
+    anomaly_rows = await detect_and_persist_anomalies(
         db,
         device_id=device.device_id,
         tenant_id=device.tenant_id,
@@ -99,6 +101,25 @@ async def ingest_telemetry(
         recorded_at=recorded_at,
         reading_id=reading.id,
     )
+    if anomaly_rows:
+        for row in anomaly_rows:
+            await sar_emergency_service.trigger_from_anomaly(
+                db,
+                redis,
+                tenant_id=device.tenant_id,
+                device_id=device.device_id,
+                anomaly_type=row.anomaly_type,
+                severity=row.severity,
+                message=row.message,
+                metadata=row.metadata_ or {},
+            )
+        await fail_safe_protocol.handle_critical_anomalies(
+            db,
+            redis,
+            device_id=device.device_id,
+            tenant_id=device.tenant_id,
+            anomalies=anomaly_rows,
+        )
 
     return TelemetryIngestResponse(
         reading_id=reading.id,

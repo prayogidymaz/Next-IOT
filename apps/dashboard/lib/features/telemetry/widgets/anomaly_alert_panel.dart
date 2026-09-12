@@ -10,17 +10,19 @@ class AnomalyAlertPanel extends StatelessWidget {
     required this.anomalies,
     this.isLoading = false,
     this.onClose,
+    this.onGenerateSarGrid,
   });
 
   final List<TelemetryAnomaly> anomalies;
   final bool isLoading;
   final VoidCallback? onClose;
+  final void Function(double lat, double lon)? onGenerateSarGrid;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 320,
-      constraints: const BoxConstraints(maxHeight: 280),
+      constraints: const BoxConstraints(maxHeight: 320),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: TacticalColors.surface.withOpacity(0.95),
@@ -80,6 +82,7 @@ class AnomalyAlertPanel extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final anomaly = anomalies[index];
                   final color = anomalySeverityColor(anomaly.severity);
+                  final lkp = anomalyLkp(anomaly.metadata);
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -122,6 +125,19 @@ class AnomalyAlertPanel extends StatelessWidget {
                                 fontSize: 11,
                               ),
                             ),
+                            if (lkp != null && onGenerateSarGrid != null) ...[
+                              const SizedBox(height: 6),
+                              OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  visualDensity: VisualDensity.compact,
+                                  foregroundColor: TacticalColors.cyan,
+                                  side: BorderSide(color: TacticalColors.cyan.withOpacity(0.6)),
+                                ),
+                                onPressed: () => onGenerateSarGrid!(lkp.$2, lkp.$3),
+                                icon: const Icon(Icons.grid_on, size: 14),
+                                label: const Text('Generate SAR Grid', style: TextStyle(fontSize: 10)),
+                              ),
+                            ],
                           ],
                         ),
                       ),

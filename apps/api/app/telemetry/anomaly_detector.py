@@ -15,6 +15,8 @@ from app.auth.dependencies import CurrentUser
 from app.devices.service import _get_device_for_user
 from app.models.telemetry_anomaly import TelemetryAnomaly
 from app.models.telemetry_reading import TelemetryReading
+from app.mission.geofence_checker import GeofenceChecker
+from app.mission.geofence_service import geofence_service
 from app.telemetry.schemas import TelemetryAnomalyItem, TelemetryAnomalyResponse
 
 ALLOWED_HOURS = frozenset({1, 24})
@@ -209,6 +211,46 @@ async def _fetch_previous_reading(
     return await db.scalar(query)
 
 
+def _geofence_severity(action_on_breach: str, breach_type: str) -> str:
+    if action_on_breach in {"RTL", "LAND"}:
+        return "critical"
+    if breach_type == "altitude_violation":
+        return "critical"
+    return "warning"
+
+
+async def _detect_geofence_anomalies(
+    db: AsyncSession,
+    *,
+    tenant_id: uuid.UUID,
+    metrics: dict[str, Any],
+) -> list[DetectedAnomaly]:
+    lat = _metric_float(metrics, "latitude", "lat")
+    lon = _metric_float(metrics, "longitude", "lon")
+    if lat is None or lon is None:
+        return []
+
+    altitude = _metric_float(metrics, "altitude", "alt", "altitude_m")
+    zones = await geofence_service.fetch_snapshots_for_tenant(db, tenant_id)
+    if not zones:
+        return []
+
+    checker = GeofenceChecker()
+    breaches = checker.check_position(lat, lon, altitude, zones)
+    anomalies: list[DetectedAnomaly] = []
+    for breach in breaches:
+        severity = _geofence_severity(breach.action_on_breach, breach.breach_type)
+        anomalies.append(
+            DetectedAnomaly(
+                severity=severity,
+                anomaly_type="geofence_breach",
+                message=breach.message,
+                metadata=breach.metadata,
+            )
+        )
+    return anomalies
+
+
 async def detect_and_persist_anomalies(
     db: AsyncSession,
     *,
@@ -228,11 +270,25 @@ async def detect_and_persist_anomalies(
 
     detector = TelemetryAnomalyDetector()
     detected = detector.evaluate(metrics, previous_metrics=previous_metrics)
+    detected.extend(
+        await _detect_geofence_anomalies(
+            db,
+            tenant_id=tenant_id,
+            metrics=metrics,
+        )
+    )
     if not detected:
         return []
 
+    lat = _metric_float(metrics, "latitude", "lat")
+    lon = _metric_float(metrics, "longitude", "lon")
+
     rows: list[TelemetryAnomaly] = []
     for item in detected:
+        metadata = dict(item.metadata)
+        if lat is not None and lon is not None:
+            metadata.setdefault("lat", lat)
+            metadata.setdefault("lon", lon)
         row = TelemetryAnomaly(
             device_id=device_id,
             tenant_id=tenant_id,
@@ -240,7 +296,7 @@ async def detect_and_persist_anomalies(
             severity=item.severity,
             anomaly_type=item.anomaly_type,
             message=item.message,
-            metadata_=item.metadata,
+            metadata_=metadata,
             recorded_at=recorded_at,
         )
         db.add(row)

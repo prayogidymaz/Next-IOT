@@ -15,6 +15,8 @@ class CommandType(StrEnum):
     RTL = "RTL"
     TAKEOFF = "TAKEOFF"
     LAND = "LAND"
+    RETURN_TO_HOME = "RETURN_TO_HOME"
+    EMERGENCY_LAND = "EMERGENCY_LAND"
 
 
 class CommandStatus(StrEnum):

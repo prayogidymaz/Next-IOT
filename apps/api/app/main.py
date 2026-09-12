@@ -26,6 +26,10 @@ from app.notifications.router import router as notifications_router
 from app.notifications.worker import notification_dispatcher_loop
 from app.hardware.router import router as hardware_router
 from app.tiles.router import router as tiles_router
+from app.mission.router import router as mission_router
+from app.mission.sar_emergency_router import router as sar_emergency_ws_router
+from app.telemetry.video_feed.router import router as video_feed_router
+from app.mavlink.router import router as mavlink_router
 from app.seed_hardware import run_hardware_seed
 
 logger = logging.getLogger(__name__)
@@ -96,6 +100,10 @@ app.include_router(alerts_router)
 app.include_router(notifications_router)
 app.include_router(hardware_router)
 app.include_router(tiles_router)
+app.include_router(mission_router)
+app.include_router(sar_emergency_ws_router)
+app.include_router(video_feed_router)
+app.include_router(mavlink_router)
 
 
 @app.get("/health")

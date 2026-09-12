@@ -1,3 +1,5 @@
+from app.models.geofence_zone import GeofenceAction, GeofenceZone
+from app.models.sar_incident import SarIncident, SarIncidentStatus, SarIncidentType
 from app.models.device import Device, DeviceStatus
 from app.models.device_command import CommandStatus, CommandType, DeviceCommand
 from app.models.device_credential import DeviceCredential
@@ -23,4 +25,9 @@ __all__ = [
     "Rule",
     "RuleOperator",
     "RuleActionType",
+    "GeofenceZone",
+    "GeofenceAction",
+    "SarIncident",
+    "SarIncidentType",
+    "SarIncidentStatus",
 ]

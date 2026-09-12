@@ -25,9 +25,22 @@ String anomalyTypeLabel(String type) {
       return 'Altitude Dev';
     case 'speed_deviation':
       return 'Speed Dev';
+    case 'geofence_breach':
+      return 'Geofence Breach';
     default:
       return type;
   }
+}
+
+bool anomalyHasLocation(Map<String, dynamic> metadata) {
+  final lat = metadata['lat'];
+  final lon = metadata['lon'];
+  return lat != null && lon != null;
+}
+
+(bool, double, double)? anomalyLkp(Map<String, dynamic> metadata) {
+  if (!anomalyHasLocation(metadata)) return null;
+  return (true, (metadata['lat'] as num).toDouble(), (metadata['lon'] as num).toDouble());
 }
 
 IconData anomalyTypeIcon(String type) {
@@ -42,6 +55,8 @@ IconData anomalyTypeIcon(String type) {
       return Icons.height;
     case 'speed_deviation':
       return Icons.speed;
+    case 'geofence_breach':
+      return Icons.fence;
     default:
       return Icons.warning_amber;
   }

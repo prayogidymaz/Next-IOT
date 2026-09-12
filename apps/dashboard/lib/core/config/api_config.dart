@@ -20,4 +20,15 @@ class ApiConfig {
 
   static const Duration connectTimeout = Duration(seconds: 15);
   static const Duration receiveTimeout = Duration(seconds: 15);
+
+  /// WebSocket base URL derived from [baseUrl].
+  static String get wsBaseUrl {
+    if (baseUrl.startsWith('https://')) {
+      return baseUrl.replaceFirst('https://', 'wss://');
+    }
+    if (baseUrl.startsWith('http://')) {
+      return baseUrl.replaceFirst('http://', 'ws://');
+    }
+    return 'ws://$baseUrl';
+  }
 }

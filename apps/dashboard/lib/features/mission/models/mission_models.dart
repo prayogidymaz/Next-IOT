@@ -32,7 +32,9 @@ enum DeviceCommandType {
   goToMission('GO_TO_MISSION'),
   rtl('RTL'),
   takeoff('TAKEOFF'),
-  land('LAND');
+  land('LAND'),
+  returnToHome('RETURN_TO_HOME'),
+  emergencyLand('EMERGENCY_LAND');
 
   const DeviceCommandType(this.apiValue);
   final String apiValue;

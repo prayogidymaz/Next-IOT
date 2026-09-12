@@ -44,7 +44,13 @@ def _validate_params(command_type: str, params: dict[str, Any]) -> None:
                 )
         return
 
-    if command_type in {CommandType.RTL, CommandType.TAKEOFF, CommandType.LAND}:
+    if command_type in {
+        CommandType.RTL,
+        CommandType.TAKEOFF,
+        CommandType.LAND,
+        CommandType.RETURN_TO_HOME,
+        CommandType.EMERGENCY_LAND,
+    }:
         return
 
     raise HTTPException(status_code=422, detail=f"Unsupported command_type: {command_type}")
