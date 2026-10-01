@@ -61,6 +61,7 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ### Step 0 — Engineering Guardrails (2026-09-30 → 2026-10-01)
 
+- **Dev image:** `requirements-dev.txt` (pinned ruff/mypy/pytest + stubs) installed when `Dockerfile` `INSTALL_DEV=true` (dev compose); prod `Dockerfile.prod` stays runtime-only.
 - **Final:** RATCHET legacy lists in `apps/api/pyproject.toml` (126-entry baseline), CORE modules strict; `check-all.ps1` shows output per step + ratchet guard; `apps/dashboard` frozen.
 - Pytest Redis isolation: `REDIS_URL_TEST` / `redis_test_db_index` (default DB 15), `test_redis` fixture with guarded `FLUSHDB` (`assert_test_redis_isolated`), FastAPI `get_redis` override on `client`.
 - Ruff: `tests/conftest.py` E402 ignored in `pyproject.toml` (test DB env must load before `app` imports).

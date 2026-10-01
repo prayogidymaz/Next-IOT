@@ -44,6 +44,8 @@ services:
     build:
       context: ./apps/api
       dockerfile: Dockerfile
+      args:
+        INSTALL_DEV: "true"
     container_name: next-iot-api
     restart: unless-stopped
     ports:
