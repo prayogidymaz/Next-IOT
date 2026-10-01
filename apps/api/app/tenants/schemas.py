@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TenantSummary(BaseModel):
@@ -12,7 +12,7 @@ class TenantSummary(BaseModel):
     is_active: bool
     membership_role: str | None = None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TenantCreateRequest(BaseModel):

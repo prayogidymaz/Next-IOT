@@ -27,7 +27,7 @@ def _normalize_relay_state(value: JsonValue) -> RelayState:
 def _normalize_pir_motion(value: JsonValue) -> bool:
     if isinstance(value, bool):
         return value
-    if isinstance(value, (int, float)):
+    if isinstance(value, int | float):
         return bool(value)
     if isinstance(value, str):
         normalized = value.strip().lower()
@@ -39,10 +39,12 @@ def _normalize_pir_motion(value: JsonValue) -> bool:
 
 
 def _normalize_hvac_temp(value: JsonValue) -> float:
-    try:
-        return float(value)
-    except (TypeError, ValueError) as exc:
-        raise ValueError("hvac_temp must be numeric") from exc
+    from app.types.json_types import json_value_to_float
+
+    parsed = json_value_to_float(value)
+    if parsed is None:
+        raise ValueError("hvac_temp must be numeric")
+    return parsed
 
 
 def _normalize_lock_state(value: JsonValue) -> LockState:

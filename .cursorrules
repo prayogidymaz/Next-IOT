@@ -8,3 +8,4 @@
 6. **New API endpoints:** Must ship pytest coverage (happy path + tenant isolation + unauthorized).
 7. **Lint / types:** Never disable or weaken rules to make CI pass — fix the code.
 8. **Task completion:** Run `scripts/check-all.ps1`, update Notion (or `NOTION_UPDATE.md`), update `docs/PROJECT_RESUME.md`.
+9. **Frozen dashboard:** Do not change `apps/dashboard` unless the user explicitly requests it (reference-only for porting to `apps/web`; see `apps/dashboard/FROZEN.md`).

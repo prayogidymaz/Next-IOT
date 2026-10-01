@@ -1,16 +1,16 @@
 import json
 
-import redis.asyncio as aioredis
 from pydantic import JsonValue
 
 from app.devices.events import emit_device_event
+from app.types.redis_client import RedisClient
 
 DEVICE_COMMANDS_CHANNEL = "device:commands:pubsub"
 HARDWARE_MQTT_BRIDGE_CHANNEL = "hardware:mqtt:commands"
 
 
 async def publish_device_command(
-    redis: aioredis.Redis,
+    redis: RedisClient,
     *,
     command_id: str,
     device_id: str,

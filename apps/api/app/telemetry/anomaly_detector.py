@@ -18,6 +18,7 @@ from app.mission.geofence_service import geofence_service
 from app.models.telemetry_anomaly import TelemetryAnomaly
 from app.models.telemetry_reading import TelemetryReading
 from app.telemetry.schemas import TelemetryAnomalyItem, TelemetryAnomalyResponse
+from app.types.json_types import metric_float
 
 ALLOWED_HOURS = frozenset({1, 24})
 
@@ -42,16 +43,6 @@ class DetectedAnomaly:
     metadata: dict[str, JsonValue]
 
 
-def _metric_float(metrics: dict[str, JsonValue], *keys: str) -> float | None:
-    for key in keys:
-        if key in metrics and metrics[key] is not None:
-            try:
-                return float(metrics[key])
-            except (TypeError, ValueError):
-                continue
-    return None
-
-
 class TelemetryAnomalyDetector:
     """Evaluate incoming telemetry against threshold rules."""
 
@@ -64,8 +55,8 @@ class TelemetryAnomalyDetector:
         anomalies: list[DetectedAnomaly] = []
         prev = previous_metrics or {}
 
-        voltage = _metric_float(metrics, "voltage", "battery_voltage", "batt_voltage")
-        prev_voltage = _metric_float(prev, "voltage", "battery_voltage", "batt_voltage")
+        voltage = metric_float(metrics, "voltage", "battery_voltage", "batt_voltage")
+        prev_voltage = metric_float(prev, "voltage", "battery_voltage", "batt_voltage")
         if voltage is not None and prev_voltage is not None and prev_voltage > 0:
             drop_pct = ((prev_voltage - voltage) / prev_voltage) * 100.0
             if drop_pct > VOLTAGE_DROP_PCT:
@@ -83,7 +74,7 @@ class TelemetryAnomalyDetector:
                     )
                 )
 
-        temp = _metric_float(metrics, "temperature", "temp", "battery_temp")
+        temp = metric_float(metrics, "temperature", "temp", "battery_temp")
         if temp is not None and temp > OVERHEAT_TEMP_C:
             severity = "critical" if temp > OVERHEAT_CRITICAL_TEMP_C else "warning"
             anomalies.append(
@@ -95,9 +86,9 @@ class TelemetryAnomalyDetector:
                 )
             )
 
-        rssi = _metric_float(metrics, "rssi", "signal_rssi")
-        prev_rssi = _metric_float(prev, "rssi", "signal_rssi")
-        ping_delay = _metric_float(metrics, "ping_delay", "ping_delay_ms", "latency_ms")
+        rssi = metric_float(metrics, "rssi", "signal_rssi")
+        prev_rssi = metric_float(prev, "rssi", "signal_rssi")
+        ping_delay = metric_float(metrics, "ping_delay", "ping_delay_ms", "latency_ms")
         signal_triggered = False
 
         if rssi is not None and rssi <= SIGNAL_RSSI_WEAK_DBM:
@@ -142,8 +133,8 @@ class TelemetryAnomalyDetector:
                 )
             )
 
-        altitude = _metric_float(metrics, "altitude", "alt", "altitude_m")
-        prev_altitude = _metric_float(prev, "altitude", "alt", "altitude_m")
+        altitude = metric_float(metrics, "altitude", "alt", "altitude_m")
+        prev_altitude = metric_float(prev, "altitude", "alt", "altitude_m")
         if altitude is not None and prev_altitude is not None:
             delta = abs(altitude - prev_altitude)
             if delta > ALTITUDE_DEVIATION_M:
@@ -161,8 +152,8 @@ class TelemetryAnomalyDetector:
                     )
                 )
 
-        speed = _metric_float(metrics, "speed", "groundspeed", "ground_speed")
-        prev_speed = _metric_float(prev, "speed", "groundspeed", "ground_speed")
+        speed = metric_float(metrics, "speed", "groundspeed", "ground_speed")
+        prev_speed = metric_float(prev, "speed", "groundspeed", "ground_speed")
         if speed is not None and speed > SPEED_CRITICAL_MS:
             anomalies.append(
                 DetectedAnomaly(
@@ -208,7 +199,8 @@ async def _fetch_previous_reading(
         .order_by(TelemetryReading.recorded_at.desc())
         .limit(1)
     )
-    return await db.scalar(query)
+    reading = await db.scalar(query)
+    return reading if isinstance(reading, TelemetryReading) else None
 
 
 def _geofence_severity(action_on_breach: str, breach_type: str) -> str:
@@ -225,12 +217,12 @@ async def _detect_geofence_anomalies(
     tenant_id: uuid.UUID,
     metrics: dict[str, JsonValue],
 ) -> list[DetectedAnomaly]:
-    lat = _metric_float(metrics, "latitude", "lat")
-    lon = _metric_float(metrics, "longitude", "lon")
+    lat = metric_float(metrics, "latitude", "lat")
+    lon = metric_float(metrics, "longitude", "lon")
     if lat is None or lon is None:
         return []
 
-    altitude = _metric_float(metrics, "altitude", "alt", "altitude_m")
+    altitude = metric_float(metrics, "altitude", "alt", "altitude_m")
     zones = await geofence_service.fetch_snapshots_for_tenant(db, tenant_id)
     if not zones:
         return []
@@ -280,8 +272,8 @@ async def detect_and_persist_anomalies(
     if not detected:
         return []
 
-    lat = _metric_float(metrics, "latitude", "lat")
-    lon = _metric_float(metrics, "longitude", "lon")
+    lat = metric_float(metrics, "latitude", "lat")
+    lon = metric_float(metrics, "longitude", "lon")
 
     rows: list[TelemetryAnomaly] = []
     for item in detected:

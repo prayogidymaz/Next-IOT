@@ -1,7 +1,7 @@
 import re
 import uuid
 
-from pydantic import BaseModel, EmailStr, Field, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 
 class RegisterRequest(BaseModel):
@@ -62,7 +62,7 @@ class UserResponse(BaseModel):
     role: str
     tenant_id: uuid.UUID
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RegisterResponse(BaseModel):

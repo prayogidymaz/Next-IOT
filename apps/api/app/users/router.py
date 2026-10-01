@@ -15,7 +15,7 @@ class UserPermissionsResponse(BaseModel):
 
 
 @router.get("/me/permissions", response_model=UserPermissionsResponse)
-async def get_my_permissions(user: RequireAuth):
+async def get_my_permissions(user: RequireAuth) -> UserPermissionsResponse:
     return UserPermissionsResponse(
         user_id=str(user.user_id),
         tenant_id=str(user.tenant_id),

@@ -5,12 +5,13 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-import redis.asyncio as aioredis
 from pydantic import JsonValue
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.commands.events import publish_device_command
 from app.models.device_command import CommandStatus, CommandType, DeviceCommand
+from app.models.telemetry_anomaly import TelemetryAnomaly
+from app.types.redis_client import RedisClient
 
 FAIL_SAFE_PRIORITY = "critical"
 
@@ -68,7 +69,7 @@ class FailSafeProtocol:
     async def dispatch_fail_safe(
         self,
         db: AsyncSession,
-        redis: aioredis.Redis,
+        redis: RedisClient,
         *,
         device_id: uuid.UUID,
         tenant_id: uuid.UUID,
@@ -114,21 +115,21 @@ class FailSafeProtocol:
     async def handle_critical_anomalies(
         self,
         db: AsyncSession,
-        redis: aioredis.Redis,
+        redis: RedisClient,
         *,
         device_id: uuid.UUID,
         tenant_id: uuid.UUID,
-        anomalies: list[JsonValue],
+        anomalies: list[TelemetryAnomaly],
     ) -> list[DeviceCommand]:
         """Auto-dispatch fail-safe for each qualifying critical anomaly."""
         dispatched: list[DeviceCommand] = []
         seen_actions: set[str] = set()
 
         for anomaly in anomalies:
-            severity = getattr(anomaly, "severity", None) or anomaly.get("severity")
-            anomaly_type = getattr(anomaly, "anomaly_type", None) or anomaly.get("anomaly_type")
-            message = getattr(anomaly, "message", None) or anomaly.get("message", "Critical anomaly")
-            metadata = getattr(anomaly, "metadata_", None) or anomaly.get("metadata") or {}
+            severity = anomaly.severity
+            anomaly_type = anomaly.anomaly_type
+            message = anomaly.message or "Critical anomaly"
+            metadata = anomaly.metadata_ if anomaly.metadata_ is not None else {}
 
             action = self.resolve_action(
                 str(anomaly_type),

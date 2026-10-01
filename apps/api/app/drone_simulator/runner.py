@@ -181,7 +181,7 @@ class DroneSimulator:
                             latitude=point.latitude,
                             longitude=point.longitude,
                             altitude_m=point.altitude_m,
-                            rssi=metrics.get("rssi") if isinstance(metrics.get("rssi"), (int, float)) else -80.0,
+                            rssi=metrics.get("rssi") if isinstance(metrics.get("rssi"), int | float) else -80.0,
                             snr=8.5,
                         )
                         prev = point

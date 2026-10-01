@@ -1,7 +1,6 @@
 import uuid
 from datetime import UTC, datetime
 
-import redis.asyncio as aioredis
 from fastapi import HTTPException, status
 from pydantic import JsonValue
 from sqlalchemy import select
@@ -12,6 +11,7 @@ from app.commands.events import publish_device_command
 from app.commands.schemas import DeviceCommandRequest, DeviceCommandResponse
 from app.models.device import Device
 from app.models.device_command import CommandStatus, CommandType, DeviceCommand
+from app.types.redis_client import RedisClient
 
 
 def _validate_params(command_type: str, params: dict[str, JsonValue]) -> None:
@@ -84,7 +84,7 @@ async def _get_device_for_user(
 
 async def dispatch_device_command(
     db: AsyncSession,
-    redis: aioredis.Redis,
+    redis: RedisClient,
     user: CurrentUser,
     device_id: uuid.UUID,
     payload: DeviceCommandRequest,

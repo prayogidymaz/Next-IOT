@@ -1,12 +1,10 @@
 import uuid
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from typing import Annotated
 
-import redis.asyncio as aioredis
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.context import CurrentUser
 from app.auth.permissions import PERMISSION_AUDIT_READ, role_has_permission
@@ -15,9 +13,10 @@ from app.auth.rbac import UserRole, has_role
 from app.auth.service import decode_access_token
 from app.auth.session_context import resolve_active_session
 from app.auth.tiering import parse_tier
-from app.deps import get_db, get_redis
+from app.deps import DbSession, RedisDep
 from app.models.tenant import Tenant
 from app.models.user import User
+from app.types.json_types import as_json_str
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -25,18 +24,18 @@ bearer_scheme = HTTPBearer(auto_error=False)
 async def get_current_user(
     request: Request,
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
-    db: AsyncSession = Depends(get_db),
-    redis: aioredis.Redis = Depends(get_redis),
+    db: DbSession,
+    redis: RedisDep,
 ) -> CurrentUser:
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
 
     payload = decode_access_token(credentials.credentials)
-    user_id = payload.get("sub")
-    tenant_id = payload.get("tenant_id")
-    role = payload.get("role")
+    user_id = as_json_str(payload.get("sub"))
+    tenant_id = as_json_str(payload.get("tenant_id"))
+    role = as_json_str(payload.get("role"))
 
-    if not user_id or not tenant_id or not role:
+    if user_id is None or tenant_id is None or role is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token claims")
 
     user = await db.scalar(select(User).where(User.id == uuid.UUID(user_id)))
@@ -71,10 +70,10 @@ async def get_current_user(
     return current
 
 
-def require_roles(*allowed_roles: UserRole | str) -> Callable:
+def require_roles(*allowed_roles: UserRole | str) -> Callable[[CurrentUser], Awaitable[CurrentUser]]:
     allowed = {str(r) for r in allowed_roles}
 
-    async def _checker(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
+    async def _checker(user: Annotated[CurrentUser, Depends(get_current_user)]) -> CurrentUser:
         if not has_role(user.role, allowed):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -87,7 +86,7 @@ def require_roles(*allowed_roles: UserRole | str) -> Callable:
 
 async def require_tenant_access(
     tenant_id: uuid.UUID,
-    user: CurrentUser = Depends(get_current_user),
+    user: Annotated[CurrentUser, Depends(get_current_user)],
 ) -> CurrentUser:
     if user.is_super_admin:
         return user
@@ -99,7 +98,6 @@ async def require_tenant_access(
     return user
 
 
-# Shortcuts
 RequireAuth = Annotated[CurrentUser, Depends(get_current_user)]
 RequireTenantAdmin = Annotated[CurrentUser, Depends(require_roles(UserRole.TENANT_ADMIN, UserRole.SUPER_ADMIN))]
 RequireOperator = Annotated[
@@ -109,8 +107,8 @@ RequireOperator = Annotated[
 RequireSuperAdmin = Annotated[CurrentUser, Depends(require_roles(UserRole.SUPER_ADMIN))]
 
 
-def require_permission(permission: str) -> Callable:
-    async def _checker(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
+def require_permission(permission: str) -> Callable[[CurrentUser], Awaitable[CurrentUser]]:
+    async def _checker(user: Annotated[CurrentUser, Depends(get_current_user)]) -> CurrentUser:
         if not role_has_permission(user.role, permission):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -132,4 +130,19 @@ RequireAutomationRun = Annotated[
 RequireAuditRead = Annotated[
     CurrentUser,
     Depends(require_permission(PERMISSION_AUDIT_READ)),
+]
+
+__all__ = [
+    "CurrentUser",
+    "RequireAuditRead",
+    "RequireAuth",
+    "RequireAutomationManage",
+    "RequireAutomationRun",
+    "RequireOperator",
+    "RequireSuperAdmin",
+    "RequireTenantAdmin",
+    "get_current_user",
+    "require_permission",
+    "require_roles",
+    "require_tenant_access",
 ]

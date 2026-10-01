@@ -15,7 +15,11 @@ from app.auth.dependencies import CurrentUser
 from app.devices.service import _get_device_for_user
 from app.mission.sar_emergency_events import publish_sar_emergency_alert
 from app.mission.sar_grid_service import SarGridService
-from app.mission.schemas import SarIncidentCreateRequest, SarIncidentUpdateRequest
+from app.mission.schemas import (
+    SarIncidentCreateRequest,
+    SarIncidentStatusEnum,
+    SarIncidentUpdateRequest,
+)
 from app.models.sar_incident import SarIncident, SarIncidentStatus, SarIncidentType
 
 DEFAULT_SEARCH_RADIUS_M = 500.0
@@ -119,7 +123,7 @@ class SarEmergencyResponseService:
 
         if payload.status is not None:
             incident.status = payload.status.value
-            if payload.status == SarIncidentStatus.RESOLVED:
+            if payload.status == SarIncidentStatusEnum.RESOLVED:
                 incident.resolved_at = datetime.now(UTC)
         if payload.assigned_device_id is not None:
             await _get_device_for_user(db, payload.assigned_device_id, user)

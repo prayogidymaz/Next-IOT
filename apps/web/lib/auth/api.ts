@@ -1,3 +1,5 @@
+import { authUserSchema, registerResponseSchema, tokenResponseSchema } from "@/lib/auth/schemas";
+
 const DEFAULT_DEV_API = "http://localhost:8000";
 
 export function getApiBaseUrl(): string {
@@ -52,7 +54,8 @@ export async function login(email: string, password: string): Promise<TokenRespo
     body: JSON.stringify({ email, password }),
   });
   if (!res.ok) throw new Error(await parseError(res));
-  return res.json() as Promise<TokenResponse>;
+  const json: unknown = await res.json();
+  return tokenResponseSchema.parse(json);
 }
 
 export async function register(input: {
@@ -67,8 +70,8 @@ export async function register(input: {
     body: JSON.stringify(input),
   });
   if (!res.ok) throw new Error(await parseError(res));
-  const data = (await res.json()) as { tokens: TokenResponse };
-  return data;
+  const json: unknown = await res.json();
+  return registerResponseSchema.parse(json);
 }
 
 export async function fetchAuthMe(accessToken: string): Promise<AuthUser> {
@@ -79,5 +82,6 @@ export async function fetchAuthMe(accessToken: string): Promise<AuthUser> {
     },
   });
   if (!res.ok) throw new Error(await parseError(res));
-  return res.json() as Promise<AuthUser>;
+  const json: unknown = await res.json();
+  return authUserSchema.parse(json);
 }

@@ -1,16 +1,16 @@
 import time
 
-import redis.asyncio as aioredis
 from fastapi import HTTPException, status
 
 from app.auth.tiering import SecurityTier, rate_limit_for_tier
+from app.types.redis_client import RedisClient
 
 RATE_LIMIT_WINDOW_SECONDS = 60
 RATE_KEY_PREFIX = "ratelimit:"
 
 
 async def enforce_rate_limit(
-    redis: aioredis.Redis,
+    redis: RedisClient,
     *,
     tenant_id: str,
     user_id: str,

@@ -1,13 +1,13 @@
 import uuid
 from dataclasses import dataclass
+from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.deps import get_db
+from app.deps import DbSession
 from app.devices.security import verify_device_secret
 from app.models.device_credential import DeviceCredential
 
@@ -23,8 +23,8 @@ class CurrentDevice:
 
 
 async def get_current_device(
-    credentials: HTTPBasicCredentials | None = Depends(device_basic),
-    db: AsyncSession = Depends(get_db),
+    credentials: Annotated[HTTPBasicCredentials | None, Depends(device_basic)],
+    db: DbSession,
 ) -> CurrentDevice:
     """Device auth via HTTP Basic: username=client_id, password=client_secret."""
     if credentials is None:
@@ -53,4 +53,4 @@ async def get_current_device(
     )
 
 
-RequireDevice = Depends(get_current_device)
+RequireDevice = Annotated[CurrentDevice, Depends(get_current_device)]

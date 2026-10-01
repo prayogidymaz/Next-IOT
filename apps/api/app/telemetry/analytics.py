@@ -6,7 +6,6 @@ import uuid
 from datetime import datetime
 
 from fastapi import HTTPException, status
-from pydantic import JsonValue
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,18 +14,10 @@ from app.models.telemetry_anomaly import TelemetryAnomaly
 from app.models.telemetry_reading import TelemetryReading
 from app.telemetry.schemas import TelemetryAnalyticsResponse
 from app.telemetry.swarm_distance import SwarmDistanceCalculator
+from app.telemetry.timeseries import aggregate_timeseries
+from app.types.json_types import metric_float
 
 MAX_READINGS = 5000
-
-
-def _metric_float(metrics: dict[str, JsonValue], *keys: str) -> float | None:
-    for key in keys:
-        if key in metrics and metrics[key] is not None:
-            try:
-                return float(metrics[key])
-            except (TypeError, ValueError):
-                continue
-    return None
 
 
 def _compute_total_distance_m(readings: list[TelemetryReading]) -> float:
@@ -37,8 +28,8 @@ def _compute_total_distance_m(readings: list[TelemetryReading]) -> float:
 
     for reading in readings:
         metrics = reading.metrics or {}
-        lat = _metric_float(metrics, "latitude", "lat")
-        lon = _metric_float(metrics, "longitude", "lon")
+        lat = metric_float(metrics, "latitude", "lat")
+        lon = metric_float(metrics, "longitude", "lon")
         if lat is None or lon is None:
             continue
         if prev_lat is not None and prev_lon is not None:
@@ -55,9 +46,9 @@ def _aggregate_readings(readings: list[TelemetryReading]) -> dict[str, float | N
 
     for reading in readings:
         metrics = reading.metrics or {}
-        speed = _metric_float(metrics, "speed", "speed_mps", "ground_speed", "velocity")
-        altitude = _metric_float(metrics, "altitude_m", "altitude", "alt")
-        voltage = _metric_float(metrics, "voltage", "battery_voltage", "batt_voltage")
+        speed = metric_float(metrics, "speed", "speed_mps", "ground_speed", "velocity")
+        altitude = metric_float(metrics, "altitude_m", "altitude", "alt")
+        voltage = metric_float(metrics, "voltage", "battery_voltage", "batt_voltage")
 
         if speed is not None:
             speeds.append(speed)
@@ -89,7 +80,6 @@ async def get_telemetry_analytics(
     interval: str = "5m",
 ) -> TelemetryAnalyticsResponse:
     from app.telemetry.timeseries import (
-        aggregate_timeseries,
         fetch_readings_window,
         parse_interval,
         resolve_time_window,
@@ -102,7 +92,10 @@ async def get_telemetry_analytics(
 
     start, end = resolve_time_window(start_time=start_time, end_time=end_time, hours=hours)
     if start >= end:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="start_time must be before end_time")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="start_time must be before end_time",
+        )
 
     readings = await fetch_readings_window(db, user, device_id=device_id, start=start, end=end)
     if len(readings) > MAX_READINGS:

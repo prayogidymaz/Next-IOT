@@ -5,8 +5,9 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 
-import redis.asyncio as aioredis
 from pydantic import JsonValue
+
+from app.types.redis_client import RedisClient
 
 TELEMETRY_WS_CHANNEL_PREFIX = "telemetry:tenant:"
 
@@ -16,7 +17,7 @@ def telemetry_channel_for_tenant(tenant_id: str) -> str:
 
 
 async def publish_control_center_event(
-    redis: aioredis.Redis,
+    redis: RedisClient,
     *,
     tenant_id: str,
     event_type: str,

@@ -1,10 +1,13 @@
 import json
 from datetime import UTC, datetime
 
-import redis.asyncio as aioredis
-from pydantic import JsonValue
+from pydantic import JsonValue, TypeAdapter
+
+from app.types.json_types import JsonObject
+from app.types.redis_client import RedisClient
 
 LATEST_KEY_PREFIX = "device:telemetry:latest:"
+_JSON_OBJECT = TypeAdapter(JsonObject)
 
 
 def latest_cache_key(device_id: str) -> str:
@@ -12,7 +15,7 @@ def latest_cache_key(device_id: str) -> str:
 
 
 async def cache_latest_telemetry(
-    redis: aioredis.Redis,
+    redis: RedisClient,
     *,
     device_id: str,
     tenant_id: str,
@@ -31,8 +34,9 @@ async def cache_latest_telemetry(
     await redis.set(latest_cache_key(device_id), json.dumps(payload))
 
 
-async def get_latest_telemetry(redis: aioredis.Redis, device_id: str) -> dict | None:
+async def get_latest_telemetry(redis: RedisClient, device_id: str) -> JsonObject | None:
     raw = await redis.get(latest_cache_key(device_id))
     if raw is None:
         return None
-    return json.loads(raw)
+    parsed: object = json.loads(raw)
+    return _JSON_OBJECT.validate_python(parsed)

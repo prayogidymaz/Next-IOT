@@ -1,60 +1,49 @@
 # Next-IoT — Technical Debt (Engineering Guardrails Step 0)
 
-**Audit date:** 2026-09-30 (UTC+7)  
-**Scope:** Post–Step 0 tooling rollout; Senior Architect verification pending.
+**Audit date:** 2026-10-01 (UTC+7)  
+**Scope:** RATCHET legacy modules + incremental burn-down. Step 0 **In progress** (Architect sign-off pending).
 
-## Initial violation counts (before fixes)
+## Architecture (official clients)
 
-| Area | Category | Initial | After Step 0 |
-| --- | --- | ---: | ---: |
-| `apps/api/app` | `typing.Any` / `: Any` | ~220 | **0** (forbidden scan) |
-| `apps/api` | `# type: ignore` | 0 | 0 |
-| `apps/web` (app/components/lib/hooks) | `any` / `as unknown as` / `@ts-ignore` | 2 | **0** |
-| `apps/mobile/field_app/lib` | explicit `dynamic` | 4 | **0** |
-| `apps/api` | **ruff** (E,F,I,B,UP,ANN,PGH) | 317 | 317 (see below) |
-| `apps/api` | **mypy** strict | blocked (syntax) | **632** errors / 111 files |
-| `apps/api` | **pytest** | — | 208 passed, **1 failed** (`test_lora_bridge.py::test_gateway_status_endpoint`) |
+| Surface | Path | Status |
+| --- | --- | --- |
+| Web HQ | `apps/web` (Next.js) | Active |
+| Mobile | `apps/mobile/field_app` (Flutter) | Active |
+| Legacy dashboard | `apps/dashboard` | **FROZEN** — see `apps/dashboard/FROZEN.md` |
 
-## Ruff — representative debt (fix incrementally)
+## Guardrails snapshot
 
-Run: `docker compose exec -T api ruff check app`
-
-Primary buckets:
-
-- **ANN*** — missing / incomplete return type annotations across routers, services, workers.
-- **I*** — import order (84 auto-fixable via `ruff check app --fix`).
-
-Core modules already migrated off `Any` to `pydantic.JsonValue` (`app/types/json_types.py`).
-
-## Mypy strict — follow-up by package
-
-Run: `docker compose exec -T api mypy app`
-
-| Package | Notes |
+| Check | Status |
 | --- | --- |
-| `app/main.py` | Untyped lifespan handlers; Redis generic params |
-| `app/devices/router.py` | Redis type parameters |
-| `app/mission/*`, `app/hardware/*`, `app/mavlink/*` | Strict inference on JSON helpers |
-| `app/automation/pipeline_interpreter.py` | Complex graph interpreter — needs Protocol/TypedDict node shapes |
+| `scripts/check-all.ps1` | Green when RATCHET baseline honored |
+| API `ruff` (`app`, `tests`) | Pass (CORE strict; legacy ANN/B008 in `pyproject.toml`) |
+| API `mypy` (`app`) | Pass (CORE strict; legacy overrides in `pyproject.toml`) |
+| API `pytest` | Pass (Redis test DB + `assert_test_redis_isolated`) |
+| Web `npm run lint` / `typecheck` | Pass |
+| Flutter `field_app` analyze | Pass |
+| Forbidden `Any` / `any` / `dynamic` (scoped scans) | 0 |
 
-**Policy:** Do not add `# type: ignore` or disable strict flags; fix types or introduce narrow TypedDict/Protocol models.
+## RATCHET (legacy API modules)
 
-## Pytest
+- **Baseline:** `scripts/ratchet-baseline.txt` → **126** entries (ruff legacy globs + mypy module names).
+- **Source of truth:** `apps/api/pyproject.toml` blocks marked `LEGACY RATCHET — list only shrinks`.
+- **Policy:** Each future Step removes ≥1 legacy module from overrides and lowers the baseline.
+- **CORE (strict):** `app/config.py`, `app/main.py`, `app/database.py`, `app/types/*`, `app/auth/*`, `app/devices/*`, `app/telemetry/*` except `app/telemetry/video_feed/*`, `app/commands/*`, `app/tenants/*`, `app/users/*`, `tests/conftest.py`.
 
-- `tests/test_lora_bridge.py::test_gateway_status_endpoint` — investigate gateway status fixture vs Redis key (pre-existing / environmental).
+Legacy lists (107 mypy modules, 19 ruff globs) live only in `pyproject.toml` — keep identical when editing debt.
 
-## Web
+## Web — JSON boundaries (zod)
 
-- `npm run typecheck` — **pass** after `noUncheckedIndexedAccess` fixes in `lib/auth/session.ts`, `lib/hq/domains.ts`, `lib/hq/hq-shell-context.tsx`.
-- ESLint strict `@typescript-eslint/no-unsafe-*` — run `npm run lint` after `eslint.config.mjs`; resolve any remaining unsafe JSON boundaries with zod (future Step 1).
+| Location | Status |
+| --- | --- |
+| `lib/auth/api.ts` | zod via `lib/auth/schemas.ts` |
+| `lib/api/automation.ts` | zod via `lib/api/automation-schemas.ts` |
+| `lib/hq/hq-shell-context.tsx:67` | TODO: zod for `/health` payload |
 
-## Mobile
+Do not disable ESLint rules to clear debt.
 
-- `flutter analyze` — **pass** (strict-casts / strict-inference enabled).
+## Next actions
 
-## Next actions (recommended)
-
-1. `ruff check app --fix` then manual ANN pass on **auth, devices, telemetry, commands, automation**.
-2. Mypy: fix `app/main.py` + Redis typing pattern once, replicate across routers.
-3. Repair `test_lora_bridge.py` gateway status assertion.
-4. Re-run `scripts/check-all.ps1` before marking P0 Step 0 **Done** in Notion.
+1. Port rows from `apps/dashboard/FROZEN.md` into `apps/web`.
+2. Remove one RATCHET legacy module per milestone; update `ratchet-baseline.txt`.
+3. Add zod for remaining fetch sites under `apps/web/lib/**`.

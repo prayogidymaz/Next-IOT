@@ -9,7 +9,7 @@ Next-IOT/
 ├── apps/api/                 # FastAPI + Alembic + pytest
 ├── apps/web/                 # Next.js 15 + React 19 + Tailwind (Web HQ)
 ├── apps/mobile/field_app/    # Flutter Field Execution
-├── apps/dashboard/           # Flutter operator shell
+├── apps/dashboard/           # Flutter legacy HQ (FROZEN — see FROZEN.md)
 ├── scripts/check-all.ps1     # Unified guardrails verification
 ├── docs/TECH_DEBT.md         # Remaining strict typing / lint debt
 └── docker-compose.yml
@@ -25,6 +25,16 @@ Next-IOT/
 - **Field app:** BLE + mDNS discovery, UUID pairing, offline SQLite queue, relay REST/BLE.
 
 Default dev API: `http://localhost:8000` · Swagger `/docs`.
+
+## Architecture Decisions
+
+| Decision | Choice |
+| --- | --- |
+| Web HQ (official) | `apps/web` (Next.js) |
+| Mobile (official) | `apps/mobile/field_app` (Flutter) |
+| `apps/dashboard` (Flutter) | **FROZEN** — reference for porting to Web HQ only; delete after parity (`apps/dashboard/FROZEN.md`) |
+| Quality gate | `scripts/check-all.ps1` + RATCHET baseline (`scripts/ratchet-baseline.txt`) |
+| Docker Compose project name | `next-iot` (`docker-compose.yml` top-level `name`) |
 
 ## Engineering Standards
 
@@ -49,8 +59,9 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
-### Step 0 — Engineering Guardrails (2026-09-30)
+### Step 0 — Engineering Guardrails (2026-09-30 → 2026-10-01)
 
+- **Final:** RATCHET legacy lists in `apps/api/pyproject.toml` (126-entry baseline), CORE modules strict; `check-all.ps1` shows output per step + ratchet guard; `apps/dashboard` frozen.
 - Pytest Redis isolation: `REDIS_URL_TEST` / `redis_test_db_index` (default DB 15), `test_redis` fixture with guarded `FLUSHDB` (`assert_test_redis_isolated`), FastAPI `get_redis` override on `client`.
 - Ruff: `tests/conftest.py` E402 ignored in `pyproject.toml` (test DB env must load before `app` imports).
 - `Settings.assert_test_redis_isolated()` guard before pytest `FLUSHDB`.
@@ -59,6 +70,6 @@ Permanent rules live in **`.cursorrules`** (root):
 - API: `pyproject.toml`, ruff/mypy deps, migrated `app/**` off `typing.Any` → `pydantic.JsonValue`.
 - Web: stricter TS config, ESLint flat config, removed `as unknown as` in automation deploy client.
 - Mobile: strict analyzer + typed `FieldApiClient` / DTO models.
-- **Status:** P0 Step 0 **In progress** — awaiting Senior Architect sign-off (`docs/TECH_DEBT.md` for remaining ruff/mypy/pytest items).
+- **Status:** P0 Step 0 **In progress** — Architect sign-off; burn down RATCHET per `docs/TECH_DEBT.md`.
 
 See also: `NOTION_UPDATE.md`, `NOTION_TASKS_BACKLOG.md`.

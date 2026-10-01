@@ -6,24 +6,16 @@ import csv
 import io
 import json
 import uuid
+from collections.abc import Iterator
 from datetime import UTC, datetime
 from xml.sax.saxutils import escape
 
 from pydantic import JsonValue
 
 from app.models.telemetry_reading import TelemetryReading
+from app.types.json_types import metric_float
 
 EXPORT_FORMATS = frozenset({"csv", "json", "kml"})
-
-
-def _metric_float(metrics: dict[str, JsonValue], *keys: str) -> float | None:
-    for key in keys:
-        if key in metrics and metrics[key] is not None:
-            try:
-                return float(metrics[key])
-            except (TypeError, ValueError):
-                continue
-    return None
 
 
 def _flatten_reading(reading: TelemetryReading) -> dict[str, JsonValue]:
@@ -32,11 +24,11 @@ def _flatten_reading(reading: TelemetryReading) -> dict[str, JsonValue]:
         "reading_id": str(reading.id),
         "recorded_at": reading.recorded_at.isoformat(),
         "ingested_at": reading.ingested_at.isoformat() if reading.ingested_at else None,
-        "latitude": _metric_float(metrics, "latitude", "lat"),
-        "longitude": _metric_float(metrics, "longitude", "lon"),
-        "altitude_m": _metric_float(metrics, "altitude_m", "altitude", "alt"),
-        "speed_m_s": _metric_float(metrics, "speed", "speed_mps", "ground_speed", "velocity"),
-        "voltage": _metric_float(metrics, "voltage", "battery_voltage", "batt_voltage"),
+        "latitude": metric_float(metrics, "latitude", "lat"),
+        "longitude": metric_float(metrics, "longitude", "lon"),
+        "altitude_m": metric_float(metrics, "altitude_m", "altitude", "alt"),
+        "speed_m_s": metric_float(metrics, "speed", "speed_mps", "ground_speed", "velocity"),
+        "voltage": metric_float(metrics, "voltage", "battery_voltage", "batt_voltage"),
     }
     for key, value in metrics.items():
         if key not in row:
@@ -44,7 +36,7 @@ def _flatten_reading(reading: TelemetryReading) -> dict[str, JsonValue]:
     return row
 
 
-def iter_csv_rows(readings: list[TelemetryReading]):
+def iter_csv_rows(readings: list[TelemetryReading]) -> Iterator[str]:
     rows = [_flatten_reading(r) for r in readings]
     if not rows:
         yield "reading_id,recorded_at,ingested_at,latitude,longitude,altitude_m,speed_m_s,voltage\n"
@@ -110,9 +102,9 @@ def generate_kml(readings: list[TelemetryReading], *, device_id: uuid.UUID, hour
 
     for reading in readings:
         metrics = reading.metrics or {}
-        lat = _metric_float(metrics, "latitude", "lat")
-        lon = _metric_float(metrics, "longitude", "lon")
-        alt = _metric_float(metrics, "altitude_m", "altitude", "alt") or 0.0
+        lat = metric_float(metrics, "latitude", "lat")
+        lon = metric_float(metrics, "longitude", "lon")
+        alt = metric_float(metrics, "altitude_m", "altitude", "alt") or 0.0
         if lat is None or lon is None:
             continue
         coordinates.append(f"{lon:.7f},{lat:.7f},{alt:.1f}")

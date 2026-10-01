@@ -1,8 +1,8 @@
 import uuid
 
 import jwt
-import redis.asyncio as aioredis
 from fastapi import HTTPException, status
+from pydantic import JsonValue
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,6 +23,8 @@ from app.models.tenant import Tenant
 from app.models.tenant_membership import TenantMembership
 from app.models.user import User
 from app.tenants.service import user_can_access_tenant
+from app.types.json_types import as_json_str
+from app.types.redis_client import RedisClient
 
 REFRESH_KEY_PREFIX = "refresh:"
 
@@ -31,22 +33,23 @@ def _refresh_ttl_seconds() -> int:
     return settings.jwt_refresh_token_expire_days * 86400
 
 
-async def _store_refresh_token(redis: aioredis.Redis, jti: str, user_id: uuid.UUID, tenant_id: uuid.UUID) -> None:
+async def _store_refresh_token(redis: RedisClient, jti: str, user_id: uuid.UUID, tenant_id: uuid.UUID) -> None:
     key = f"{REFRESH_KEY_PREFIX}{jti}"
     value = f"{user_id}:{tenant_id}"
     await redis.set(key, value, ex=_refresh_ttl_seconds())
 
 
-async def _is_refresh_token_active(redis: aioredis.Redis, jti: str) -> bool:
-    return await redis.exists(f"{REFRESH_KEY_PREFIX}{jti}") == 1
+async def _is_refresh_token_active(redis: RedisClient, jti: str) -> bool:
+    exists = await redis.exists(f"{REFRESH_KEY_PREFIX}{jti}")
+    return bool(exists == 1)
 
 
-async def _revoke_refresh_token(redis: aioredis.Redis, jti: str) -> None:
+async def _revoke_refresh_token(redis: RedisClient, jti: str) -> None:
     await redis.delete(f"{REFRESH_KEY_PREFIX}{jti}")
 
 
 async def _issue_tokens(
-    redis: aioredis.Redis,
+    redis: RedisClient,
     user: User,
     *,
     tenant_id: uuid.UUID | None = None,
@@ -62,7 +65,7 @@ async def _issue_tokens(
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
 
-async def register(db: AsyncSession, redis: aioredis.Redis, payload: RegisterRequest) -> RegisterResponse:
+async def register(db: AsyncSession, redis: RedisClient, payload: RegisterRequest) -> RegisterResponse:
     slug = payload.tenant_slug or "workspace"
     slug_base = slug
     while await db.scalar(select(Tenant).where(Tenant.slug == slug)):
@@ -104,7 +107,7 @@ async def register(db: AsyncSession, redis: aioredis.Redis, payload: RegisterReq
     )
 
 
-async def login(db: AsyncSession, redis: aioredis.Redis, payload: LoginRequest) -> TokenResponse:
+async def login(db: AsyncSession, redis: RedisClient, payload: LoginRequest) -> TokenResponse:
     user = await db.scalar(select(User).where(User.email == payload.email))
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
@@ -127,20 +130,22 @@ async def login(db: AsyncSession, redis: aioredis.Redis, payload: LoginRequest) 
     )
 
 
-async def refresh_tokens(db: AsyncSession, redis: aioredis.Redis, refresh_token: str) -> TokenResponse:
+async def refresh_tokens(db: AsyncSession, redis: RedisClient, refresh_token: str) -> TokenResponse:
     try:
         payload = decode_token(refresh_token)
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+    except jwt.PyJWTError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+        ) from exc
 
     if payload.get("type") != TOKEN_TYPE_REFRESH:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
 
-    jti = payload.get("jti")
-    user_id = payload.get("sub")
-    tenant_id = payload.get("tenant_id")
+    jti = as_json_str(payload.get("jti"))
+    user_id = as_json_str(payload.get("sub"))
+    tenant_id = as_json_str(payload.get("tenant_id"))
 
-    if not jti or not user_id or not tenant_id:
+    if jti is None or user_id is None or tenant_id is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token claims")
 
     if not await _is_refresh_token_active(redis, jti):
@@ -165,7 +170,7 @@ async def refresh_tokens(db: AsyncSession, redis: aioredis.Redis, refresh_token:
 
 async def switch_tenant(
     db: AsyncSession,
-    redis: aioredis.Redis,
+    redis: RedisClient,
     user_id: uuid.UUID,
     target_tenant_id: uuid.UUID,
 ) -> TokenResponse:
@@ -187,27 +192,31 @@ async def switch_tenant(
     )
 
 
-async def logout(redis: aioredis.Redis, refresh_token: str) -> None:
+async def logout(redis: RedisClient, refresh_token: str) -> None:
     try:
         payload = decode_token(refresh_token)
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+    except jwt.PyJWTError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+        ) from exc
 
     if payload.get("type") != TOKEN_TYPE_REFRESH:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
 
-    jti = payload.get("jti")
-    if not jti:
+    jti = as_json_str(payload.get("jti"))
+    if jti is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token claims")
 
     await _revoke_refresh_token(redis, jti)
 
 
-def decode_access_token(access_token: str) -> dict:
+def decode_access_token(access_token: str) -> dict[str, JsonValue]:
     try:
         payload = decode_token(access_token)
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid access token")
+    except jwt.PyJWTError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid access token"
+        ) from exc
 
     if payload.get("type") != TOKEN_TYPE_ACCESS:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")

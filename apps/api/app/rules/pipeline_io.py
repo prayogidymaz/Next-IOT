@@ -80,5 +80,7 @@ def validate_pipeline_payload(document: dict[str, JsonValue]) -> dict[str, JsonV
 
     nodes = pipeline_body.get("nodes") or pipeline_body.get("nodes_json") or []
     edges = pipeline_body.get("edges") or pipeline_body.get("edges_json") or []
-    errors, warnings = validate_pipeline_document(nodes if isinstance(nodes, list) else [], edges if isinstance(edges, list) else [])
+    node_list = nodes if isinstance(nodes, list) else []
+    edge_list = edges if isinstance(edges, list) else []
+    errors, warnings = validate_pipeline_document(node_list, edge_list)
     return {"valid": len(errors) == 0, "errors": errors, "warnings": warnings}

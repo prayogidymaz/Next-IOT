@@ -1,14 +1,15 @@
 import json
 from datetime import UTC, datetime
 
-import redis.asyncio as aioredis
 from pydantic import JsonValue
+
+from app.types.redis_client import RedisClient
 
 DEVICE_EVENTS_QUEUE = "device:events"
 
 
 async def emit_device_event(
-    redis: aioredis.Redis,
+    redis: RedisClient,
     event_type: str,
     *,
     device_id: str,

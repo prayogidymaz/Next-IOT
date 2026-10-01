@@ -1,3 +1,4 @@
+import { automationPipelineRecordSchema } from "@/lib/api/automation-schemas";
 import { getApiBaseUrl } from "@/lib/auth/api";
 import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/constants";
 import type { AutomationWorkflowExport } from "@/lib/studio/automation-flow";
@@ -85,7 +86,8 @@ export async function deployAutomationPipeline(input: DeployWorkflowInput): Prom
       body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error(await parseApiError(res));
-    return res.json() as Promise<AutomationPipelineRecord>;
+    const json: unknown = await res.json();
+    return automationPipelineRecordSchema.parse(json);
   }
 
   const res = await fetch(`${base}/api/v1/automation/pipelines`, {
@@ -94,5 +96,6 @@ export async function deployAutomationPipeline(input: DeployWorkflowInput): Prom
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(await parseApiError(res));
-  return res.json() as Promise<AutomationPipelineRecord>;
+  const json: unknown = await res.json();
+  return automationPipelineRecordSchema.parse(json);
 }

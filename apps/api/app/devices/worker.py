@@ -1,7 +1,6 @@
 import asyncio
 import logging
 
-import redis.asyncio as aioredis
 from sqlalchemy import select
 
 from app.config import settings
@@ -9,11 +8,12 @@ from app.database import async_session
 from app.devices.events import emit_device_event
 from app.devices.liveness import is_lively
 from app.models.device import Device, DeviceStatus
+from app.types.redis_client import RedisClient
 
 logger = logging.getLogger(__name__)
 
 
-async def mark_stale_devices_offline(redis: aioredis.Redis) -> int:
+async def mark_stale_devices_offline(redis: RedisClient) -> int:
     """Mark online devices as offline when Redis liveness TTL has expired."""
     marked = 0
     async with async_session() as session:
@@ -44,7 +44,7 @@ async def mark_stale_devices_offline(redis: aioredis.Redis) -> int:
     return marked
 
 
-async def offline_checker_loop(redis: aioredis.Redis, stop_event: asyncio.Event) -> None:
+async def offline_checker_loop(redis: RedisClient, stop_event: asyncio.Event) -> None:
     interval = settings.device_offline_check_interval_seconds
     while not stop_event.is_set():
         try:

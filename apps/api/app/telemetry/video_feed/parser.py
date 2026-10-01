@@ -42,7 +42,7 @@ def serialize_stream_info(info: StreamInfoPayload) -> dict[str, JsonValue]:
 def _coerce_dict(raw: str | bytes | dict[str, JsonValue]) -> dict[str, JsonValue]:
     if isinstance(raw, dict):
         return raw
-    if isinstance(raw, (str, bytes)):
+    if isinstance(raw, str | bytes):
         try:
             parsed = json.loads(raw)
         except json.JSONDecodeError as exc:

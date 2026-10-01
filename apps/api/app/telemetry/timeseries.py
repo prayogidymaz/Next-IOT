@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import TypedDict
 
 from pydantic import JsonValue
 from sqlalchemy import select
@@ -12,6 +13,28 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import CurrentUser
 from app.devices.service import _get_device_for_user
 from app.models.telemetry_reading import TelemetryReading
+from app.types.json_types import json_value_to_float
+
+
+class MetricStatsDict(TypedDict):
+    avg: float | None
+    min: float | None
+    max: float | None
+    latest: float | None
+
+
+class BucketPointDict(TypedDict):
+    bucket_start: datetime
+    avg: float
+    min: float
+    max: float
+    count: int
+
+
+class AggregatedSeriesItem(TypedDict):
+    metric: str
+    stats: MetricStatsDict
+    points: list[BucketPointDict]
 
 ALLOWED_INTERVALS = {
     "1m": timedelta(minutes=1),
@@ -47,12 +70,7 @@ def resolve_time_window(
 
 
 def _metric_value(metrics: dict[str, JsonValue], metric: str) -> float | None:
-    if metric not in metrics or metrics[metric] is None:
-        return None
-    try:
-        return float(metrics[metric])
-    except (TypeError, ValueError):
-        return None
+    return json_value_to_float(metrics.get(metric))
 
 
 def _floor_bucket(ts: datetime, bucket: timedelta) -> datetime:
@@ -68,19 +86,19 @@ def aggregate_timeseries(
     *,
     metrics: list[str],
     interval: timedelta,
-) -> list[dict[str, JsonValue]]:
+) -> list[AggregatedSeriesItem]:
     """Return list of {metric, stats, points} for each requested metric."""
     if not metrics:
         discovered: set[str] = set()
         for reading in readings[:50]:
             for key, value in (reading.metrics or {}).items():
-                if isinstance(value, (int, float)) or (
+                if isinstance(value, int | float) or (
                     isinstance(value, str) and value.replace(".", "", 1).isdigit()
                 ):
                     discovered.add(key)
         metrics = sorted(discovered)[:8]
 
-    series_output: list[dict[str, JsonValue]] = []
+    series_output: list[AggregatedSeriesItem] = []
 
     for metric in metrics:
         values_by_time: list[tuple[datetime, float]] = []
@@ -101,7 +119,7 @@ def aggregate_timeseries(
 
         raw_values = [v for _, v in values_by_time]
         latest = raw_values[-1]
-        stats = {
+        stats: MetricStatsDict = {
             "avg": round(sum(raw_values) / len(raw_values), 4),
             "min": round(min(raw_values), 4),
             "max": round(max(raw_values), 4),
@@ -113,20 +131,20 @@ def aggregate_timeseries(
             bucket_start = _floor_bucket(ts if ts.tzinfo else ts.replace(tzinfo=UTC), interval)
             buckets.setdefault(bucket_start, []).append(val)
 
-        points = []
+        points: list[BucketPointDict] = []
         for bucket_start in sorted(buckets):
             vals = buckets[bucket_start]
-            points.append(
-                {
-                    "bucket_start": bucket_start,
-                    "avg": round(sum(vals) / len(vals), 4),
-                    "min": round(min(vals), 4),
-                    "max": round(max(vals), 4),
-                    "count": len(vals),
-                }
-            )
+            point: BucketPointDict = {
+                "bucket_start": bucket_start,
+                "avg": round(sum(vals) / len(vals), 4),
+                "min": round(min(vals), 4),
+                "max": round(max(vals), 4),
+                "count": len(vals),
+            }
+            points.append(point)
 
-        series_output.append({"metric": metric, "stats": stats, "points": points})
+        item: AggregatedSeriesItem = {"metric": metric, "stats": stats, "points": points}
+        series_output.append(item)
 
     return series_output
 
@@ -152,4 +170,4 @@ async def fetch_readings_window(
     )
     if not user.is_super_admin:
         query = query.where(TelemetryReading.tenant_id == user.tenant_id)
-    return (await db.scalars(query)).all()
+    return list(await db.scalars(query))

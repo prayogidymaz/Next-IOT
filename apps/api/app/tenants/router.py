@@ -1,13 +1,11 @@
 import uuid
 
-import redis.asyncio as aioredis
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter
 
 from app.auth import service as auth_service
 from app.auth.dependencies import RequireAuth, RequireTenantAdmin
 from app.auth.schemas import TokenResponse
-from app.deps import get_db, get_redis
+from app.deps import DbSession, RedisDep
 from app.tenants import service
 from app.tenants.schemas import (
     TenantCreateRequest,
@@ -21,7 +19,7 @@ router = APIRouter(prefix="/api/v1/tenants", tags=["tenants"])
 
 
 @router.get("", response_model=list[TenantSummary])
-async def list_tenants(user: RequireAuth, db: AsyncSession = Depends(get_db)):
+async def list_tenants(user: RequireAuth, db: DbSession) -> list[TenantSummary]:
     return await service.list_accessible_tenants(db, user)
 
 
@@ -29,8 +27,8 @@ async def list_tenants(user: RequireAuth, db: AsyncSession = Depends(get_db)):
 async def create_tenant(
     payload: TenantCreateRequest,
     user: RequireTenantAdmin,
-    db: AsyncSession = Depends(get_db),
-):
+    db: DbSession,
+) -> TenantSummary:
     return await service.create_tenant(db, user, payload)
 
 
@@ -38,9 +36,9 @@ async def create_tenant(
 async def switch_active_tenant(
     payload: TenantSwitchRequest,
     user: RequireAuth,
-    db: AsyncSession = Depends(get_db),
-    redis: aioredis.Redis = Depends(get_redis),
-):
+    db: DbSession,
+    redis: RedisDep,
+) -> TokenResponse:
     return await auth_service.switch_tenant(db, redis, user.user_id, payload.tenant_id)
 
 
@@ -48,8 +46,8 @@ async def switch_active_tenant(
 async def list_members(
     tenant_id: uuid.UUID,
     user: RequireAuth,
-    db: AsyncSession = Depends(get_db),
-):
+    db: DbSession,
+) -> list[TenantMemberResponse]:
     return await service.list_tenant_members(db, user, tenant_id)
 
 
@@ -58,6 +56,6 @@ async def invite_member(
     tenant_id: uuid.UUID,
     payload: TenantMemberInviteRequest,
     user: RequireTenantAdmin,
-    db: AsyncSession = Depends(get_db),
-):
+    db: DbSession,
+) -> TenantMemberResponse:
     return await service.invite_tenant_member(db, user, tenant_id, payload)

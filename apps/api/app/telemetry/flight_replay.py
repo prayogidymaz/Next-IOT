@@ -6,7 +6,6 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
-from pydantic import JsonValue
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,19 +18,10 @@ from app.telemetry.schemas import (
     FlightReplayResponse,
     FlightReplaySample,
 )
+from app.types.json_types import metric_float
 
 ALLOWED_HOURS = frozenset({1, 24})
 MAX_SAMPLES = 2000
-
-
-def _metric_float(metrics: dict[str, JsonValue], *keys: str) -> float | None:
-    for key in keys:
-        if key in metrics and metrics[key] is not None:
-            try:
-                return float(metrics[key])
-            except (TypeError, ValueError):
-                continue
-    return None
 
 
 def _build_sample(
@@ -39,8 +29,8 @@ def _build_sample(
     anomalies_by_reading: dict[uuid.UUID, list[TelemetryAnomaly]],
 ) -> FlightReplaySample | None:
     metrics = reading.metrics or {}
-    lat = _metric_float(metrics, "latitude", "lat")
-    lon = _metric_float(metrics, "longitude", "lon")
+    lat = metric_float(metrics, "latitude", "lat")
+    lon = metric_float(metrics, "longitude", "lon")
     if lat is None or lon is None:
         return None
 
@@ -49,10 +39,10 @@ def _build_sample(
         timestamp=reading.recorded_at,
         lat=round(lat, 7),
         lon=round(lon, 7),
-        alt=_metric_float(metrics, "altitude_m", "altitude", "alt"),
-        speed=_metric_float(metrics, "speed", "speed_mps", "ground_speed", "velocity"),
-        heading=_metric_float(metrics, "yaw", "heading", "course"),
-        rssi=_metric_float(metrics, "rssi", "signal_rssi"),
+        alt=metric_float(metrics, "altitude_m", "altitude", "alt"),
+        speed=metric_float(metrics, "speed", "speed_mps", "ground_speed", "velocity"),
+        heading=metric_float(metrics, "yaw", "heading", "course"),
+        rssi=metric_float(metrics, "rssi", "signal_rssi"),
         anomalies=[
             FlightReplayAnomalyBrief(
                 id=row.id,

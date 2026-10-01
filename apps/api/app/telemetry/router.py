@@ -1,14 +1,14 @@
 import uuid
+from collections.abc import Iterator
 from datetime import datetime
+from typing import Annotated
 
-import redis.asyncio as aioredis
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Query
 from fastapi.responses import Response, StreamingResponse
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import RequireAuth, RequireOperator
-from app.deps import get_db, get_redis
-from app.devices.dependencies import CurrentDevice, get_current_device
+from app.deps import DbSession, RedisDep
+from app.devices.dependencies import RequireDevice
 from app.telemetry import service
 from app.telemetry.analytics import get_telemetry_analytics
 from app.telemetry.anomaly_detector import get_anomalies
@@ -34,14 +34,21 @@ from app.telemetry.weather_vector import get_weather_vector
 
 router = APIRouter(prefix="/api/v1/telemetry", tags=["telemetry"])
 
+OptionalStartTime = Annotated[datetime | None, Query(description="Range start (ISO-8601)")]
+OptionalEndTime = Annotated[datetime | None, Query(description="Range end (ISO-8601)")]
+FlightStartTime = Annotated[datetime | None, Query(description="Flight session start (ISO-8601)")]
+FlightEndTime = Annotated[datetime | None, Query(description="Flight session end (ISO-8601)")]
+AnalyticsStartTime = Annotated[datetime | None, Query(description="Window start (ISO-8601)")]
+AnalyticsEndTime = Annotated[datetime | None, Query(description="Window end (ISO-8601)")]
+
 
 @router.post("/bulk", response_model=TelemetryBulkIngestResponse, status_code=201)
 async def ingest_telemetry_bulk(
     payload: TelemetryBulkIngestRequest,
     user: RequireOperator,
-    db: AsyncSession = Depends(get_db),
-    redis: aioredis.Redis = Depends(get_redis),
-):
+    db: DbSession,
+    redis: RedisDep,
+) -> TelemetryBulkIngestResponse:
     """Flush queued field telemetry (operator JWT) — mobile offline sync."""
     return await service.bulk_ingest_telemetry(db, redis, user, payload)
 
@@ -49,10 +56,10 @@ async def ingest_telemetry_bulk(
 @router.post("", response_model=TelemetryIngestResponse, status_code=201)
 async def ingest_telemetry(
     payload: TelemetryIngestRequest,
-    device: CurrentDevice = Depends(get_current_device),
-    db: AsyncSession = Depends(get_db),
-    redis: aioredis.Redis = Depends(get_redis),
-):
+    device: RequireDevice,
+    db: DbSession,
+    redis: RedisDep,
+) -> TelemetryIngestResponse:
     """Ingest sensor telemetry from an authenticated online device."""
     return await service.ingest_telemetry(db, redis, device, payload)
 
@@ -61,9 +68,9 @@ async def ingest_telemetry(
 async def signal_heatmap(
     device_id: uuid.UUID,
     user: RequireAuth,
-    db: AsyncSession = Depends(get_db),
+    db: DbSession,
     hours: int = Query(default=24, description="Lookback window in hours (1 or 24)"),
-):
+) -> SignalHeatmapResponse:
     """Return GPS + RSSI/SNR points for radio coverage heatmap visualization."""
     return await get_signal_heatmap(db, user, device_id=device_id, hours=hours)
 
@@ -72,9 +79,9 @@ async def signal_heatmap(
 async def telemetry_anomalies(
     device_id: uuid.UUID,
     user: RequireAuth,
-    db: AsyncSession = Depends(get_db),
+    db: DbSession,
     hours: int = Query(default=24, description="Lookback window in hours (1 or 24)"),
-):
+) -> TelemetryAnomalyResponse:
     """Return detected telemetry anomaly history for a device."""
     return await get_anomalies(db, user, device_id=device_id, hours=hours)
 
@@ -83,11 +90,11 @@ async def telemetry_anomalies(
 async def flight_replay(
     device_id: uuid.UUID,
     user: RequireAuth,
-    db: AsyncSession = Depends(get_db),
+    db: DbSession,
+    start_time: FlightStartTime = None,
+    end_time: FlightEndTime = None,
     hours: int | None = Query(default=24, description="Lookback window in hours (1 or 24)"),
-    start_time: datetime | None = Query(default=None, description="Flight session start (ISO-8601)"),
-    end_time: datetime | None = Query(default=None, description="Flight session end (ISO-8601)"),
-):
+) -> FlightReplayResponse:
     """Return chronological telemetry samples for mission flight replay."""
     return await get_flight_replay(
         db,
@@ -102,9 +109,9 @@ async def flight_replay(
 @router.get("/swarm-matrix", response_model=SwarmMatrixResponse)
 async def swarm_matrix(
     user: RequireAuth,
-    db: AsyncSession = Depends(get_db),
-    redis: aioredis.Redis = Depends(get_redis),
-):
+    db: DbSession,
+    redis: RedisDep,
+) -> SwarmMatrixResponse:
     """Return pairwise drone distances and collision-risk warnings for the tenant swarm."""
     return await get_swarm_matrix(db, redis, user)
 
@@ -115,22 +122,22 @@ async def weather_vector(
     lat: float = Query(..., ge=-90, le=90),
     lon: float = Query(..., ge=-180, le=180),
     radius: float = Query(default=2000.0, gt=0, le=20_000, alias="radius"),
-):
+) -> WeatherVectorResponse:
     """Return mock/analyzed wind vector field and flight safety status for a mission area."""
     _ = user
     return await get_weather_vector(lat=lat, lon=lon, radius_m=radius)
 
 
-@router.get("/export")
+@router.get("/export", response_model=None)
 async def telemetry_export(
     device_id: uuid.UUID,
     user: RequireAuth,
-    db: AsyncSession = Depends(get_db),
+    db: DbSession,
+    start_time: OptionalStartTime = None,
+    end_time: OptionalEndTime = None,
     export_format: str = Query(..., alias="format", description="Export format: csv, json, or kml"),
     hours: int | None = Query(default=24, description="Lookback window in hours when start/end omitted"),
-    start_time: datetime | None = Query(default=None, description="Range start (ISO-8601)"),
-    end_time: datetime | None = Query(default=None, description="Range end (ISO-8601)"),
-):
+) -> Response | StreamingResponse:
     """Download telemetry history (CSV stream, or JSON/KML payload)."""
     fmt = export_format.lower()
     start, end = resolve_time_window(start_time=start_time, end_time=end_time, hours=hours)
@@ -142,9 +149,8 @@ async def telemetry_export(
         )
         filename = f"telemetry_{device_id}_{lookback}h.csv"
 
-        def _stream():
-            for chunk in iter_csv_rows(readings):
-                yield chunk
+        def _stream() -> Iterator[str]:
+            yield from iter_csv_rows(readings)
 
         return StreamingResponse(
             _stream(),
@@ -172,13 +178,13 @@ async def telemetry_export(
 async def telemetry_analytics(
     device_id: uuid.UUID,
     user: RequireAuth,
-    db: AsyncSession = Depends(get_db),
+    db: DbSession,
+    start_time: AnalyticsStartTime = None,
+    end_time: AnalyticsEndTime = None,
     hours: int | None = Query(default=24, description="Lookback hours if start/end omitted"),
     metrics: str | None = Query(default=None, description="Comma-separated metric keys"),
-    start_time: datetime | None = Query(default=None, description="Window start (ISO-8601)"),
-    end_time: datetime | None = Query(default=None, description="Window end (ISO-8601)"),
     interval: str = Query(default="5m", description="Bucket interval: 1m, 5m, 1h, 1d"),
-):
+) -> TelemetryAnalyticsResponse:
     """Aggregated telemetry stats + bucketed time-series for charting."""
     metric_list = [m.strip() for m in metrics.split(",") if m.strip()] if metrics else None
     return await get_telemetry_analytics(

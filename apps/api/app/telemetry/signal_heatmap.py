@@ -6,7 +6,6 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
-from pydantic import JsonValue
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,18 +13,9 @@ from app.auth.dependencies import CurrentUser
 from app.devices.service import _get_device_for_user
 from app.models.telemetry_reading import TelemetryReading
 from app.telemetry.schemas import SignalHeatmapPoint, SignalHeatmapResponse
+from app.types.json_types import metric_float
 
 ALLOWED_HOURS = frozenset({1, 24})
-
-
-def _metric_float(metrics: dict[str, JsonValue], *keys: str) -> float | None:
-    for key in keys:
-        if key in metrics and metrics[key] is not None:
-            try:
-                return float(metrics[key])
-            except (TypeError, ValueError):
-                continue
-    return None
 
 
 def compute_signal_score(rssi: float) -> int:
@@ -47,13 +37,13 @@ def classify_signal_strength(rssi: float) -> str:
 
 def _extract_point(reading: TelemetryReading) -> SignalHeatmapPoint | None:
     metrics = reading.metrics or {}
-    lat = _metric_float(metrics, "latitude", "lat")
-    lon = _metric_float(metrics, "longitude", "lon")
-    rssi = _metric_float(metrics, "rssi")
+    lat = metric_float(metrics, "latitude", "lat")
+    lon = metric_float(metrics, "longitude", "lon")
+    rssi = metric_float(metrics, "rssi")
     if lat is None or lon is None or rssi is None:
         return None
 
-    snr = _metric_float(metrics, "snr")
+    snr = metric_float(metrics, "snr")
     return SignalHeatmapPoint(
         lat=lat,
         lon=lon,

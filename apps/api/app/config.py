@@ -1,15 +1,26 @@
+import os
 from urllib.parse import quote_plus, urlparse, urlunparse
 
-from pydantic import model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from dotenv import dotenv_values
+from pydantic import BaseModel, ConfigDict, model_validator
 
 
 def _url_has_unexpanded_placeholders(url: str) -> bool:
     return "${" in url or "$POSTGRES" in url
 
 
-class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+def _environment() -> dict[str, object]:
+    merged = {**dotenv_values(".env"), **os.environ}
+    normalized: dict[str, object] = {}
+    for key, value in merged.items():
+        if value is None:
+            continue
+        normalized[key.lower()] = value
+    return normalized
+
+
+class Settings(BaseModel):
+    model_config = ConfigDict(extra="ignore")
 
     app_name: str = "Next-IOT"
     app_env: str = "development"
@@ -163,4 +174,4 @@ class Settings(BaseSettings):
         return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
-settings = Settings()
+settings = Settings.model_validate(_environment())

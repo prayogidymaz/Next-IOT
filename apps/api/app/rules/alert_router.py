@@ -6,13 +6,13 @@ from fastapi import APIRouter, Depends, Query
 from app.auth.dependencies import CurrentUser, require_roles
 from app.auth.rbac import UserRole
 from app.deps import get_redis
+from app.rules.alert_schemas import AlertListResponse, AlertResponse, AlertSummaryResponse
+from app.rules.alerts import list_alerts
 
 RequireDeviceReader = Annotated[
     CurrentUser,
     Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.TENANT_ADMIN, UserRole.SUPER_ADMIN)),
 ]
-from app.rules.alert_schemas import AlertListResponse, AlertResponse, AlertSummaryResponse
-from app.rules.alerts import list_alerts
 
 router = APIRouter(prefix="/api/v1/alerts", tags=["alerts"])
 

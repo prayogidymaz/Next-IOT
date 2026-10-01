@@ -10,6 +10,13 @@ const compat = new FlatCompat({ baseDirectory: __dirname });
 export default [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
+    files: ["**/*.{ts,tsx}"],
+    languageOptions: {
+      parserOptions: {
+        project: "./tsconfig.json",
+        tsconfigRootDir: __dirname,
+      },
+    },
     rules: {
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/ban-ts-comment": "error",

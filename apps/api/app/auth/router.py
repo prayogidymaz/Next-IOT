@@ -1,7 +1,5 @@
-import redis.asyncio as aioredis
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.audit.actions import AuditAction
 from app.audit.service import client_ip, record_audit_event
@@ -18,7 +16,7 @@ from app.auth.schemas import (
     RegisterResponse,
     TokenResponse,
 )
-from app.deps import get_db, get_redis
+from app.deps import DbSession, RedisDep
 from app.models.user import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -27,9 +25,9 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/register", response_model=RegisterResponse, status_code=201)
 async def register(
     payload: RegisterRequest,
-    db: AsyncSession = Depends(get_db),
-    redis: aioredis.Redis = Depends(get_redis),
-):
+    db: DbSession,
+    redis: RedisDep,
+) -> RegisterResponse:
     return await service.register(db, redis, payload)
 
 
@@ -37,9 +35,9 @@ async def register(
 async def login(
     request: Request,
     payload: LoginRequest,
-    db: AsyncSession = Depends(get_db),
-    redis: aioredis.Redis = Depends(get_redis),
-):
+    db: DbSession,
+    redis: RedisDep,
+) -> TokenResponse:
     ip = client_ip(request)
     try:
         tokens = await service.login(db, redis, payload)
@@ -73,23 +71,23 @@ async def login(
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh(
     payload: RefreshRequest,
-    db: AsyncSession = Depends(get_db),
-    redis: aioredis.Redis = Depends(get_redis),
-):
+    db: DbSession,
+    redis: RedisDep,
+) -> TokenResponse:
     return await service.refresh_tokens(db, redis, payload.refresh_token)
 
 
 @router.post("/logout", response_model=MessageResponse)
 async def logout(
     payload: LogoutRequest,
-    redis: aioredis.Redis = Depends(get_redis),
-):
+    redis: RedisDep,
+) -> MessageResponse:
     await service.logout(redis, payload.refresh_token)
     return MessageResponse(message="Logged out successfully")
 
 
 @router.get("/me", response_model=AuthMeResponse)
-async def get_auth_me(user: RequireAuth):
+async def get_auth_me(user: RequireAuth) -> AuthMeResponse:
     return AuthMeResponse(
         user_id=user.user_id,
         email=user.email,

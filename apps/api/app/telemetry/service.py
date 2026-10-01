@@ -1,7 +1,6 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 
-import redis.asyncio as aioredis
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,6 +28,8 @@ from app.telemetry.schemas import (
     TelemetryLatestResponse,
 )
 from app.telemetry.ws_events import publish_control_center_event
+from app.types.json_types import as_json_object, as_json_str, numeric_metrics
+from app.types.redis_client import RedisClient, as_legacy_redis_stub
 
 INGEST_ALLOWED_STATUSES = frozenset({DeviceStatus.ONLINE})
 
@@ -58,7 +59,7 @@ def _validate_timestamp(ts: datetime) -> datetime:
 
 async def ingest_telemetry(
     db: AsyncSession,
-    redis: aioredis.Redis,
+    redis: RedisClient,
     device: CurrentDevice,
     payload: TelemetryIngestRequest,
 ) -> TelemetryIngestResponse:
@@ -100,12 +101,13 @@ async def ingest_telemetry(
         },
     )
 
+    legacy_redis = as_legacy_redis_stub(redis)
     rules_triggered = await evaluate_rules_for_telemetry(
         db,
-        redis,
+        legacy_redis,
         device_id=device.device_id,
         tenant_id=device.tenant_id,
-        metrics=metrics,
+        metrics=numeric_metrics(metrics),
         reading_id=reading.id,
     )
 
@@ -131,21 +133,21 @@ async def ingest_telemetry(
                 "GEOFENCE_BREACH" if row.anomaly_type == "geofence_breach" else "TELEMETRY_ANOMALY"
             )
             await publish_automation_event(
-                redis,
+                legacy_redis,
                 tenant_id=str(device.tenant_id),
                 event_type=event_type,
                 context=event_context,
             )
             await pipeline_interpreter_service.process_event(
                 db,
-                redis,
+                legacy_redis,
                 tenant_id=device.tenant_id,
                 event_type=event_type,
                 context=event_context,
             )
             await sar_emergency_service.trigger_from_anomaly(
                 db,
-                redis,
+                legacy_redis,
                 tenant_id=device.tenant_id,
                 device_id=device.device_id,
                 anomaly_type=row.anomaly_type,
@@ -170,14 +172,14 @@ async def ingest_telemetry(
             "metrics": metrics,
         }
         await publish_automation_event(
-            redis,
+            legacy_redis,
             tenant_id=str(device.tenant_id),
             event_type="WEATHER_HAZARD",
             context=weather_context,
         )
         await pipeline_interpreter_service.process_event(
             db,
-            redis,
+            legacy_redis,
             tenant_id=device.tenant_id,
             event_type="WEATHER_HAZARD",
             context=weather_context,
@@ -195,7 +197,7 @@ async def ingest_telemetry(
 
 async def bulk_ingest_telemetry(
     db: AsyncSession,
-    redis: aioredis.Redis,
+    redis: RedisClient,
     user: CurrentUser,
     payload: TelemetryBulkIngestRequest,
 ) -> TelemetryBulkIngestResponse:
@@ -244,7 +246,7 @@ async def bulk_ingest_telemetry(
 
 async def get_latest_for_device(
     db: AsyncSession,
-    redis: aioredis.Redis,
+    redis: RedisClient,
     user: CurrentUser,
     device_id: uuid.UUID,
 ) -> TelemetryLatestResponse:
@@ -254,12 +256,13 @@ async def get_latest_for_device(
     if cached is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No telemetry data found for device")
 
+    metrics = as_json_object(cached.get("metrics")) or {}
     return TelemetryLatestResponse(
         device_id=device_id,
-        reading_id=cached.get("reading_id"),
-        recorded_at=cached.get("recorded_at"),
-        metrics=cached.get("metrics", {}),
-        cached_at=cached.get("cached_at"),
+        reading_id=as_json_str(cached.get("reading_id")),
+        recorded_at=as_json_str(cached.get("recorded_at")),
+        metrics=metrics,
+        cached_at=as_json_str(cached.get("cached_at")),
     )
 
 

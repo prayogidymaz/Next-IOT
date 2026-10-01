@@ -57,8 +57,6 @@ async def test_me_permissions_tenant_admin(client: AsyncClient, unique_slug: str
 async def test_viewer_permissions_limited(client: AsyncClient, unique_slug: str, unique_email: str):
     reg = await _register(client, unique_slug, unique_email)
     tenant_id = uuid.UUID(reg["tenant_id"])
-    admin_token = reg["tokens"]["access_token"]
-
     viewer_email = f"viewer-{uuid.uuid4().hex[:6]}@example.com"
     async with async_session() as session:
         viewer = User(

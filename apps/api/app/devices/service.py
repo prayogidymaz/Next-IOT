@@ -1,7 +1,6 @@
 import uuid
 from datetime import UTC, datetime
 
-import redis.asyncio as aioredis
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -38,6 +37,7 @@ from app.models.device import Device, DeviceStatus
 from app.models.device_category import DeviceCategory, infer_device_category
 from app.models.device_credential import DeviceCredential
 from app.models.device_metadata import DeviceMetadata
+from app.types.redis_client import RedisClient
 
 
 def _to_device_response(device: Device) -> DeviceResponse:
@@ -76,7 +76,7 @@ async def _get_device_for_user(
 
 async def register_device(
     db: AsyncSession,
-    redis: aioredis.Redis,
+    redis: RedisClient,
     user: CurrentUser,
     payload: DeviceRegisterRequest,
 ) -> DeviceRegisterResponse:
@@ -120,7 +120,7 @@ async def register_device(
 
 async def bulk_import_devices(
     db: AsyncSession,
-    redis: aioredis.Redis,
+    redis: RedisClient,
     user: CurrentUser,
     payload: BulkImportRequest,
 ) -> BulkImportResponse:
@@ -175,7 +175,7 @@ async def get_device(db: AsyncSession, user: CurrentUser, device_id: uuid.UUID) 
 
 async def provision_device(
     db: AsyncSession,
-    redis: aioredis.Redis,
+    redis: RedisClient,
     device_id: uuid.UUID,
     provisioning_token: str,
 ) -> DeviceCredentialsResponse:
@@ -231,7 +231,7 @@ async def _upsert_metadata(db: AsyncSession, device: Device, key: str, value: st
 
 async def process_heartbeat(
     db: AsyncSession,
-    redis: aioredis.Redis,
+    redis: RedisClient,
     device_auth: CurrentDevice,
     device_id: uuid.UUID,
     payload: HeartbeatRequest,
@@ -282,7 +282,7 @@ async def process_heartbeat(
 
 async def update_device_status(
     db: AsyncSession,
-    redis: aioredis.Redis,
+    redis: RedisClient,
     user: CurrentUser,
     device_id: uuid.UUID,
     payload: DeviceStatusPatchRequest,

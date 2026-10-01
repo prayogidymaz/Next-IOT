@@ -5,11 +5,12 @@ from __future__ import annotations
 import importlib.util
 import sys
 from pathlib import Path
+from types import ModuleType
 
 from app.hardware import lora_crypto_core as _fallback
 
 
-def _load_shared_module():
+def _load_shared_module() -> ModuleType | None:
     candidates: list[Path] = [Path("/packages/shared/lora_crypto.py")]
     resolved = Path(__file__).resolve().parents
     if len(resolved) > 4:

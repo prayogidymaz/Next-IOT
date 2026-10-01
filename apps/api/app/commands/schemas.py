@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, Field, JsonValue, field_validator
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
 
 
 class CommandTypeEnum(StrEnum):
@@ -40,4 +40,4 @@ class DeviceCommandResponse(BaseModel):
     created_at: datetime
     dispatched_at: datetime | None = None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)

@@ -30,8 +30,8 @@ async def test_register_login_refresh_logout_happy_path(
     )
     assert login.status_code == 200
     tokens = login.json()
-    access_token = tokens["access_token"]
     refresh_token = tokens["refresh_token"]
+    assert tokens["access_token"]
 
     refresh = await client.post("/auth/refresh", json={"refresh_token": refresh_token})
     assert refresh.status_code == 200

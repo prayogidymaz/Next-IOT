@@ -36,4 +36,4 @@ def test_packet_to_metrics_numeric_only():
     metrics = packet_to_metrics(packet)
     assert metrics["latitude"] == 3.595
     assert metrics["rssi"] == -85.0
-    assert all(isinstance(v, (int, float)) for v in metrics.values())
+    assert all(isinstance(v, int | float) for v in metrics.values())

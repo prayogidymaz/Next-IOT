@@ -1,3 +1,5 @@
+name: next-iot
+
 networks:
   next-iot-net:
     driver: bridge

@@ -15,7 +15,7 @@ def scoped_tenant_id(user: CurrentUser, requested_tenant_id: uuid.UUID) -> uuid.
     return user.tenant_id
 
 
-def tenant_filter_clause(user: CurrentUser, tenant_column: ColumnElement) -> ColumnElement:
+def tenant_filter_clause(user: CurrentUser, tenant_column: ColumnElement[uuid.UUID]) -> ColumnElement[bool]:
     """Build SQLAlchemy WHERE clause scoped to the user's tenant."""
     if user.is_super_admin:
         return true()

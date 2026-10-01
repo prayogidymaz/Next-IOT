@@ -1,6 +1,8 @@
 import asyncio
 import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import TypedDict, cast
 
 import redis.asyncio as aioredis
 from fastapi import FastAPI
@@ -37,14 +39,29 @@ from app.telemetry.video_feed.router import router as video_feed_router
 from app.telemetry.ws_router import router as telemetry_ws_router
 from app.tenants.router import router as tenants_router
 from app.tiles.router import router as tiles_router
+from app.types.redis_client import (
+    RedisClient,
+    as_legacy_redis_stub,
+    close_redis,
+    redis_from_url,
+)
 from app.users.router import router as users_router
 
 logger = logging.getLogger(__name__)
 
 
+class CorsMiddlewareKwargs(TypedDict, total=False):
+    allow_credentials: bool
+    allow_methods: list[str]
+    allow_headers: list[str]
+    expose_headers: list[str]
+    allow_origin_regex: str
+    allow_origins: list[str]
+
+
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    redis = aioredis.from_url(settings.redis_url, decode_responses=True)
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    redis: RedisClient = redis_from_url(settings.redis_url)
     app.state.redis = redis
 
     if settings.seed_default_admin:
@@ -55,13 +72,13 @@ async def lifespan(app: FastAPI):
 
     if settings.seed_demo_telemetry:
         try:
-            await run_telemetry_seed(redis)
+            await run_telemetry_seed(as_legacy_redis_stub(redis))
         except Exception:
             logger.exception("Demo telemetry seed failed")
 
     if settings.seed_demo_telemetry:
         try:
-            await run_hardware_seed(redis)
+            await run_hardware_seed(as_legacy_redis_stub(redis))
         except Exception:
             logger.exception("Demo hardware seed failed")
 
@@ -80,7 +97,7 @@ async def lifespan(app: FastAPI):
             await task
         except asyncio.CancelledError:
             pass
-    await redis.aclose()
+    await close_redis(redis)
     await engine.dispose()
 
 
@@ -91,7 +108,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-_cors_kwargs: dict = {
+_cors_kwargs: CorsMiddlewareKwargs = {
     "allow_credentials": settings.cors_allow_credentials,
     "allow_methods": ["*"],
     "allow_headers": ["*"],
@@ -127,7 +144,7 @@ app.include_router(system_router)
 
 
 @app.get("/health")
-async def health_check():
+async def health_check() -> JSONResponse:
     db_ok = False
     redis_ok = False
 
@@ -149,9 +166,9 @@ async def health_check():
             logger.exception("Dev admin self-heal failed")
 
     try:
-        redis = app.state.redis
-        if redis:
-            await redis.ping()
+        state_redis: object = getattr(app.state, "redis", None)
+        if isinstance(state_redis, aioredis.Redis):
+            await cast(RedisClient, state_redis).ping()
             redis_ok = True
     except Exception:
         pass

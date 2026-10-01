@@ -22,11 +22,11 @@ os.environ["DATABASE_URL_SYNC"] = _test_sync_url
 
 import psycopg2
 import pytest
-import redis.asyncio as aioredis
 from app.config import settings
 from app.database import engine
 from app.deps import get_redis
 from app.main import app
+from app.types.redis_client import RedisClient, close_redis, redis_from_url
 from fastapi import Request
 from httpx import ASGITransport, AsyncClient
 
@@ -69,8 +69,8 @@ def truncate_auth_tables() -> None:
     conn.close()
 
 
-def _override_get_redis(redis: aioredis.Redis) -> Callable[[Request], aioredis.Redis]:
-    def _getter(_request: Request) -> aioredis.Redis:
+def _override_get_redis(redis: RedisClient) -> Callable[[Request], RedisClient]:
+    def _getter(_request: Request) -> RedisClient:
         return redis
 
     return _getter
@@ -90,22 +90,22 @@ async def reset_async_engine():
     await engine.dispose()
 
 
-async def _flush_test_redis(redis: aioredis.Redis) -> None:
+async def _flush_test_redis(redis: RedisClient) -> None:
     settings.assert_test_redis_isolated()
     await redis.flushdb()
 
 
 @pytest.fixture
-async def test_redis() -> AsyncIterator[aioredis.Redis]:
-    redis = aioredis.from_url(settings.redis_url_for_tests(), decode_responses=True)
+async def test_redis() -> AsyncIterator[RedisClient]:
+    redis = redis_from_url(settings.redis_url_for_tests())
     await _flush_test_redis(redis)
     yield redis
     await _flush_test_redis(redis)
-    await redis.aclose()
+    await close_redis(redis)
 
 
 @pytest.fixture
-async def client(test_redis: aioredis.Redis) -> AsyncIterator[AsyncClient]:
+async def client(test_redis: RedisClient) -> AsyncIterator[AsyncClient]:
     truncate_auth_tables()
 
     app.state.redis = test_redis

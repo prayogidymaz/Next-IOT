@@ -1,12 +1,14 @@
 import asyncio
 import json
 import uuid
+from typing import cast
 
 import redis.asyncio as aioredis
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect, status
+from pydantic import TypeAdapter
 from sqlalchemy import select
 
-from app.auth.dependencies import CurrentUser
+from app.auth.context import CurrentUser
 from app.auth.rbac import UserRole, has_role
 from app.auth.service import decode_access_token
 from app.auth.tiering import SecurityTier
@@ -14,12 +16,15 @@ from app.commands.events import DEVICE_COMMANDS_CHANNEL
 from app.database import async_session
 from app.models.user import User
 from app.telemetry.ws_events import publish_control_center_event, telemetry_channel_for_tenant
+from app.types.json_types import JsonObject, as_json_object, as_json_str
+from app.types.redis_client import RedisClient, close_pubsub
 
 VIEWER_ROLES = frozenset(
     {UserRole.VIEWER, UserRole.OPERATOR, UserRole.TENANT_ADMIN, UserRole.SUPER_ADMIN}
 )
 
 router = APIRouter(prefix="/api/v1/ws", tags=["telemetry-ws"])
+_JSON_OBJECT = TypeAdapter(JsonObject)
 
 
 async def _authenticate_ws(token: str | None) -> CurrentUser:
@@ -27,12 +32,12 @@ async def _authenticate_ws(token: str | None) -> CurrentUser:
         raise WebSocketDisconnect(code=status.WS_1008_POLICY_VIOLATION)
 
     payload = decode_access_token(token)
-    user_id = payload.get("sub")
-    tenant_id = payload.get("tenant_id")
-    role = payload.get("role")
-    if not user_id or not tenant_id or not role:
+    user_id = as_json_str(payload.get("sub"))
+    tenant_id = as_json_str(payload.get("tenant_id"))
+    role = as_json_str(payload.get("role"))
+    if user_id is None or tenant_id is None or role is None:
         raise WebSocketDisconnect(code=status.WS_1008_POLICY_VIOLATION)
-    if not has_role(role, VIEWER_ROLES):
+    if not has_role(role, set(VIEWER_ROLES)):
         raise WebSocketDisconnect(code=status.WS_1008_POLICY_VIOLATION)
 
     async with async_session() as db:
@@ -55,13 +60,14 @@ async def _authenticate_ws(token: str | None) -> CurrentUser:
 async def telemetry_control_websocket(
     websocket: WebSocket,
     token: str | None = Query(default=None),
-):
+) -> None:
     """Live telemetry + control audit stream for Tactical Control Center."""
     await websocket.accept()
-    redis: aioredis.Redis = websocket.app.state.redis
-    if redis is None:
+    state_redis: object = websocket.app.state.redis
+    if not isinstance(state_redis, aioredis.Redis):
         await websocket.close(code=status.WS_1011_INTERNAL_ERROR)
         return
+    redis = cast(RedisClient, state_redis)
 
     try:
         user = await _authenticate_ws(token)
@@ -84,11 +90,11 @@ async def telemetry_control_websocket(
                 if not isinstance(raw, str):
                     raw = json.dumps(raw)
                 try:
-                    payload = json.loads(raw)
-                except json.JSONDecodeError:
+                    payload = _JSON_OBJECT.validate_python(json.loads(raw))
+                except (json.JSONDecodeError, ValueError):
                     continue
                 if message.get("channel") == DEVICE_COMMANDS_CHANNEL:
-                    if str(payload.get("tenant_id")) != tenant_id:
+                    if as_json_str(payload.get("tenant_id")) != tenant_id:
                         continue
                     payload = {
                         "type": "audit.command",
@@ -106,11 +112,12 @@ async def telemetry_control_websocket(
         while True:
             text = await websocket.receive_text()
             try:
-                data = json.loads(text)
-            except json.JSONDecodeError:
+                data = _JSON_OBJECT.validate_python(json.loads(text))
+            except (json.JSONDecodeError, ValueError):
                 continue
-            msg_type = data.get("type")
+            msg_type = as_json_str(data.get("type"))
             if msg_type in {"relay.toggle", "emergency.stop", "control.audit"}:
+                details = as_json_object(data.get("details")) or {}
                 await publish_control_center_event(
                     redis,
                     tenant_id=tenant_id,
@@ -118,7 +125,7 @@ async def telemetry_control_websocket(
                     payload={
                         "actor": user.email,
                         "action": msg_type,
-                        "details": data.get("details") or {},
+                        "details": details,
                         "domain": data.get("domain"),
                     },
                 )
@@ -127,4 +134,4 @@ async def telemetry_control_websocket(
     finally:
         forward_task.cancel()
         await pubsub.unsubscribe(tenant_channel, DEVICE_COMMANDS_CHANNEL)
-        await pubsub.aclose()
+        await close_pubsub(pubsub)

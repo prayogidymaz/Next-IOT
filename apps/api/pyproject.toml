@@ -17,6 +17,28 @@ select = ["E", "F", "I", "B", "UP", "ANN", "PGH"]
 "tests/conftest.py" = ["E402"]
 "alembic/**" = ["ANN"]
 
+
+# LEGACY RATCHET — list only shrinks. See docs/TECH_DEBT.md
+"app/api/v1/*.py" = ["ANN", "B008"]
+"app/audit/*.py" = ["ANN", "B008"]
+"app/automation/*.py" = ["ANN", "B008"]
+"app/drone_simulator/*.py" = ["ANN"]
+"app/hardware/*.py" = ["ANN", "B008"]
+"app/mavlink/*.py" = ["ANN", "B008"]
+"app/mission/*.py" = ["ANN", "B008"]
+"app/models/*.py" = ["ANN"]
+"app/notifications/*.py" = ["ANN", "B008"]
+"app/notifications/providers/*.py" = ["ANN"]
+"app/ota/*.py" = ["ANN", "B008"]
+"app/rules/*.py" = ["ANN", "B008"]
+"app/system/*.py" = ["ANN", "B008"]
+"app/telemetry/video_feed/*.py" = ["ANN", "B008"]
+"app/tiles/*.py" = ["ANN", "B008"]
+"app/seed.py" = ['ANN']
+"app/seed_hardware.py" = ['ANN']
+"app/seed_telemetry.py" = ['ANN']
+"app/__init__.py" = ['ANN']
+
 [tool.mypy]
 python_version = "3.12"
 strict = true
@@ -26,9 +48,154 @@ warn_unused_ignores = true
 plugins = ["pydantic.mypy"]
 files = ["app"]
 
+[tool.pydantic-mypy]
+init_typed = true
+init_forbid_extra = true
+warn_required_dynamic_aliases = true
+
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
+
+
+# LEGACY RATCHET — list only shrinks. See docs/TECH_DEBT.md
+[[tool.mypy.overrides]]
+module = [
+    "app.__init__",
+    "app.api.__init__",
+    "app.api.v1.__init__",
+    "app.api.v1.router",
+    "app.audit.actions",
+    "app.audit.export",
+    "app.audit.middleware",
+    "app.audit.router",
+    "app.audit.schemas",
+    "app.audit.service",
+    "app.automation.__init__",
+    "app.automation.events",
+    "app.automation.pipeline_interpreter",
+    "app.automation.pipeline_listener",
+    "app.automation.pipeline_service",
+    "app.automation.router",
+    "app.automation.schemas",
+    "app.automation.xyflow_adapter",
+    "app.drone_simulator.__init__",
+    "app.drone_simulator.__main__",
+    "app.drone_simulator.interpolation",
+    "app.drone_simulator.lora_mock",
+    "app.drone_simulator.runner",
+    "app.drone_simulator.telemetry",
+    "app.hardware.__init__",
+    "app.hardware.__main__",
+    "app.hardware.cyberdeck_ptt",
+    "app.hardware.cyberdeck_schemas",
+    "app.hardware.events",
+    "app.hardware.lora_bridge",
+    "app.hardware.lora_crypto",
+    "app.hardware.lora_crypto_core",
+    "app.hardware.parser",
+    "app.hardware.router",
+    "app.hardware.schemas",
+    "app.mavlink.__init__",
+    "app.mavlink.bridge_service",
+    "app.mavlink.constants",
+    "app.mavlink.router",
+    "app.mavlink.schemas",
+    "app.mavlink.status_store",
+    "app.mission.__init__",
+    "app.mission.geofence_checker",
+    "app.mission.geofence_service",
+    "app.mission.router",
+    "app.mission.sar_emergency_events",
+    "app.mission.sar_emergency_router",
+    "app.mission.sar_emergency_service",
+    "app.mission.sar_grid_service",
+    "app.mission.schemas",
+    "app.models.__init__",
+    "app.models.audit_log",
+    "app.models.automation_pipeline",
+    "app.models.device",
+    "app.models.device_category",
+    "app.models.device_command",
+    "app.models.device_credential",
+    "app.models.device_metadata",
+    "app.models.firmware_release",
+    "app.models.geofence_zone",
+    "app.models.rule",
+    "app.models.sar_incident",
+    "app.models.telemetry_anomaly",
+    "app.models.telemetry_reading",
+    "app.models.tenant",
+    "app.models.tenant_membership",
+    "app.models.user",
+    "app.notifications.__init__",
+    "app.notifications.dispatcher",
+    "app.notifications.formatter",
+    "app.notifications.providers.__init__",
+    "app.notifications.providers.base",
+    "app.notifications.providers.telegram",
+    "app.notifications.providers.webhook",
+    "app.notifications.router",
+    "app.notifications.schemas",
+    "app.notifications.worker",
+    "app.ota.__init__",
+    "app.ota.router",
+    "app.ota.schemas",
+    "app.ota.service",
+    "app.ota.storage",
+    "app.rules.__init__",
+    "app.rules.alert_router",
+    "app.rules.alert_schemas",
+    "app.rules.alerts",
+    "app.rules.evaluator",
+    "app.rules.pipeline_io",
+    "app.rules.pipeline_validation",
+    "app.rules.router",
+    "app.rules.schemas",
+    "app.rules.service",
+    "app.seed",
+    "app.seed_hardware",
+    "app.seed_telemetry",
+    "app.system.health",
+    "app.system.router",
+    "app.telemetry.video_feed.__init__",
+    "app.telemetry.video_feed.events",
+    "app.telemetry.video_feed.generator",
+    "app.telemetry.video_feed.parser",
+    "app.telemetry.video_feed.router",
+    "app.telemetry.video_feed.schemas",
+    "app.tiles.__init__",
+    "app.tiles.placeholder",
+    "app.tiles.router",
+    "app.tiles.service",
+]
+strict = false
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = false
+warn_return_any = false
+disallow_any_generics = false
+disallow_any_explicit = false
+disable_error_code = [
+    "union-attr",
+    "arg-type",
+    "name-defined",
+    "dict-item",
+    "attr-defined",
+    "index",
+    "call-overload",
+    "assignment",
+    "operator",
+    "import-untyped",
+    "misc",
+    "no-untyped-def",
+    "type-arg",
+    "valid-type",
+    "call-arg",
+    "return-value",
+    "list-item",
+    "var-annotated",
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

@@ -45,7 +45,10 @@ async def export_telemetry(
 
     start, end = resolve_time_window(start_time=start_time, end_time=end_time, hours=hours)
     if start >= end:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="start_time must be before end_time")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="start_time must be before end_time",
+        )
 
     readings = await fetch_export_readings(
         db, user, device_id=device_id, start=start, end=end
