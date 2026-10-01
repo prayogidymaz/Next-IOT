@@ -60,3 +60,8 @@ __pycache__/
 .flutter-plugins
 .flutter-plugins-dependencies
 *.log
+
+# runtime data & build artifacts
+apps/api/data/
+*.tsbuildinfo
+.build-log.txt
