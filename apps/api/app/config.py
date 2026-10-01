@@ -27,6 +27,8 @@ class Settings(BaseModel):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     api_debug: bool = True
+    db_echo: bool = False
+    run_background_workers: bool = True
 
     postgres_host: str = "localhost"
     postgres_port: int = 5432
@@ -36,6 +38,7 @@ class Settings(BaseModel):
 
     database_url: str = "postgresql+asyncpg://next_iot:changeme@localhost:5432/next_iot"
     database_url_sync: str = "postgresql://next_iot:changeme@localhost:5432/next_iot"
+    database_url_test: str = ""
     test_database_name: str = "next_iot_test"
 
     redis_url: str = "redis://localhost:6379/0"
@@ -137,6 +140,49 @@ class Settings(BaseModel):
         test_location = self.redis_location_from_url(self.redis_url_for_tests())
         if app_location == test_location:
             raise RuntimeError("Refusing to FLUSHDB: test Redis points to application Redis")
+
+    @staticmethod
+    def database_name_from_url(url: str) -> str:
+        segment = urlparse(url).path.lstrip("/").split("/", 1)[0]
+        return segment
+
+    def resolved_test_database_name(self) -> str:
+        explicit = self.test_database_name.strip()
+        if explicit:
+            return explicit
+        base = self.postgres_db.strip() or self.database_name_from_url(self.database_url_sync)
+        if base.endswith("_test"):
+            return base
+        return f"{base}_test"
+
+    @staticmethod
+    def _replace_url_database(url: str, db_name: str) -> str:
+        parsed = urlparse(url)
+        return urlunparse(parsed._replace(path=f"/{db_name}"))
+
+    def database_url_for_tests(self) -> str:
+        """Async SQLAlchemy URL for pytest (DATABASE_URL_TEST or <app_db>_test)."""
+        explicit = self.database_url_test.strip()
+        if explicit:
+            return explicit
+        return self._replace_url_database(self.database_url, self.resolved_test_database_name())
+
+    def database_url_sync_for_tests(self) -> str:
+        """Psycopg2 / Alembic URL for pytest."""
+        explicit = self.database_url_test.strip()
+        if explicit:
+            return explicit.replace("postgresql+asyncpg://", "postgresql://", 1)
+        return self._replace_url_database(self.database_url_sync, self.resolved_test_database_name())
+
+    def admin_postgres_url(self) -> str:
+        return self._replace_url_database(self.database_url_sync, "postgres")
+
+    def assert_test_database_name(self, db_name: str) -> None:
+        if not db_name.endswith("_test"):
+            raise RuntimeError(f"Refusing to truncate non-test database: {db_name}")
+
+    def assert_test_database_url(self, sync_url: str) -> None:
+        self.assert_test_database_name(self.database_name_from_url(sync_url))
 
     def build_database_url(self, *, async_driver: bool) -> str:
         user = quote_plus(self.postgres_user)

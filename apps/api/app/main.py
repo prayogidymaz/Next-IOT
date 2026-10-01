@@ -83,15 +83,19 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             logger.exception("Demo hardware seed failed")
 
     stop_event = asyncio.Event()
-    offline_worker_task = asyncio.create_task(offline_checker_loop(redis, stop_event))
-    notification_worker_task = asyncio.create_task(notification_dispatcher_loop(redis, stop_event))
-    pipeline_worker_task = asyncio.create_task(pipeline_listener_loop(redis, stop_event))
+    worker_tasks: list[asyncio.Task[None]] = []
+    if settings.run_background_workers:
+        worker_tasks = [
+            asyncio.create_task(offline_checker_loop(redis, stop_event)),
+            asyncio.create_task(notification_dispatcher_loop(redis, stop_event)),
+            asyncio.create_task(pipeline_listener_loop(redis, stop_event)),
+        ]
     app.state.offline_worker_stop = stop_event
 
     yield
 
     stop_event.set()
-    for task in (offline_worker_task, notification_worker_task, pipeline_worker_task):
+    for task in worker_tasks:
         task.cancel()
         try:
             await task

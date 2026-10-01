@@ -3,22 +3,35 @@ import uuid
 from collections.abc import AsyncIterator, Callable
 from urllib.parse import urlparse, urlunparse
 
-# Route pytest to an isolated DB before SQLAlchemy engine is created.
-_default_sync = os.environ.get(
-    "DATABASE_URL_SYNC", "postgresql://next_iot:changeme@postgres:5432/next_iot"
-)
-_test_db = os.environ.get("TEST_DATABASE_NAME", "next_iot_test")
+# Pytest must not touch the live app DB/Redis or start background workers.
+os.environ.setdefault("RUN_BACKGROUND_WORKERS", "false")
+os.environ.setdefault("SEED_DEFAULT_ADMIN", "false")
+os.environ.setdefault("SEED_DEMO_TELEMETRY", "false")
 
 
-def _with_db_name(url: str, db_name: str) -> str:
-    parsed = urlparse(url)
-    return urlunparse(parsed._replace(path=f"/{db_name}"))
+def _bootstrap_test_database_env() -> tuple[str, str]:
+    sync_base = os.environ.get(
+        "DATABASE_URL_SYNC",
+        "postgresql://next_iot:changeme@postgres:5432/next_iot",
+    )
+    explicit_test = os.environ.get("DATABASE_URL_TEST", "").strip()
+    if explicit_test:
+        test_async = explicit_test
+        test_sync = explicit_test.replace("postgresql+asyncpg://", "postgresql://", 1)
+    else:
+        test_name = os.environ.get("TEST_DATABASE_NAME", "").strip()
+        if not test_name:
+            base_db = urlparse(sync_base).path.lstrip("/").split("/", 1)[0] or "next_iot"
+            test_name = base_db if base_db.endswith("_test") else f"{base_db}_test"
+        parsed = urlparse(sync_base)
+        test_sync = urlunparse(parsed._replace(path=f"/{test_name}"))
+        test_async = test_sync.replace("postgresql://", "postgresql+asyncpg://", 1)
+    os.environ["DATABASE_URL"] = test_async
+    os.environ["DATABASE_URL_SYNC"] = test_sync
+    return test_sync, test_async
 
 
-_test_sync_url = _with_db_name(_default_sync, _test_db)
-_test_async_url = _test_sync_url.replace("postgresql://", "postgresql+asyncpg://", 1)
-os.environ["DATABASE_URL"] = _test_async_url
-os.environ["DATABASE_URL_SYNC"] = _test_sync_url
+_test_sync_url, _test_async_url = _bootstrap_test_database_env()
 
 import psycopg2
 import pytest
@@ -32,17 +45,18 @@ from httpx import ASGITransport, AsyncClient
 
 
 def _admin_db_url() -> str:
-    parsed = urlparse(_default_sync)
-    return urlunparse(parsed._replace(path="/postgres"))
+    return settings.admin_postgres_url()
 
 
 def _ensure_test_database() -> None:
+    test_db = settings.database_name_from_url(_test_sync_url)
+    settings.assert_test_database_name(test_db)
     admin_conn = psycopg2.connect(_admin_db_url())
     admin_conn.autocommit = True
     with admin_conn.cursor() as cur:
-        cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (_test_db,))
+        cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (test_db,))
         if cur.fetchone() is None:
-            cur.execute(f'CREATE DATABASE "{_test_db}"')
+            cur.execute(f'CREATE DATABASE "{test_db}"')
     admin_conn.close()
 
 
@@ -50,12 +64,14 @@ def _run_test_migrations() -> None:
     from alembic import command
     from alembic.config import Config
 
+    settings.assert_test_database_url(_test_sync_url)
     cfg = Config("alembic.ini")
     cfg.set_main_option("sqlalchemy.url", _test_sync_url)
     command.upgrade(cfg, "head")
 
 
 def truncate_auth_tables() -> None:
+    settings.assert_test_database_url(_test_sync_url)
     conn = psycopg2.connect(_test_sync_url)
     conn.autocommit = True
     truncate_sql = (
@@ -78,6 +94,9 @@ def _override_get_redis(redis: RedisClient) -> Callable[[Request], RedisClient]:
 
 @pytest.fixture(scope="session", autouse=True)
 def _prepare_test_database():
+    assert settings.database_url == _test_async_url
+    assert settings.database_url_sync == _test_sync_url
+    assert not settings.run_background_workers
     _ensure_test_database()
     _run_test_migrations()
     yield
