@@ -1,9 +1,8 @@
 import uuid
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, JsonValue, field_validator
 
 
 class CommandTypeEnum(StrEnum):
@@ -14,15 +13,18 @@ class CommandTypeEnum(StrEnum):
     LAND = "LAND"
     RETURN_TO_HOME = "RETURN_TO_HOME"
     EMERGENCY_LAND = "EMERGENCY_LAND"
+    RELAY_ON = "RELAY_ON"
+    RELAY_OFF = "RELAY_OFF"
+    SET_ACTUATOR = "SET_ACTUATOR"
 
 
 class DeviceCommandRequest(BaseModel):
     command_type: CommandTypeEnum
-    params: dict[str, Any] = Field(default_factory=dict)
+    params: dict[str, JsonValue] = Field(default_factory=dict)
 
     @field_validator("params")
     @classmethod
-    def params_must_be_object(cls, value: dict[str, Any]) -> dict[str, Any]:
+    def params_must_be_object(cls, value: dict[str, JsonValue]) -> dict[str, JsonValue]:
         if not isinstance(value, dict):
             raise ValueError("params must be an object")
         return value
@@ -33,7 +35,7 @@ class DeviceCommandResponse(BaseModel):
     device_id: uuid.UUID
     tenant_id: uuid.UUID
     command_type: str
-    params: dict[str, Any]
+    params: dict[str, JsonValue]
     status: str
     created_at: datetime
     dispatched_at: datetime | None = None

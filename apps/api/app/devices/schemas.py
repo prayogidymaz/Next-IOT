@@ -7,6 +7,11 @@ from pydantic import BaseModel, Field
 class DeviceRegisterRequest(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     device_type: str = Field(min_length=1, max_length=100)
+    device_category: str | None = Field(
+        default=None,
+        description="Optional taxonomy override (e.g. SMART_HOME)",
+        max_length=64,
+    )
     metadata: dict[str, str] = Field(default_factory=dict)
 
 
@@ -20,6 +25,7 @@ class DeviceResponse(BaseModel):
     tenant_id: uuid.UUID
     name: str
     device_type: str
+    device_category: str
     status: str
     last_seen_at: datetime | None
     metadata: list[DeviceMetadataItem]
@@ -59,3 +65,22 @@ class HeartbeatResponse(BaseModel):
 
 class DeviceStatusPatchRequest(BaseModel):
     status: str = Field(description="Target status: provisioned (reactivate) or deactivated")
+
+
+class BulkImportResultItem(BaseModel):
+    name: str
+    device_id: uuid.UUID
+    provisioning_token: str
+
+
+class BulkImportErrorItem(BaseModel):
+    row: int
+    name: str | None = None
+    detail: str
+
+
+class BulkImportResponse(BaseModel):
+    imported_count: int
+    failed_count: int
+    items: list[BulkImportResultItem]
+    errors: list[BulkImportErrorItem]

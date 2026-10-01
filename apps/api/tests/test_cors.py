@@ -3,6 +3,20 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
+async def test_cors_preflight_allows_ephemeral_flutter_web_port(client: AsyncClient):
+    response = await client.options(
+        "/auth/login",
+        headers={
+            "Origin": "http://localhost:55921",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type,authorization",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers.get("access-control-allow-origin") == "http://localhost:55921"
+
+
+@pytest.mark.asyncio
 async def test_cors_preflight_allows_flutter_web_origin(client: AsyncClient):
     response = await client.options(
         "/auth/login",
@@ -13,7 +27,8 @@ async def test_cors_preflight_allows_flutter_web_origin(client: AsyncClient):
         },
     )
     assert response.status_code == 200
-    assert response.headers.get("access-control-allow-origin") == "*"
+    allow_origin = response.headers.get("access-control-allow-origin")
+    assert allow_origin in {"*", "http://localhost:54321"}
     assert "POST" in (response.headers.get("access-control-allow-methods") or "")
 
 
@@ -35,5 +50,6 @@ async def test_cors_allows_json_login_from_browser_origin(client: AsyncClient, u
         headers={"Origin": "http://localhost:54321"},
     )
     assert response.status_code == 200
-    assert response.headers.get("access-control-allow-origin") == "*"
+    allow_origin = response.headers.get("access-control-allow-origin")
+    assert allow_origin in {"*", "http://localhost:54321"}
     assert "access_token" in response.json()

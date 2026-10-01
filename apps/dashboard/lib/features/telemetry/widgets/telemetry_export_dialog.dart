@@ -5,6 +5,7 @@ import '../../../core/theme/tactical_theme.dart';
 import '../data/telemetry_repository.dart';
 import '../models/telemetry_analytics_models.dart';
 import '../providers/telemetry_provider.dart';
+
 class TelemetryExportDialog extends ConsumerStatefulWidget {
   const TelemetryExportDialog({
     super.key,
@@ -22,12 +23,14 @@ class TelemetryExportDialog extends ConsumerStatefulWidget {
   }) {
     return showDialog<void>(
       context: context,
-      builder: (_) => TelemetryExportDialog(deviceId: deviceId, deviceName: deviceName),
+      builder: (_) =>
+          TelemetryExportDialog(deviceId: deviceId, deviceName: deviceName),
     );
   }
 
   @override
-  ConsumerState<TelemetryExportDialog> createState() => _TelemetryExportDialogState();
+  ConsumerState<TelemetryExportDialog> createState() =>
+      _TelemetryExportDialogState();
 }
 
 class _TelemetryExportDialogState extends ConsumerState<TelemetryExportDialog> {
@@ -57,14 +60,16 @@ class _TelemetryExportDialogState extends ConsumerState<TelemetryExportDialog> {
       if (!mounted) return;
       setState(() => _isExporting = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Export failed. Check connection and try again.')),
+        const SnackBar(
+            content: Text('Export failed. Check connection and try again.')),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.deviceName ?? 'Device ${widget.deviceId.substring(0, 8)}';
+    final title =
+        widget.deviceName ?? 'Device ${widget.deviceId.substring(0, 8)}';
 
     return AlertDialog(
       backgroundColor: TacticalColors.surface,
@@ -77,21 +82,29 @@ class _TelemetryExportDialogState extends ConsumerState<TelemetryExportDialog> {
           children: [
             Text(
               title.toUpperCase(),
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(color: TacticalColors.cyan),
+              style: Theme.of(context)
+                  .textTheme
+                  .labelMedium
+                  ?.copyWith(color: TacticalColors.cyan),
             ),
             const SizedBox(height: 16),
             Text('Time Range', style: Theme.of(context).textTheme.labelSmall),
             const SizedBox(height: 8),
             SegmentedButton<int>(
               segments: const [
-                ButtonSegment(value: 1, label: Text('1 Hour')),
-                ButtonSegment(value: 24, label: Text('24 Hours')),
+                ButtonSegment(value: 1, label: Text('1H')),
+                ButtonSegment(value: 24, label: Text('24H')),
+                ButtonSegment(value: 168, label: Text('7D')),
+                ButtonSegment(value: 720, label: Text('30D')),
               ],
               selected: {_hours},
-              onSelectionChanged: _isExporting ? null : (value) => setState(() => _hours = value.first),
+              onSelectionChanged: _isExporting
+                  ? null
+                  : (value) => setState(() => _hours = value.first),
             ),
             const SizedBox(height: 16),
-            Text('Export Format', style: Theme.of(context).textTheme.labelSmall),
+            Text('Export Format',
+                style: Theme.of(context).textTheme.labelSmall),
             const SizedBox(height: 8),
             DropdownButtonFormField<TelemetryExportFormat>(
               value: _format,
@@ -110,7 +123,10 @@ class _TelemetryExportDialogState extends ConsumerState<TelemetryExportDialog> {
               const SizedBox(height: 12),
               Text(
                 'Saved to:\n$_savedPath',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: TacticalColors.success),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: TacticalColors.success),
               ),
             ],
           ],
@@ -127,7 +143,8 @@ class _TelemetryExportDialogState extends ConsumerState<TelemetryExportDialog> {
               ? const SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
                 )
               : const Icon(Icons.download, size: 18),
           label: Text(_isExporting ? 'Exporting...' : 'Download'),

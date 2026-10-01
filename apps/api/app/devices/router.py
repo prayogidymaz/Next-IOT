@@ -3,21 +3,19 @@ from datetime import datetime
 from typing import Annotated
 
 import redis.asyncio as aioredis
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import CurrentUser, RequireOperator, RequireTenantAdmin, require_roles
 from app.auth.rbac import UserRole
-from app.deps import get_db, get_redis
-from app.devices import service
-from app.devices.dependencies import CurrentDevice, get_current_device
-from app.rules import service as rules_service
-from app.rules.schemas import RuleResponse
-from app.telemetry import service as telemetry_service
-from app.telemetry.schemas import TelemetryHistoryResponse, TelemetryLatestResponse
 from app.commands import service as command_service
 from app.commands.schemas import DeviceCommandRequest, DeviceCommandResponse
+from app.deps import get_db, get_redis
+from app.devices import service
+from app.devices.bulk_import import BulkImportRequest, parse_bulk_import_payload
+from app.devices.dependencies import CurrentDevice, get_current_device
 from app.devices.schemas import (
+    BulkImportResponse,
     DeviceCredentialsResponse,
     DeviceProvisionRequest,
     DeviceRegisterRequest,
@@ -27,6 +25,10 @@ from app.devices.schemas import (
     HeartbeatRequest,
     HeartbeatResponse,
 )
+from app.rules import service as rules_service
+from app.rules.schemas import RuleResponse
+from app.telemetry import service as telemetry_service
+from app.telemetry.schemas import TelemetryHistoryResponse, TelemetryLatestResponse
 
 router = APIRouter(prefix="/api/v1/devices", tags=["devices"])
 
@@ -52,6 +54,28 @@ async def list_devices(
     db: AsyncSession = Depends(get_db),
 ):
     return await service.list_devices(db, user)
+
+
+@router.post("/bulk-import", response_model=BulkImportResponse, status_code=201)
+async def bulk_import_devices(
+    request: Request,
+    user: RequireTenantAdmin,
+    db: AsyncSession = Depends(get_db),
+    redis: aioredis.Redis = Depends(get_redis),
+):
+    """Register many devices from JSON body or CSV/JSON file upload (multipart field `file`)."""
+    content_type = request.headers.get("content-type", "")
+    if "multipart/form-data" in content_type:
+        form = await request.form()
+        upload = form.get("file")
+        if upload is None:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Missing file")
+        raw = await upload.read()
+        parsed = parse_bulk_import_payload(raw, upload.content_type or "", upload.filename)
+    else:
+        body = BulkImportRequest.model_validate(await request.json())
+        parsed = body
+    return await service.bulk_import_devices(db, redis, user, parsed)
 
 
 @router.get("/{device_id}", response_model=DeviceResponse)

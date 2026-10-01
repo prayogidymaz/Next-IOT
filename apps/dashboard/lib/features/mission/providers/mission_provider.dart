@@ -4,7 +4,8 @@ import 'package:latlong2/latlong.dart';
 import '../data/command_repository.dart';
 import '../models/mission_models.dart';
 
-final commandRepositoryProvider = Provider<CommandRepository>((ref) => CommandRepository());
+final commandRepositoryProvider =
+    Provider<CommandRepository>((ref) => CommandRepository());
 
 class MissionPlannerState {
   const MissionPlannerState({
@@ -53,7 +54,8 @@ class MissionPlannerNotifier extends StateNotifier<MissionPlannerState> {
   int _waypointCounter = 0;
 
   void togglePlannerMode() {
-    state = state.copyWith(plannerMode: !state.plannerMode, clearFeedback: true);
+    state =
+        state.copyWith(plannerMode: !state.plannerMode, clearFeedback: true);
   }
 
   void setTargetDevice(String? deviceId) {
@@ -61,7 +63,8 @@ class MissionPlannerNotifier extends StateNotifier<MissionPlannerState> {
   }
 
   void setAltitude(double value) {
-    final clamped = value.clamp(MissionPlannerState.minAltitude, MissionPlannerState.maxAltitude);
+    final clamped = value.clamp(
+        MissionPlannerState.minAltitude, MissionPlannerState.maxAltitude);
     state = state.copyWith(altitudeM: clamped);
   }
 
@@ -112,8 +115,7 @@ class MissionPlannerNotifier extends StateNotifier<MissionPlannerState> {
 
   List<MissionWaypoint> _resequence(List<MissionWaypoint> list) {
     return [
-      for (var i = 0; i < list.length; i++)
-        list[i].copyWith(sequence: i + 1),
+      for (var i = 0; i < list.length; i++) list[i].copyWith(sequence: i + 1),
     ];
   }
 

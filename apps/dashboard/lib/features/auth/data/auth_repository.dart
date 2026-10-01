@@ -23,8 +23,10 @@ class AuthRepository {
   }
 
   Future<AuthUser> fetchCurrentUser() async {
-    final response = await _api.get('/api/v1/me');
-    return AuthUser.fromMeJson(response.data as Map<String, dynamic>);
+    final response = await _api.get('/api/v1/auth/me');
+    final user = AuthUser.fromMeJson(response.data as Map<String, dynamic>);
+    await _tokenStorage.saveActiveTenantId(user.tenantId);
+    return user;
   }
 
   Future<void> logout() async {

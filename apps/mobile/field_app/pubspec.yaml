@@ -1,0 +1,32 @@
+name: next_iot_field_app
+description: Next-IoT Field Execution — tactical BLE/Wi-Fi ops & offline telemetry
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.6.1
+  go_router: ^14.6.2
+  dio: ^5.7.0
+  flutter_secure_storage: ^9.2.4
+  sqflite: ^2.4.1
+  path: ^1.9.0
+  path_provider: ^2.1.5
+  intl: ^0.19.0
+  flutter_blue_plus: ^1.35.5
+  permission_handler: ^11.4.0
+  connectivity_plus: ^6.1.4
+  multicast_dns: ^0.3.2+4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

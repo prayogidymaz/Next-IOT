@@ -7,15 +7,16 @@ import io
 import json
 import uuid
 from datetime import UTC, datetime
-from typing import Any
 from xml.sax.saxutils import escape
+
+from pydantic import JsonValue
 
 from app.models.telemetry_reading import TelemetryReading
 
 EXPORT_FORMATS = frozenset({"csv", "json", "kml"})
 
 
-def _metric_float(metrics: dict[str, Any], *keys: str) -> float | None:
+def _metric_float(metrics: dict[str, JsonValue], *keys: str) -> float | None:
     for key in keys:
         if key in metrics and metrics[key] is not None:
             try:
@@ -25,9 +26,9 @@ def _metric_float(metrics: dict[str, Any], *keys: str) -> float | None:
     return None
 
 
-def _flatten_reading(reading: TelemetryReading) -> dict[str, Any]:
+def _flatten_reading(reading: TelemetryReading) -> dict[str, JsonValue]:
     metrics = reading.metrics or {}
-    row: dict[str, Any] = {
+    row: dict[str, JsonValue] = {
         "reading_id": str(reading.id),
         "recorded_at": reading.recorded_at.isoformat(),
         "ingested_at": reading.ingested_at.isoformat() if reading.ingested_at else None,
@@ -41,6 +42,34 @@ def _flatten_reading(reading: TelemetryReading) -> dict[str, Any]:
         if key not in row:
             row[key] = value
     return row
+
+
+def iter_csv_rows(readings: list[TelemetryReading]):
+    rows = [_flatten_reading(r) for r in readings]
+    if not rows:
+        yield "reading_id,recorded_at,ingested_at,latitude,longitude,altitude_m,speed_m_s,voltage\n"
+        return
+
+    fieldnames: list[str] = []
+    seen: set[str] = set()
+    for row in rows:
+        for key in row:
+            if key not in seen:
+                seen.add(key)
+                fieldnames.append(key)
+
+    buffer = io.StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=fieldnames, extrasaction="ignore")
+    writer.writeheader()
+    yield buffer.getvalue()
+    buffer.seek(0)
+    buffer.truncate(0)
+
+    for row in rows:
+        writer.writerow(row)
+        yield buffer.getvalue()
+        buffer.seek(0)
+        buffer.truncate(0)
 
 
 def generate_csv(readings: list[TelemetryReading]) -> str:

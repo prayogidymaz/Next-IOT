@@ -20,7 +20,9 @@ class WaypointMarker extends StatelessWidget {
             color: TacticalColors.warning.withOpacity(0.25),
             border: Border.all(color: TacticalColors.warning, width: 2),
             boxShadow: [
-              BoxShadow(color: TacticalColors.warning.withOpacity(0.4), blurRadius: 8),
+              BoxShadow(
+                  color: TacticalColors.warning.withOpacity(0.4),
+                  blurRadius: 8),
             ],
           ),
           child: Center(

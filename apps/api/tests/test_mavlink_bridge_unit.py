@@ -1,10 +1,9 @@
 import math
 
 import pytest
-from pymavlink.dialects.v20 import common as mavlink
-
 from app.mavlink.bridge_service import MavlinkBridgeService
 from app.mavlink.constants import MavlinkCommandType
+from pymavlink.dialects.v20 import common as mavlink
 
 
 def _pack_message(mav: mavlink.MAVLink, msg: mavlink.MAVLink_message) -> bytes:

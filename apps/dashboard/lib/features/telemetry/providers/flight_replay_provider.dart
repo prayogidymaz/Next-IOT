@@ -6,7 +6,8 @@ import 'package:latlong2/latlong.dart';
 import '../data/flight_replay_repository.dart';
 import '../models/flight_replay_models.dart';
 
-final flightReplayRepositoryProvider = Provider<FlightReplayRepository>((ref) => FlightReplayRepository());
+final flightReplayRepositoryProvider =
+    Provider<FlightReplayRepository>((ref) => FlightReplayRepository());
 
 class FlightReplayPosition {
   const FlightReplayPosition({
@@ -116,7 +117,8 @@ class FlightReplayNotifier extends StateNotifier<FlightReplayState> {
     _stopTimer();
 
     try {
-      final data = await _repository.fetchReplay(deviceId: deviceId, hours: hours);
+      final data =
+          await _repository.fetchReplay(deviceId: deviceId, hours: hours);
       if (data.samples.isEmpty) {
         state = state.copyWith(
           isLoading: false,
@@ -188,7 +190,8 @@ class FlightReplayNotifier extends StateNotifier<FlightReplayState> {
 
   void _startTimer() {
     _stopTimer();
-    _playbackTimer = Timer.periodic(const Duration(milliseconds: _tickMs), (_) => _tick());
+    _playbackTimer =
+        Timer.periodic(const Duration(milliseconds: _tickMs), (_) => _tick());
   }
 
   void _stopTimer() {
@@ -218,7 +221,8 @@ class FlightReplayNotifier extends StateNotifier<FlightReplayState> {
     );
   }
 
-  FlightReplayPosition? _positionAtProgress(FlightReplayData data, double progress) {
+  FlightReplayPosition? _positionAtProgress(
+      FlightReplayData data, double progress) {
     final samples = data.samples;
     if (samples.isEmpty) return null;
 
@@ -308,6 +312,7 @@ class FlightReplayNotifier extends StateNotifier<FlightReplayState> {
   }
 }
 
-final flightReplayProvider = StateNotifierProvider<FlightReplayNotifier, FlightReplayState>((ref) {
+final flightReplayProvider =
+    StateNotifierProvider<FlightReplayNotifier, FlightReplayState>((ref) {
   return FlightReplayNotifier(ref.watch(flightReplayRepositoryProvider));
 });

@@ -9,6 +9,7 @@ import 'package:next_iot_dashboard/features/devices/providers/device_provider.da
 import 'package:next_iot_dashboard/features/map/providers/map_provider.dart';
 import 'package:next_iot_dashboard/features/telemetry/data/telemetry_repository.dart';
 import 'package:next_iot_dashboard/features/telemetry/models/telemetry_models.dart';
+import 'package:next_iot_dashboard/features/telemetry/models/telemetry_stream_event.dart';
 
 class _MockTelemetryRepository extends Mock implements TelemetryRepository {}
 
@@ -105,5 +106,55 @@ void main() {
     expect(container.read(tacticalMapProvider).isLoading, isFalse);
     expect(container.read(tacticalMapProvider).markers.first.fix.latitude, -6.2090);
     verify(() => telemetryRepo.fetchResolvableLatest('dev-offline')).called(2);
+  });
+
+  test('applyStreamEvent updates marker GPS and sensor metrics live', () async {
+    when(() => telemetryRepo.fetchResolvableLatest('dev-offline')).thenAnswer(
+      (_) async => TelemetryLatest(
+        deviceId: 'dev-offline',
+        source: 'cache',
+        metrics: const {
+          'latitude': -6.2088,
+          'longitude': 106.8456,
+          'battery': 90,
+        },
+      ),
+    );
+
+    final container = ProviderContainer(
+      overrides: [
+        deviceProvider.overrideWith((ref) => _TestDeviceNotifier(DeviceListState(devices: [offlineDevice]))),
+        telemetryRepositoryProvider.overrideWithValue(telemetryRepo),
+        alertProvider.overrideWith((ref) => _FakeAlertNotifier()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final notifier = container.read(tacticalMapProvider.notifier);
+    await notifier.loadMarkers();
+    final initialLat =
+        container.read(tacticalMapProvider).markers.first.fix.latitude;
+
+    notifier.applyStreamEvent(
+      TelemetryStreamEvent(
+        deviceId: 'dev-offline',
+        status: 'online',
+        metrics: const {
+          'latitude': -6.2100,
+          'longitude': 106.8465,
+          'battery': 82,
+          'do_mg_l': 6.3,
+          'ph': 7.1,
+        },
+      ),
+    );
+
+    final marker = container.read(tacticalMapProvider).markers.first;
+    expect(marker.fix.latitude, isNot(initialLat));
+    expect(marker.fix.latitude, -6.2100);
+    expect(marker.battery, 82);
+    expect(marker.doMgL, 6.3);
+    expect(marker.ph, 7.1);
+    expect(marker.device.status, 'online');
   });
 }

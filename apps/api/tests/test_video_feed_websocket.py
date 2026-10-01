@@ -2,21 +2,35 @@ import uuid
 
 import pytest
 import redis.asyncio as aioredis
+from app.config import settings
+from app.deps import get_redis
+from app.main import app
+from redis import Redis as SyncRedis
 from starlette.testclient import TestClient
 
-from app.config import settings
-from app.main import app
+from tests.conftest import _override_get_redis
 
 PASSWORD = "SecurePass123!"
 
 
+def _flush_test_redis_sync() -> None:
+    settings.assert_test_redis_isolated()
+    client = SyncRedis.from_url(settings.redis_url_for_tests(), decode_responses=True)
+    client.flushdb()
+    client.close()
+
+
 @pytest.fixture
 def video_ws_client():
-    redis = aioredis.from_url(settings.redis_url, decode_responses=True)
+    _flush_test_redis_sync()
+    redis = aioredis.from_url(settings.redis_url_for_tests(), decode_responses=True)
     app.state.redis = redis
+    app.dependency_overrides[get_redis] = _override_get_redis(redis)
     with TestClient(app) as client:
         yield client
+    app.dependency_overrides.pop(get_redis, None)
     app.state.redis = None
+    _flush_test_redis_sync()
 
 
 def _register_device_sync(client: TestClient) -> dict:

@@ -1,5 +1,6 @@
 import os
 import uuid
+from collections.abc import AsyncIterator, Callable
 from urllib.parse import urlparse, urlunparse
 
 # Route pytest to an isolated DB before SQLAlchemy engine is created.
@@ -22,11 +23,12 @@ os.environ["DATABASE_URL_SYNC"] = _test_sync_url
 import psycopg2
 import pytest
 import redis.asyncio as aioredis
-from httpx import ASGITransport, AsyncClient
-
 from app.config import settings
 from app.database import engine
+from app.deps import get_redis
 from app.main import app
+from fastapi import Request
+from httpx import ASGITransport, AsyncClient
 
 
 def _admin_db_url() -> str:
@@ -56,30 +58,22 @@ def _run_test_migrations() -> None:
 def truncate_auth_tables() -> None:
     conn = psycopg2.connect(_test_sync_url)
     conn.autocommit = True
+    truncate_sql = (
+        "TRUNCATE audit_logs, ota_device_rollouts, firmware_releases, automation_pipelines, "
+        "sar_incidents, telemetry_anomalies, geofence_zones, device_commands, rules, "
+        "telemetry_readings, device_metadata, device_credentials, devices, tenant_memberships, "
+        "users, tenants RESTART IDENTITY CASCADE"
+    )
     with conn.cursor() as cur:
-        cur.execute(
-            "TRUNCATE sar_incidents, telemetry_anomalies, geofence_zones, device_commands, rules, telemetry_readings, device_metadata, device_credentials, devices, users, tenants RESTART IDENTITY CASCADE"
-        )
+        cur.execute(truncate_sql)
     conn.close()
 
 
-async def _clear_redis_keys() -> None:
-    redis = aioredis.from_url(settings.redis_url, decode_responses=True)
-    for pattern in (
-        "refresh:*",
-        "ratelimit:*",
-        "provision:*",
-        "device:liveness:*",
-        "device:telemetry:latest:*",
-        "device:alerts*",
-        "hardware:*",
-        "hardware:mavlink:status:*",
-    ):
-        keys = [k async for k in redis.scan_iter(pattern)]
-        if keys:
-            await redis.delete(*keys)
-    await redis.delete("device:alerts", "device:alerts:history")
-    await redis.aclose()
+def _override_get_redis(redis: aioredis.Redis) -> Callable[[Request], aioredis.Redis]:
+    def _getter(_request: Request) -> aioredis.Redis:
+        return redis
+
+    return _getter
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -96,23 +90,34 @@ async def reset_async_engine():
     await engine.dispose()
 
 
+async def _flush_test_redis(redis: aioredis.Redis) -> None:
+    settings.assert_test_redis_isolated()
+    await redis.flushdb()
+
+
 @pytest.fixture
-async def client():
-    await _clear_redis_keys()
+async def test_redis() -> AsyncIterator[aioredis.Redis]:
+    redis = aioredis.from_url(settings.redis_url_for_tests(), decode_responses=True)
+    await _flush_test_redis(redis)
+    yield redis
+    await _flush_test_redis(redis)
+    await redis.aclose()
+
+
+@pytest.fixture
+async def client(test_redis: aioredis.Redis) -> AsyncIterator[AsyncClient]:
     truncate_auth_tables()
 
-    redis = aioredis.from_url(settings.redis_url, decode_responses=True)
-    await redis.ping()
-    app.state.redis = redis
+    app.state.redis = test_redis
+    app.dependency_overrides[get_redis] = _override_get_redis(test_redis)
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
-    await _clear_redis_keys()
-    truncate_auth_tables()
-    await redis.aclose()
+    app.dependency_overrides.pop(get_redis, None)
     app.state.redis = None
+    truncate_auth_tables()
 
 
 @pytest.fixture

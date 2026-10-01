@@ -5,7 +5,8 @@ import '../../../core/config/api_config.dart';
 import '../data/auth_repository.dart';
 import '../models/auth_models.dart';
 
-final authRepositoryProvider = Provider<AuthRepository>((ref) => AuthRepository());
+final authRepositoryProvider =
+    Provider<AuthRepository>((ref) => AuthRepository());
 
 class AuthState {
   const AuthState({
@@ -20,7 +21,11 @@ class AuthState {
 
   bool get isAuthenticated => user != null;
 
-  AuthState copyWith({AuthUser? user, bool? isLoading, String? error, bool clearError = false}) {
+  AuthState copyWith(
+      {AuthUser? user,
+      bool? isLoading,
+      String? error,
+      bool clearError = false}) {
     return AuthState(
       user: user ?? this.user,
       isLoading: isLoading ?? this.isLoading,
@@ -30,7 +35,7 @@ class AuthState {
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier(this._repository) : super(const AuthState());
+  AuthNotifier(this._repository) : super(const AuthState(isLoading: true));
 
   final AuthRepository _repository;
 
@@ -66,6 +71,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> logout() async {
     await _repository.logout();
     state = const AuthState();
+  }
+
+  Future<void> refreshProfile() async {
+    if (!state.isAuthenticated) return;
+    final user = await _repository.fetchCurrentUser();
+    state = AuthState(user: user);
   }
 
   String _mapError(Object e) {

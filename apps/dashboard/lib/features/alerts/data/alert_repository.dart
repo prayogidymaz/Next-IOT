@@ -4,7 +4,8 @@ import '../../../core/network/api_client.dart';
 import '../models/alert_models.dart';
 
 class AlertRepository {
-  AlertRepository({ApiClient? apiClient}) : _api = (apiClient ?? ApiClient()).dio;
+  AlertRepository({ApiClient? apiClient})
+      : _api = (apiClient ?? ApiClient()).dio;
 
   final Dio _api;
 

@@ -71,8 +71,12 @@ class SarIncident {
       message: json['message'] as String?,
       sarGrid: json['sar_grid'] as Map<String, dynamic>? ?? const {},
       metadata: json['metadata'] as Map<String, dynamic>? ?? const {},
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
-      resolvedAt: json['resolved_at'] != null ? DateTime.parse(json['resolved_at'] as String) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : null,
+      resolvedAt: json['resolved_at'] != null
+          ? DateTime.parse(json['resolved_at'] as String)
+          : null,
     );
   }
 }
@@ -87,6 +91,7 @@ class SarIncidentListData {
     final items = (json['items'] as List<dynamic>? ?? [])
         .map((e) => SarIncident.fromJson(e as Map<String, dynamic>))
         .toList();
-    return SarIncidentListData(count: json['count'] as int? ?? items.length, incidents: items);
+    return SarIncidentListData(
+        count: json['count'] as int? ?? items.length, incidents: items);
   }
 }

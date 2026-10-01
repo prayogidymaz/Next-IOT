@@ -27,7 +27,8 @@ class WindVectorPoint {
   final double windSpeedMs;
   final double windDirectionDeg;
 
-  factory WindVectorPoint.fromJson(Map<String, dynamic> json) => WindVectorPoint(
+  factory WindVectorPoint.fromJson(Map<String, dynamic> json) =>
+      WindVectorPoint(
         lat: (json['lat'] as num).toDouble(),
         lon: (json['lon'] as num).toDouble(),
         windSpeedMs: (json['wind_speed_m_s'] as num).toDouble(),
@@ -68,7 +69,8 @@ class WeatherVectorData {
       windDirectionDeg: (json['wind_direction_deg'] as num).toDouble(),
       visibilityM: (json['visibility_m'] as num).toDouble(),
       rainRateMmH: (json['rain_rate_mm_h'] as num).toDouble(),
-      flightSafetyStatus: FlightSafetyStatus.fromApi(json['flight_safety_status'] as String),
+      flightSafetyStatus:
+          FlightSafetyStatus.fromApi(json['flight_safety_status'] as String),
       vectors: rawVectors
           .map((e) => WindVectorPoint.fromJson(e as Map<String, dynamic>))
           .toList(),

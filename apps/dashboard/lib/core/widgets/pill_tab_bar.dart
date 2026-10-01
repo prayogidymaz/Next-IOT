@@ -33,20 +33,21 @@ class PillTabBar<T> extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: () => onSelected(tab.value),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(BentoTokens.radiusPill),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: isSelected ? TacticalColors.cyan.withOpacity(0.15) : TacticalColors.surface,
-                borderRadius: BorderRadius.circular(24),
+                color: isSelected
+                    ? TacticalColors.success.withOpacity( 0.14)
+                    : TacticalColors.surfaceElevated,
+                borderRadius: BorderRadius.circular(BentoTokens.radiusPill),
                 border: Border.all(
-                  color: isSelected ? TacticalColors.borderNeon : TacticalColors.border,
-                  width: isSelected ? 1.5 : 1,
+                  color: isSelected
+                      ? TacticalColors.success.withOpacity( 0.55)
+                      : TacticalColors.border,
+                  width: isSelected ? 2 : 1,
                 ),
-                boxShadow: isSelected
-                    ? [BoxShadow(color: TacticalColors.cyanGlow, blurRadius: 8)]
-                    : null,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -55,15 +56,20 @@ class PillTabBar<T> extends StatelessWidget {
                     Icon(
                       tab.icon,
                       size: 16,
-                      color: isSelected ? TacticalColors.borderNeon : TacticalColors.textSecondary,
+                      color: isSelected
+                          ? TacticalColors.success
+                          : TacticalColors.textSecondary,
                     ),
                     const SizedBox(width: 6),
                   ],
                   Text(
                     tab.label,
                     style: TextStyle(
-                      color: isSelected ? TacticalColors.borderNeon : TacticalColors.textSecondary,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected
+                          ? TacticalColors.success
+                          : TacticalColors.textSecondary,
+                      fontWeight:
+                          isSelected ? FontWeight.w700 : FontWeight.w500,
                       fontSize: 13,
                     ),
                   ),

@@ -30,7 +30,9 @@ class SwarmDistanceOverlay extends StatelessWidget {
       final b = nodeById[link.deviceBId];
       if (a == null || b == null) continue;
 
-      final color = link.collisionRisk ? TacticalColors.critical : TacticalColors.borderNeon;
+      final color = link.collisionRisk
+          ? TacticalColors.critical
+          : TacticalColors.borderNeon;
       final pointA = LatLng(a.lat, a.lon);
       final pointB = LatLng(b.lat, b.lon);
       polylines.add(
@@ -52,18 +54,27 @@ class SwarmDistanceOverlay extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: (link.collisionRisk ? TacticalColors.critical : TacticalColors.surface).withOpacity(0.92),
+              color: (link.collisionRisk
+                      ? TacticalColors.critical
+                      : TacticalColors.surface)
+                  .withOpacity(0.92),
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
-                color: link.collisionRisk ? TacticalColors.critical : TacticalColors.borderNeon,
+                color: link.collisionRisk
+                    ? TacticalColors.critical
+                    : TacticalColors.borderNeon,
               ),
             ),
             child: Text(
-              link.collisionRisk ? '${link.distanceM.round()}m ⚠' : '${link.distanceM.round()}m',
+              link.collisionRisk
+                  ? '${link.distanceM.round()}m ⚠'
+                  : '${link.distanceM.round()}m',
               style: TextStyle(
                 fontSize: 9,
                 fontWeight: FontWeight.w800,
-                color: link.collisionRisk ? Colors.white : TacticalColors.borderNeon,
+                color: link.collisionRisk
+                    ? Colors.white
+                    : TacticalColors.borderNeon,
               ),
               textAlign: TextAlign.center,
             ),

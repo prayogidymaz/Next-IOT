@@ -33,6 +33,9 @@ class DeviceMapMarkerWidget extends StatelessWidget {
       case DeviceType.lorawan:
         return Icons.cell_tower;
       case DeviceType.sensor:
+        return Icons.sensors;
+      case DeviceType.smartHome:
+        return Icons.home_work_outlined;
       case null:
         return Icons.sensors;
     }
@@ -60,7 +63,8 @@ class DeviceMapMarkerWidget extends StatelessWidget {
                   border: Border.all(color: color, width: isSelected ? 3 : 2),
                   boxShadow: [
                     BoxShadow(
-                      color: color.withOpacity(marker.status.pulse ? 0.55 : 0.35),
+                      color:
+                          color.withOpacity(marker.status.pulse ? 0.55 : 0.35),
                       blurRadius: isSelected ? 14 : 10,
                       spreadRadius: marker.status.pulse ? 2 : 1,
                     ),

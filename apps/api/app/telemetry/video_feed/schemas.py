@@ -1,8 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, JsonValue, field_validator
 
 
 class TargetType(StrEnum):
@@ -50,4 +49,4 @@ class VideoFeedMessage(BaseModel):
     """Union wrapper for inbound/outbound video feed websocket messages."""
 
     type: str
-    payload: dict[str, Any]
+    payload: dict[str, JsonValue]

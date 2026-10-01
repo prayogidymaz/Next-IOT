@@ -3,19 +3,32 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import datetime
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import CurrentUser
-from app.devices.service import _get_device_for_user
 from app.models.telemetry_reading import TelemetryReading
 from app.telemetry.export_generator import render_export
 
-ALLOWED_HOURS = frozenset({1, 24})
-MAX_EXPORT_SAMPLES = 5000
+MAX_EXPORT_SAMPLES = 50_000
+
+
+async def fetch_export_readings(
+    db: AsyncSession,
+    user: CurrentUser,
+    *,
+    device_id: uuid.UUID,
+    start: datetime,
+    end: datetime,
+) -> list[TelemetryReading]:
+    from app.telemetry.timeseries import fetch_readings_window
+
+    readings = await fetch_readings_window(
+        db, user, device_id=device_id, start=start, end=end
+    )
+    return readings[:MAX_EXPORT_SAMPLES]
 
 
 async def export_telemetry(
@@ -24,36 +37,27 @@ async def export_telemetry(
     *,
     device_id: uuid.UUID,
     export_format: str,
-    hours: int = 24,
+    hours: int | None = 24,
+    start_time: datetime | None = None,
+    end_time: datetime | None = None,
 ) -> tuple[str, str, str]:
-    if hours not in ALLOWED_HOURS:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="hours must be 1 or 24",
-        )
+    from app.telemetry.timeseries import resolve_time_window
 
-    await _get_device_for_user(db, device_id, user)
-    since = datetime.now(UTC) - timedelta(hours=hours)
+    start, end = resolve_time_window(start_time=start_time, end_time=end_time, hours=hours)
+    if start >= end:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="start_time must be before end_time")
 
-    query = (
-        select(TelemetryReading)
-        .where(
-            TelemetryReading.device_id == device_id,
-            TelemetryReading.recorded_at >= since,
-        )
-        .order_by(TelemetryReading.recorded_at.asc())
-        .limit(MAX_EXPORT_SAMPLES)
+    readings = await fetch_export_readings(
+        db, user, device_id=device_id, start=start, end=end
     )
-    if not user.is_super_admin:
-        query = query.where(TelemetryReading.tenant_id == user.tenant_id)
 
-    readings = (await db.scalars(query)).all()
+    lookback_hours = hours if hours is not None else max(1, int((end - start).total_seconds() // 3600))
 
     try:
         return render_export(
             readings,
             device_id=device_id,
-            hours=hours,
+            hours=lookback_hours,
             export_format=export_format,
         )
     except ValueError as exc:

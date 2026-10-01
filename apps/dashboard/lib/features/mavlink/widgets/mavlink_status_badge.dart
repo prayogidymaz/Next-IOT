@@ -16,11 +16,14 @@ class MavlinkStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = connected ? TacticalColors.success : TacticalColors.textSecondary;
-    final label = connected ? 'MAVLink $protocolVersion Connected' : 'MAVLink Offline';
+    final color =
+        connected ? TacticalColors.success : TacticalColors.textSecondary;
+    final label =
+        connected ? 'MAVLink $protocolVersion Connected' : 'MAVLink Offline';
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: compact ? 6 : 8, vertical: compact ? 2 : 4),
+      padding: EdgeInsets.symmetric(
+          horizontal: compact ? 6 : 8, vertical: compact ? 2 : 4),
       decoration: BoxDecoration(
         color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(6),
@@ -49,7 +52,8 @@ class MavlinkStatusBadge extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               connected ? 'MAVLink 2.0' : 'MAVLink',
-              style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                  color: color, fontSize: 9, fontWeight: FontWeight.w700),
             ),
           ],
         ],

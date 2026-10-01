@@ -4,7 +4,8 @@ import '../../../core/network/api_client.dart';
 import '../models/notification_models.dart';
 
 class NotificationRepository {
-  NotificationRepository({ApiClient? apiClient}) : _api = (apiClient ?? ApiClient()).dio;
+  NotificationRepository({ApiClient? apiClient})
+      : _api = (apiClient ?? ApiClient()).dio;
 
   final Dio _api;
 
@@ -19,6 +20,7 @@ class NotificationRepository {
         'channels': channels,
       },
     );
-    return NotificationTestResponse.fromJson(response.data as Map<String, dynamic>);
+    return NotificationTestResponse.fromJson(
+        response.data as Map<String, dynamic>);
   }
 }

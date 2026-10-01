@@ -8,12 +8,14 @@ import '../models/telemetry_analytics_models.dart';
 import '../models/telemetry_models.dart';
 
 class TelemetryRepository {
-  TelemetryRepository({ApiClient? apiClient}) : _api = (apiClient ?? ApiClient()).dio;
+  TelemetryRepository({ApiClient? apiClient})
+      : _api = (apiClient ?? ApiClient()).dio;
 
   final Dio _api;
 
   Future<TelemetryLatest> fetchLatest(String deviceId) async {
-    final response = await _api.get('/api/v1/devices/$deviceId/telemetry/latest');
+    final response =
+        await _api.get('/api/v1/devices/$deviceId/telemetry/latest');
     return TelemetryLatest.fromJson(response.data as Map<String, dynamic>);
   }
 
@@ -63,11 +65,23 @@ class TelemetryRepository {
 
   Future<TelemetryAnalytics> fetchAnalytics({
     required String deviceId,
-    int hours = 24,
+    int? hours,
+    List<String>? metrics,
+    DateTime? startTime,
+    DateTime? endTime,
+    String interval = '5m',
   }) async {
+    final params = <String, dynamic>{
+      'device_id': deviceId,
+      'interval': interval,
+      if (metrics != null && metrics.isNotEmpty) 'metrics': metrics.join(','),
+      if (startTime != null) 'start_time': startTime.toUtc().toIso8601String(),
+      if (endTime != null) 'end_time': endTime.toUtc().toIso8601String(),
+      if (startTime == null && endTime == null && hours != null) 'hours': hours,
+    };
     final response = await _api.get(
       '/api/v1/telemetry/analytics',
-      queryParameters: {'device_id': deviceId, 'hours': hours},
+      queryParameters: params,
     );
     return TelemetryAnalytics.fromJson(response.data as Map<String, dynamic>);
   }
@@ -75,22 +89,31 @@ class TelemetryRepository {
   Future<String> downloadExport({
     required String deviceId,
     required TelemetryExportFormat format,
-    int hours = 24,
+    int? hours,
+    DateTime? startTime,
+    DateTime? endTime,
   }) async {
+    final params = <String, dynamic>{
+      'device_id': deviceId,
+      'format': format.apiValue,
+      if (startTime != null) 'start_time': startTime.toUtc().toIso8601String(),
+      if (endTime != null) 'end_time': endTime.toUtc().toIso8601String(),
+      if (startTime == null && endTime == null) 'hours': hours ?? 24,
+    };
     final response = await _api.get<List<int>>(
       '/api/v1/telemetry/export',
-      queryParameters: {
-        'device_id': deviceId,
-        'format': format.apiValue,
-        'hours': hours,
-      },
+      queryParameters: params,
       options: Options(responseType: ResponseType.bytes),
     );
 
     final bytes = response.data ?? [];
-    final dir = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
-    final timestamp = DateTime.now().toUtc().toIso8601String().replaceAll(':', '-');
-    final filename = 'telemetry_${deviceId.substring(0, 8)}_${hours}h_$timestamp${format.extension}';
+    final dir = await getDownloadsDirectory() ??
+        await getApplicationDocumentsDirectory();
+    final timestamp =
+        DateTime.now().toUtc().toIso8601String().replaceAll(':', '-');
+    final lookback = hours ?? 24;
+    final filename =
+        'telemetry_${deviceId.substring(0, 8)}_${lookback}h_$timestamp${format.extension}';
     final file = File('${dir.path}/$filename');
     await file.writeAsBytes(bytes, flush: true);
     return file.path;

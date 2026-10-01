@@ -10,19 +10,28 @@ class TelemetryAnalyticsState {
     this.data,
     this.isLoading = false,
     this.error,
-    this.hours = 24,
+    this.timeRange = TelemetryTimeRange.twentyFourHours,
+    this.selectedMetrics = const [],
+    this.customStart,
+    this.customEnd,
   });
 
   final TelemetryAnalytics? data;
   final bool isLoading;
   final String? error;
-  final int hours;
+  final TelemetryTimeRange timeRange;
+  final List<String> selectedMetrics;
+  final DateTime? customStart;
+  final DateTime? customEnd;
 
   TelemetryAnalyticsState copyWith({
     TelemetryAnalytics? data,
     bool? isLoading,
     String? error,
-    int? hours,
+    TelemetryTimeRange? timeRange,
+    List<String>? selectedMetrics,
+    DateTime? customStart,
+    DateTime? customEnd,
     bool clearError = false,
     bool clearData = false,
   }) {
@@ -30,39 +39,67 @@ class TelemetryAnalyticsState {
       data: clearData ? null : (data ?? this.data),
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
-      hours: hours ?? this.hours,
+      timeRange: timeRange ?? this.timeRange,
+      selectedMetrics: selectedMetrics ?? this.selectedMetrics,
+      customStart: customStart ?? this.customStart,
+      customEnd: customEnd ?? this.customEnd,
     );
   }
 }
 
-class TelemetryAnalyticsNotifier extends StateNotifier<TelemetryAnalyticsState> {
-  TelemetryAnalyticsNotifier(this._repository, this.deviceId) : super(const TelemetryAnalyticsState());
+class TelemetryAnalyticsNotifier
+    extends StateNotifier<TelemetryAnalyticsState> {
+  TelemetryAnalyticsNotifier(this._repository, this.deviceId)
+      : super(const TelemetryAnalyticsState());
 
   final TelemetryRepository _repository;
   final String deviceId;
 
-  Future<void> load({int? hours}) async {
-    final lookback = hours ?? state.hours;
-    state = state.copyWith(isLoading: true, hours: lookback, clearError: true);
+  Future<void> load({
+    TelemetryTimeRange? range,
+    List<String>? metrics,
+    DateTime? customStart,
+    DateTime? customEnd,
+  }) async {
+    final activeRange = range ?? state.timeRange;
+    final (start, end) = activeRange.window(
+      customStart: customStart ?? state.customStart,
+      customEnd: customEnd ?? state.customEnd,
+    );
+    final metricKeys = metrics ?? state.selectedMetrics;
+    state = state.copyWith(
+      isLoading: true,
+      timeRange: activeRange,
+      selectedMetrics: metricKeys,
+      customStart: customStart ?? state.customStart,
+      customEnd: customEnd ?? state.customEnd,
+      clearError: true,
+    );
     try {
-      final data = await _repository.fetchAnalytics(deviceId: deviceId, hours: lookback);
+      final data = await _repository.fetchAnalytics(
+        deviceId: deviceId,
+        startTime: start,
+        endTime: end,
+        interval: activeRange.defaultInterval,
+        metrics: metricKeys.isEmpty ? null : metricKeys,
+      );
       state = state.copyWith(isLoading: false, data: data);
     } catch (_) {
       state = state.copyWith(
         isLoading: false,
-        error: 'Failed to load flight analytics.',
+        error: 'Failed to load telemetry analytics.',
         clearData: true,
       );
     }
   }
 
   Future<void> loadForTimeRange(TelemetryTimeRange range) async {
-    final hours = range == TelemetryTimeRange.oneHour ? 1 : 24;
-    await load(hours: hours);
+    await load(range: range);
   }
 }
 
-final telemetryAnalyticsProvider =
-    StateNotifierProvider.family<TelemetryAnalyticsNotifier, TelemetryAnalyticsState, String>(
-  (ref, deviceId) => TelemetryAnalyticsNotifier(ref.watch(telemetryRepositoryProvider), deviceId),
+final telemetryAnalyticsProvider = StateNotifierProvider.family<
+    TelemetryAnalyticsNotifier, TelemetryAnalyticsState, String>(
+  (ref, deviceId) => TelemetryAnalyticsNotifier(
+      ref.watch(telemetryRepositoryProvider), deviceId),
 );

@@ -12,7 +12,8 @@ class TileUrlResolver {
   final String apiBaseUrl;
   final String tileServerBaseUrl;
 
-  static const onlineOsmTemplate = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  static const onlineOsmTemplate =
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
   static const onlineCartoTemplate =
       'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
 
@@ -32,7 +33,9 @@ class TileUrlResolver {
           : tileServerBaseUrl;
       return '$base/{z}/{x}/{y}.png';
     }
-    final api = apiBaseUrl.endsWith('/') ? apiBaseUrl.substring(0, apiBaseUrl.length - 1) : apiBaseUrl;
+    final api = apiBaseUrl.endsWith('/')
+        ? apiBaseUrl.substring(0, apiBaseUrl.length - 1)
+        : apiBaseUrl;
     return '$api/api/v1/tiles/{z}/{x}/{y}.png';
   }
 

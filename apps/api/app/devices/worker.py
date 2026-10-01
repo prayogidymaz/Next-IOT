@@ -3,7 +3,6 @@ import logging
 
 import redis.asyncio as aioredis
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
 from app.config import settings
 from app.database import async_session
@@ -56,5 +55,5 @@ async def offline_checker_loop(redis: aioredis.Redis, stop_event: asyncio.Event)
             logger.exception("Offline checker iteration failed")
         try:
             await asyncio.wait_for(stop_event.wait(), timeout=interval)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             continue

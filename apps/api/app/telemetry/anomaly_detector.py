@@ -5,18 +5,18 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Any
 
 from fastapi import HTTPException, status
+from pydantic import JsonValue
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import CurrentUser
 from app.devices.service import _get_device_for_user
-from app.models.telemetry_anomaly import TelemetryAnomaly
-from app.models.telemetry_reading import TelemetryReading
 from app.mission.geofence_checker import GeofenceChecker
 from app.mission.geofence_service import geofence_service
+from app.models.telemetry_anomaly import TelemetryAnomaly
+from app.models.telemetry_reading import TelemetryReading
 from app.telemetry.schemas import TelemetryAnomalyItem, TelemetryAnomalyResponse
 
 ALLOWED_HOURS = frozenset({1, 24})
@@ -39,10 +39,10 @@ class DetectedAnomaly:
     severity: str
     anomaly_type: str
     message: str
-    metadata: dict[str, Any]
+    metadata: dict[str, JsonValue]
 
 
-def _metric_float(metrics: dict[str, Any], *keys: str) -> float | None:
+def _metric_float(metrics: dict[str, JsonValue], *keys: str) -> float | None:
     for key in keys:
         if key in metrics and metrics[key] is not None:
             try:
@@ -57,9 +57,9 @@ class TelemetryAnomalyDetector:
 
     def evaluate(
         self,
-        metrics: dict[str, Any],
+        metrics: dict[str, JsonValue],
         *,
-        previous_metrics: dict[str, Any] | None = None,
+        previous_metrics: dict[str, JsonValue] | None = None,
     ) -> list[DetectedAnomaly]:
         anomalies: list[DetectedAnomaly] = []
         prev = previous_metrics or {}
@@ -223,7 +223,7 @@ async def _detect_geofence_anomalies(
     db: AsyncSession,
     *,
     tenant_id: uuid.UUID,
-    metrics: dict[str, Any],
+    metrics: dict[str, JsonValue],
 ) -> list[DetectedAnomaly]:
     lat = _metric_float(metrics, "latitude", "lat")
     lon = _metric_float(metrics, "longitude", "lon")
@@ -256,7 +256,7 @@ async def detect_and_persist_anomalies(
     *,
     device_id: uuid.UUID,
     tenant_id: uuid.UUID,
-    metrics: dict[str, Any],
+    metrics: dict[str, JsonValue],
     recorded_at: datetime,
     reading_id: uuid.UUID,
 ) -> list[TelemetryAnomaly]:

@@ -31,18 +31,21 @@ class TacticalVideoPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.black,
         borderRadius: BorderRadius.circular(compact ? 10 : 12),
-        border: Border.all(color: TacticalColors.cyan.withOpacity(0.6), width: compact ? 1.5 : 2),
+        border: Border.all(
+            color: TacticalColors.cyan.withOpacity(0.6),
+            width: compact ? 1.5 : 2),
         boxShadow: [
-          BoxShadow(color: TacticalColors.cyan.withOpacity(0.15), blurRadius: 16),
+          BoxShadow(
+              color: TacticalColors.cyan.withOpacity(0.15), blurRadius: 16),
         ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          _VideoPlaceholder(frameIndex: frame?.frameIndex ?? 0, isConnecting: isConnecting),
-          if (detections.isNotEmpty)
-            AiDetectionOverlay(detections: detections),
+          _VideoPlaceholder(
+              frameIndex: frame?.frameIndex ?? 0, isConnecting: isConnecting),
+          if (detections.isNotEmpty) AiDetectionOverlay(detections: detections),
           Positioned(
             top: 8,
             left: 8,
@@ -56,7 +59,8 @@ class TacticalVideoPanel extends StatelessWidget {
                     streamInfo != null
                         ? '${streamInfo!.streamProtocol}/${streamInfo!.codec} · ${streamInfo!.resolution}'
                         : 'AWAITING STREAM',
-                    style: const TextStyle(color: TacticalColors.textSecondary, fontSize: 10),
+                    style: const TextStyle(
+                        color: TacticalColors.textSecondary, fontSize: 10),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -64,11 +68,14 @@ class TacticalVideoPanel extends StatelessWidget {
                   IconButton(
                     visualDensity: VisualDensity.compact,
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    constraints:
+                        const BoxConstraints(minWidth: 28, minHeight: 28),
                     tooltip: 'Toggle PiP / Split',
                     onPressed: onToggleLayout,
                     icon: Icon(
-                      compact ? Icons.view_agenda_outlined : Icons.picture_in_picture_alt_outlined,
+                      compact
+                          ? Icons.view_agenda_outlined
+                          : Icons.picture_in_picture_alt_outlined,
                       size: 16,
                       color: TacticalColors.cyan,
                     ),
@@ -77,10 +84,12 @@ class TacticalVideoPanel extends StatelessWidget {
                   IconButton(
                     visualDensity: VisualDensity.compact,
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    constraints:
+                        const BoxConstraints(minWidth: 28, minHeight: 28),
                     tooltip: 'Close HUD',
                     onPressed: onClose,
-                    icon: const Icon(Icons.close, size: 16, color: TacticalColors.textSecondary),
+                    icon: const Icon(Icons.close,
+                        size: 16, color: TacticalColors.textSecondary),
                   ),
               ],
             ),
@@ -97,7 +106,8 @@ class TacticalVideoPanel extends StatelessWidget {
                 ),
                 child: Text(
                   'F${frame.frameIndex} · ${detections.length} AI',
-                  style: const TextStyle(fontSize: 9, color: TacticalColors.borderNeon),
+                  style: const TextStyle(
+                      fontSize: 9, color: TacticalColors.borderNeon),
                 ),
               ),
             ),
@@ -117,7 +127,8 @@ class _LiveBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: (isConnecting ? TacticalColors.warning : TacticalColors.critical).withOpacity(0.85),
+        color: (isConnecting ? TacticalColors.warning : TacticalColors.critical)
+            .withOpacity(0.85),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
@@ -131,7 +142,8 @@ class _LiveBadge extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             isConnecting ? 'CONNECT' : 'LIVE',
-            style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
+            style: const TextStyle(
+                color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
           ),
         ],
       ),
@@ -140,7 +152,8 @@ class _LiveBadge extends StatelessWidget {
 }
 
 class _VideoPlaceholder extends StatelessWidget {
-  const _VideoPlaceholder({required this.frameIndex, required this.isConnecting});
+  const _VideoPlaceholder(
+      {required this.frameIndex, required this.isConnecting});
 
   final int frameIndex;
   final bool isConnecting;
@@ -148,7 +161,8 @@ class _VideoPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: _TacticalFeedPainter(frameIndex: frameIndex, isConnecting: isConnecting),
+      painter: _TacticalFeedPainter(
+          frameIndex: frameIndex, isConnecting: isConnecting),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -208,6 +222,7 @@ class _TacticalFeedPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _TacticalFeedPainter oldDelegate) {
-    return oldDelegate.frameIndex != frameIndex || oldDelegate.isConnecting != isConnecting;
+    return oldDelegate.frameIndex != frameIndex ||
+        oldDelegate.isConnecting != isConnecting;
   }
 }

@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import json
-from typing import Any
 
-from pydantic import ValidationError
+from pydantic import JsonValue, ValidationError
 
 from app.telemetry.video_feed.schemas import DetectionBox, StreamInfoPayload, VideoFramePayload
 
@@ -14,7 +13,7 @@ class VideoFeedParseError(ValueError):
     """Raised when a websocket payload cannot be parsed as video feed metadata."""
 
 
-def parse_video_feed_message(raw: str | bytes | dict[str, Any]) -> VideoFramePayload | StreamInfoPayload:
+def parse_video_feed_message(raw: str | bytes | dict[str, JsonValue]) -> VideoFramePayload | StreamInfoPayload:
     """Parse JSON websocket payload into a typed video feed message."""
     data = _coerce_dict(raw)
     message_type = data.get("type")
@@ -25,22 +24,22 @@ def parse_video_feed_message(raw: str | bytes | dict[str, Any]) -> VideoFramePay
     raise VideoFeedParseError(f"Unsupported video feed message type: {message_type}")
 
 
-def parse_detection_box(raw: dict[str, Any]) -> DetectionBox:
+def parse_detection_box(raw: dict[str, JsonValue]) -> DetectionBox:
     try:
         return DetectionBox.model_validate(raw)
     except ValidationError as exc:
         raise VideoFeedParseError(str(exc)) from exc
 
 
-def serialize_video_frame(frame: VideoFramePayload) -> dict[str, Any]:
+def serialize_video_frame(frame: VideoFramePayload) -> dict[str, JsonValue]:
     return frame.model_dump(mode="json")
 
 
-def serialize_stream_info(info: StreamInfoPayload) -> dict[str, Any]:
+def serialize_stream_info(info: StreamInfoPayload) -> dict[str, JsonValue]:
     return info.model_dump(mode="json")
 
 
-def _coerce_dict(raw: str | bytes | dict[str, Any]) -> dict[str, Any]:
+def _coerce_dict(raw: str | bytes | dict[str, JsonValue]) -> dict[str, JsonValue]:
     if isinstance(raw, dict):
         return raw
     if isinstance(raw, (str, bytes)):

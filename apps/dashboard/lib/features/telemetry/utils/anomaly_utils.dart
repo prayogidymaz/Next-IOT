@@ -40,7 +40,11 @@ bool anomalyHasLocation(Map<String, dynamic> metadata) {
 
 (bool, double, double)? anomalyLkp(Map<String, dynamic> metadata) {
   if (!anomalyHasLocation(metadata)) return null;
-  return (true, (metadata['lat'] as num).toDouble(), (metadata['lon'] as num).toDouble());
+  return (
+    true,
+    (metadata['lat'] as num).toDouble(),
+    (metadata['lon'] as num).toDouble()
+  );
 }
 
 IconData anomalyTypeIcon(String type) {

@@ -4,7 +4,8 @@ import '../../../core/network/api_client.dart';
 import '../models/mavlink_models.dart';
 
 class MavlinkRepository {
-  MavlinkRepository({ApiClient? apiClient}) : _api = (apiClient ?? ApiClient()).dio;
+  MavlinkRepository({ApiClient? apiClient})
+      : _api = (apiClient ?? ApiClient()).dio;
 
   final Dio _api;
 

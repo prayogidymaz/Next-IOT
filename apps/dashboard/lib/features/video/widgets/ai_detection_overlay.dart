@@ -59,13 +59,18 @@ class _AiDetectionPainter extends CustomPainter {
         ..color = color
         ..strokeWidth = 3
         ..style = PaintingStyle.stroke;
-      _drawCorner(canvas, Offset(x, y), cornerLen, cornerPaint, top: true, left: true);
-      _drawCorner(canvas, Offset(x + w, y), cornerLen, cornerPaint, top: true, left: false);
-      _drawCorner(canvas, Offset(x, y + h), cornerLen, cornerPaint, top: false, left: true);
-      _drawCorner(canvas, Offset(x + w, y + h), cornerLen, cornerPaint, top: false, left: false);
+      _drawCorner(canvas, Offset(x, y), cornerLen, cornerPaint,
+          top: true, left: true);
+      _drawCorner(canvas, Offset(x + w, y), cornerLen, cornerPaint,
+          top: true, left: false);
+      _drawCorner(canvas, Offset(x, y + h), cornerLen, cornerPaint,
+          top: false, left: true);
+      _drawCorner(canvas, Offset(x + w, y + h), cornerLen, cornerPaint,
+          top: false, left: false);
 
       if (showLabels) {
-        final label = '${detection.targetType.toUpperCase()} ${(detection.confidence * 100).round()}%';
+        final label =
+            '${detection.targetType.toUpperCase()} ${(detection.confidence * 100).round()}%';
         final textPainter = TextPainter(
           text: TextSpan(
             text: label,
@@ -78,7 +83,12 @@ class _AiDetectionPainter extends CustomPainter {
           ),
           textDirection: TextDirection.ltr,
         )..layout();
-        textPainter.paint(canvas, Offset(x, (y - textPainter.height).clamp(0, size.height - textPainter.height)));
+        textPainter.paint(
+            canvas,
+            Offset(
+                x,
+                (y - textPainter.height)
+                    .clamp(0, size.height - textPainter.height)));
       }
     }
   }

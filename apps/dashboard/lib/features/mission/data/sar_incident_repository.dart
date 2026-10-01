@@ -4,7 +4,8 @@ import '../../../core/network/api_client.dart';
 import '../models/sar_incident_models.dart';
 
 class SarIncidentRepository {
-  SarIncidentRepository({ApiClient? apiClient}) : _api = (apiClient ?? ApiClient()).dio;
+  SarIncidentRepository({ApiClient? apiClient})
+      : _api = (apiClient ?? ApiClient()).dio;
 
   final Dio _api;
 

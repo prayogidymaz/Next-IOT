@@ -1,11 +1,10 @@
 import uuid
 
 import pytest
-from httpx import AsyncClient
-
 from app.auth.security import hash_password
 from app.database import async_session
 from app.models.user import User
+from httpx import AsyncClient
 
 PASSWORD = "SecurePass123!"
 

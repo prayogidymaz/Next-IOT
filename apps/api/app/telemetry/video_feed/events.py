@@ -1,7 +1,7 @@
 import json
-from typing import Any
 
 import redis.asyncio as aioredis
+from pydantic import JsonValue
 
 DEVICE_VIDEO_CHANNEL = "device:video:pubsub"
 
@@ -14,6 +14,6 @@ async def publish_video_frame(
     redis: aioredis.Redis,
     *,
     device_id: str,
-    frame_payload: dict[str, Any],
+    frame_payload: dict[str, JsonValue],
 ) -> None:
     await redis.publish(video_channel_for_device(device_id), json.dumps(frame_payload))

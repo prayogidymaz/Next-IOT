@@ -4,7 +4,8 @@ import '../../../core/network/api_client.dart';
 import '../models/gateway_models.dart';
 
 class HardwareRepository {
-  HardwareRepository({ApiClient? apiClient}) : _api = (apiClient ?? ApiClient()).dio;
+  HardwareRepository({ApiClient? apiClient})
+      : _api = (apiClient ?? ApiClient()).dio;
 
   final Dio _api;
 

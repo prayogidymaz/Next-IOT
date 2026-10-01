@@ -1,0 +1,10 @@
+from enum import StrEnum
+
+
+class AuditAction(StrEnum):
+    LOGIN = "LOGIN"
+    DEVICE_REGISTER = "DEVICE_REGISTER"
+    DEVICE_COMMAND = "DEVICE_COMMAND"
+    OTA_UPLOAD = "OTA_UPLOAD"
+    RULE_MUTATION = "RULE_MUTATION"
+    TENANT_UPDATE = "TENANT_UPDATE"

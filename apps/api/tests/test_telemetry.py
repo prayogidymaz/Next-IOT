@@ -3,15 +3,13 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 import redis.asyncio as aioredis
-from httpx import AsyncClient
-from sqlalchemy import select
-
-from app.config import settings
 from app.database import async_session
-from app.models.telemetry_reading import TelemetryReading
 from app.devices.liveness import liveness_key
 from app.devices.worker import mark_stale_devices_offline
+from app.models.telemetry_reading import TelemetryReading
 from app.telemetry.cache import get_latest_telemetry
+from httpx import AsyncClient
+from sqlalchemy import select
 
 PASSWORD = "SecurePass123!"
 
@@ -55,7 +53,39 @@ async def _register_provision_online(client: AsyncClient, slug: str, email: str)
 
 
 @pytest.mark.asyncio
-async def test_telemetry_ingestion_happy_path(client: AsyncClient, unique_slug: str, unique_email: str):
+async def test_telemetry_bulk_ingest_operator(client: AsyncClient, unique_slug: str, unique_email: str):
+    ctx = await _register_provision_online(client, unique_slug, unique_email)
+    ts = datetime.now(UTC).isoformat()
+
+    resp = await client.post(
+        "/api/v1/telemetry/bulk",
+        headers={"Authorization": f"Bearer {ctx['user_token']}"},
+        json={
+            "items": [
+                {
+                    "device_id": ctx["device_id"],
+                    "timestamp": ts,
+                    "metrics": {"temperature": 27.1, "humidity": 58.0, "ph": 7.0},
+                },
+                {
+                    "device_id": ctx["device_id"],
+                    "timestamp": ts,
+                    "metrics": {"temperature": 27.2, "humidity": 58.1, "ph": 7.01},
+                },
+            ]
+        },
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["accepted"] == 2
+    assert body["failed"] == 0
+    assert len(body["reading_ids"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_telemetry_ingestion_happy_path(
+    client: AsyncClient, test_redis: aioredis.Redis, unique_slug: str, unique_email: str
+):
     ctx = await _register_provision_online(client, unique_slug, unique_email)
     ts = datetime.now(UTC).isoformat()
 
@@ -80,22 +110,20 @@ async def test_telemetry_ingestion_happy_path(client: AsyncClient, unique_slug: 
         assert reading is not None
         assert reading.metrics["humidity"] == 61.2
 
-    redis = aioredis.from_url(settings.redis_url, decode_responses=True)
-    cached = await get_latest_telemetry(redis, ctx["device_id"])
-    await redis.aclose()
+    cached = await get_latest_telemetry(test_redis, ctx["device_id"])
     assert cached is not None
     assert cached["metrics"]["ph"] == 7.1
     assert cached["reading_id"] == data["reading_id"]
 
 
 @pytest.mark.asyncio
-async def test_telemetry_rejects_offline_device(client: AsyncClient, unique_slug: str, unique_email: str):
+async def test_telemetry_rejects_offline_device(
+    client: AsyncClient, test_redis: aioredis.Redis, unique_slug: str, unique_email: str
+):
     ctx = await _register_provision_online(client, unique_slug, unique_email)
 
-    redis = aioredis.from_url(settings.redis_url, decode_responses=True)
-    await redis.delete(liveness_key(ctx["device_id"]))
-    await mark_stale_devices_offline(redis)
-    await redis.aclose()
+    await test_redis.delete(liveness_key(ctx["device_id"]))
+    await mark_stale_devices_offline(test_redis)
 
     resp = await client.post(
         "/api/v1/telemetry",
@@ -181,7 +209,9 @@ async def test_telemetry_requires_metrics(client: AsyncClient, unique_slug: str,
 
 
 @pytest.mark.asyncio
-async def test_telemetry_updates_redis_latest_cache(client: AsyncClient, unique_slug: str, unique_email: str):
+async def test_telemetry_updates_redis_latest_cache(
+    client: AsyncClient, test_redis: aioredis.Redis, unique_slug: str, unique_email: str
+):
     ctx = await _register_provision_online(client, unique_slug, unique_email)
 
     await client.post(
@@ -195,7 +225,5 @@ async def test_telemetry_updates_redis_latest_cache(client: AsyncClient, unique_
         json={"timestamp": datetime.now(UTC).isoformat(), "metrics": {"temperature": 99.9}},
     )
 
-    redis = aioredis.from_url(settings.redis_url, decode_responses=True)
-    cached = await get_latest_telemetry(redis, ctx["device_id"])
-    await redis.aclose()
+    cached = await get_latest_telemetry(test_redis, ctx["device_id"])
     assert cached["metrics"]["temperature"] == 99.9

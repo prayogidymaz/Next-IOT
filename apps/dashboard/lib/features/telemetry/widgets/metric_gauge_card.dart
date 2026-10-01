@@ -15,7 +15,8 @@ class MetricGaugeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final range = definition.max - definition.min;
-    final normalized = range <= 0 ? 0.0 : ((value - definition.min) / range).clamp(0.0, 1.0);
+    final normalized =
+        range <= 0 ? 0.0 : ((value - definition.min) / range).clamp(0.0, 1.0);
     final color = _colorForKind(definition.kind, normalized);
 
     return Card(
@@ -24,7 +25,8 @@ class MetricGaugeCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(definition.label, style: Theme.of(context).textTheme.titleSmall),
+            Text(definition.label,
+                style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 12),
             SizedBox(
               height: 72,
@@ -40,7 +42,10 @@ class MetricGaugeCard extends StatelessWidget {
                   ),
                   Text(
                     value.toStringAsFixed(1),
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ],
               ),

@@ -4,7 +4,6 @@ from httpx import AsyncClient
 from tests.test_anomaly_detection import _setup_device
 from tests.test_commands import _register_and_create_device
 
-
 SAMPLE_POLYGON = [
     {"lat": -6.2100, "lon": 106.8440},
     {"lat": -6.2100, "lon": 106.8460},

@@ -1,8 +1,8 @@
 import json
 from datetime import UTC, datetime
-from typing import Any
 
 import redis.asyncio as aioredis
+from pydantic import JsonValue
 
 LATEST_KEY_PREFIX = "device:telemetry:latest:"
 
@@ -17,7 +17,7 @@ async def cache_latest_telemetry(
     device_id: str,
     tenant_id: str,
     recorded_at: datetime,
-    metrics: dict[str, Any],
+    metrics: dict[str, JsonValue],
     reading_id: str,
 ) -> None:
     payload = {

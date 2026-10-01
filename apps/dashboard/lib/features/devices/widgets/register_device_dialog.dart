@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/device_models.dart';
 import '../providers/device_provider.dart';
+import 'bulk_register_devices_panel.dart';
 
-Future<void> showRegisterDeviceDialog(BuildContext context, WidgetRef ref) async {
+Future<void> showRegisterDeviceDialog(
+    BuildContext context, WidgetRef ref) async {
   await showDialog<void>(
     context: context,
     builder: (context) => const RegisterDeviceDialog(),
@@ -16,7 +18,8 @@ class RegisterDeviceDialog extends ConsumerStatefulWidget {
   const RegisterDeviceDialog({super.key});
 
   @override
-  ConsumerState<RegisterDeviceDialog> createState() => _RegisterDeviceDialogState();
+  ConsumerState<RegisterDeviceDialog> createState() =>
+      _RegisterDeviceDialogState();
 }
 
 class _RegisterDeviceDialogState extends ConsumerState<RegisterDeviceDialog> {
@@ -47,14 +50,45 @@ class _RegisterDeviceDialogState extends ConsumerState<RegisterDeviceDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isRegistering = ref.watch(deviceProvider.select((s) => s.isRegistering));
+    final isRegistering =
+        ref.watch(deviceProvider.select((s) => s.isRegistering));
     final error = ref.watch(deviceProvider.select((s) => s.error));
 
     return AlertDialog(
-      title: Text(_result == null ? 'Register New Device' : 'Device Registered'),
+      title: Text(_result == null ? 'Device registration' : 'Device Registered'),
       content: SizedBox(
-        width: 420,
-        child: _result == null ? _buildForm(isRegistering, error) : _buildSuccess(_result!),
+        width: 480,
+        child: _result == null
+            ? DefaultTabController(
+                length: 2,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const TabBar(
+                      tabs: [
+                        Tab(text: 'Single device'),
+                        Tab(text: 'Bulk register'),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 400,
+                      child: TabBarView(
+                        children: [
+                          SingleChildScrollView(
+                              child: _buildForm(isRegistering, error)),
+                          SingleChildScrollView(
+                            child: BulkRegisterDevicesPanel(
+                              onCompleted: () => Navigator.of(context).pop(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : _buildSuccess(_result!),
       ),
       actions: [
         if (_result == null) ...[
@@ -125,7 +159,8 @@ class _RegisterDeviceDialogState extends ConsumerState<RegisterDeviceDialog> {
           ),
           if (error != null) ...[
             const SizedBox(height: 12),
-            Text(error, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            Text(error,
+                style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ],
         ],
       ),
@@ -137,7 +172,8 @@ class _RegisterDeviceDialogState extends ConsumerState<RegisterDeviceDialog> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('${result.device.name} (${result.device.deviceTypeLabel}) is ready to provision.'),
+        Text(
+            '${result.device.name} (${result.device.deviceTypeLabel}) is ready to provision.'),
         const SizedBox(height: 12),
         const Text('Provisioning token (copy now — shown once):',
             style: TextStyle(fontWeight: FontWeight.w600)),

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Any
 
 from fastapi import HTTPException, status
+from pydantic import JsonValue
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,7 +18,7 @@ from app.telemetry.schemas import SignalHeatmapPoint, SignalHeatmapResponse
 ALLOWED_HOURS = frozenset({1, 24})
 
 
-def _metric_float(metrics: dict[str, Any], *keys: str) -> float | None:
+def _metric_float(metrics: dict[str, JsonValue], *keys: str) -> float | None:
     for key in keys:
         if key in metrics and metrics[key] is not None:
             try:

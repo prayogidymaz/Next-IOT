@@ -23,7 +23,8 @@ class SarGridWaypoint {
   final double lon;
   final String? label;
 
-  factory SarGridWaypoint.fromJson(Map<String, dynamic> json) => SarGridWaypoint(
+  factory SarGridWaypoint.fromJson(Map<String, dynamic> json) =>
+      SarGridWaypoint(
         sequence: json['sequence'] as int,
         lat: (json['lat'] as num).toDouble(),
         lon: (json['lon'] as num).toDouble(),
@@ -51,7 +52,8 @@ class SarGridSearchArea {
   final String label;
   final List<SarGridPoint> points;
 
-  factory SarGridSearchArea.fromJson(Map<String, dynamic> json) => SarGridSearchArea(
+  factory SarGridSearchArea.fromJson(Map<String, dynamic> json) =>
+      SarGridSearchArea(
         label: json['label'] as String,
         points: (json['points'] as List<dynamic>)
             .map((e) => SarGridPoint.fromJson(e as Map<String, dynamic>))

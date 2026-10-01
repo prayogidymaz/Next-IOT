@@ -4,7 +4,8 @@ import '../../../core/network/api_client.dart';
 import '../models/sar_grid_models.dart';
 
 class SarGridRepository {
-  SarGridRepository({ApiClient? apiClient}) : _api = (apiClient ?? ApiClient()).dio;
+  SarGridRepository({ApiClient? apiClient})
+      : _api = (apiClient ?? ApiClient()).dio;
 
   final Dio _api;
 

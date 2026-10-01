@@ -4,7 +4,8 @@ import '../../../core/network/api_client.dart';
 import '../models/telemetry_anomaly_models.dart';
 
 class TelemetryAnomalyRepository {
-  TelemetryAnomalyRepository({ApiClient? apiClient}) : _api = (apiClient ?? ApiClient()).dio;
+  TelemetryAnomalyRepository({ApiClient? apiClient})
+      : _api = (apiClient ?? ApiClient()).dio;
 
   final Dio _api;
 

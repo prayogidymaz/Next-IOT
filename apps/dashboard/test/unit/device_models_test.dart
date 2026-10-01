@@ -92,6 +92,61 @@ void main() {
       expect(filtered, hasLength(1));
       expect(filtered.first.name, 'Pending Node');
     });
+
+    test('filters devices by category', () {
+      final filtered = filterDevices(
+        devices,
+        DeviceStatusFilter.all,
+        category: DeviceCategoryFilter.droneUnmanned,
+      );
+      expect(filtered, hasLength(2));
+      expect(filtered.map((d) => d.name), containsAll(['Offline Node', 'Pending Node']));
+
+      final lora = filterDevices(
+        devices,
+        DeviceStatusFilter.all,
+        category: DeviceCategoryFilter.fieldSensorsLora,
+      );
+      expect(lora, isEmpty);
+
+      final sensors = filterDevices(
+        devices,
+        DeviceStatusFilter.all,
+        category: DeviceCategoryFilter.agricultureAquaculture,
+      );
+      expect(sensors, hasLength(1));
+      expect(sensors.first.name, 'Online Node');
+    });
+
+    test('filters smart home category by device type and category', () {
+      final smartHome = Device(
+        id: '4',
+        tenantId: 't',
+        name: 'Relay Node',
+        deviceType: 'smart_home',
+        deviceCategory: DeviceCategoryApi.smartHome,
+        status: 'online',
+        createdAt: createdAt,
+      );
+      final withSeeds = [...devices, smartHome];
+      final filtered = filterDevices(
+        withSeeds,
+        DeviceStatusFilter.all,
+        category: DeviceCategoryFilter.smartHomeBuilding,
+      );
+      expect(filtered, hasLength(1));
+      expect(filtered.first.name, 'Relay Node');
+    });
+
+    test('combines status and category filters', () {
+      final filtered = filterDevices(
+        devices,
+        DeviceStatusFilter.online,
+        category: DeviceCategoryFilter.agricultureAquaculture,
+      );
+      expect(filtered, hasLength(1));
+      expect(filtered.first.name, 'Online Node');
+    });
   });
 
   group('formatLastSeen', () {

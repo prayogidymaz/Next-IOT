@@ -1,9 +1,9 @@
 import json
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Any
 
 import redis.asyncio as aioredis
+from pydantic import JsonValue
 
 ALERTS_QUEUE = "device:alerts"
 ALERTS_HISTORY = "device:alerts:history"
@@ -37,7 +37,7 @@ async def emit_alert(
     action_type: str,
     reading_id: str,
     notification_channel: str | None = None,
-) -> dict[str, Any]:
+) -> dict[str, JsonValue]:
     severity = _compute_severity(actual_value, threshold, operator)
     payload = {
         "id": str(uuid.uuid4()),
@@ -72,7 +72,7 @@ def _parse_timestamp(value: str | None) -> datetime | None:
         return None
 
 
-def is_alert_active(alert: dict[str, Any], *, window_hours: int = ACTIVE_WINDOW_HOURS) -> bool:
+def is_alert_active(alert: dict[str, JsonValue], *, window_hours: int = ACTIVE_WINDOW_HOURS) -> bool:
     if alert.get("status") == "resolved":
         return False
     ts = _parse_timestamp(alert.get("timestamp"))
@@ -88,9 +88,9 @@ async def list_alerts(
     is_super_admin: bool = False,
     status: str | None = None,
     limit: int = 50,
-) -> list[dict[str, Any]]:
+) -> list[dict[str, JsonValue]]:
     raw_items = await redis.lrange(ALERTS_HISTORY, 0, DEFAULT_HISTORY_LIMIT - 1)
-    results: list[dict[str, Any]] = []
+    results: list[dict[str, JsonValue]] = []
 
     for raw in raw_items:
         try:
@@ -115,7 +115,7 @@ async def list_alerts(
     return results
 
 
-async def pop_alerts(redis: aioredis.Redis, count: int = 10) -> list[dict[str, Any]]:
+async def pop_alerts(redis: aioredis.Redis, count: int = 10) -> list[dict[str, JsonValue]]:
     alerts = []
     for _ in range(count):
         raw = await redis.rpop(ALERTS_QUEUE)

@@ -5,7 +5,8 @@ class SwarmOverlayState {
 
   final bool enabled;
 
-  SwarmOverlayState copyWith({bool? enabled}) => SwarmOverlayState(enabled: enabled ?? this.enabled);
+  SwarmOverlayState copyWith({bool? enabled}) =>
+      SwarmOverlayState(enabled: enabled ?? this.enabled);
 }
 
 class SwarmOverlayNotifier extends StateNotifier<SwarmOverlayState> {
@@ -14,6 +15,7 @@ class SwarmOverlayNotifier extends StateNotifier<SwarmOverlayState> {
   void toggle() => state = state.copyWith(enabled: !state.enabled);
 }
 
-final swarmOverlayProvider = StateNotifierProvider<SwarmOverlayNotifier, SwarmOverlayState>((ref) {
+final swarmOverlayProvider =
+    StateNotifierProvider<SwarmOverlayNotifier, SwarmOverlayState>((ref) {
   return SwarmOverlayNotifier();
 });

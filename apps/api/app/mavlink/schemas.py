@@ -1,7 +1,6 @@
 from enum import StrEnum
-from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, JsonValue
 
 
 class MavlinkCommandEnum(StrEnum):
@@ -35,7 +34,7 @@ class MavlinkEncodeRequest(BaseModel):
     command: MavlinkCommandEnum
     target_system: int = Field(default=1, ge=1, le=255)
     target_component: int = Field(default=1, ge=1, le=255)
-    params: dict[str, Any] = Field(default_factory=dict)
+    params: dict[str, JsonValue] = Field(default_factory=dict)
 
 
 class MavlinkEncodeResponse(BaseModel):

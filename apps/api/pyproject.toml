@@ -1,0 +1,35 @@
+[project]
+name = "next-iot-api"
+version = "0.1.0"
+requires-python = ">=3.12"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+src = ["app", "tests", "alembic"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "ANN", "PGH"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ANN"]
+# tests/conftest.py sets DATABASE_URL env before importing app (isolated test DB).
+"tests/conftest.py" = ["E402"]
+"alembic/**" = ["ANN"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+disallow_any_explicit = true
+disallow_any_generics = true
+warn_unused_ignores = true
+plugins = ["pydantic.mypy"]
+files = ["app"]
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

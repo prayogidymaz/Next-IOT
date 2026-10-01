@@ -4,7 +4,8 @@ import '../../map/models/device_map_models.dart';
 import '../data/mavlink_repository.dart';
 import '../models/mavlink_models.dart';
 
-final mavlinkRepositoryProvider = Provider<MavlinkRepository>((ref) => MavlinkRepository());
+final mavlinkRepositoryProvider =
+    Provider<MavlinkRepository>((ref) => MavlinkRepository());
 
 class MavlinkState {
   const MavlinkState({
@@ -43,7 +44,8 @@ class MavlinkNotifier extends StateNotifier<MavlinkState> {
   final MavlinkRepository _repository;
 
   Future<void> loadForDevice(String deviceId, {DeviceMapMarker? marker}) async {
-    state = state.copyWith(isLoading: true, deviceId: deviceId, clearError: true);
+    state =
+        state.copyWith(isLoading: true, deviceId: deviceId, clearError: true);
 
     MavlinkStatus? markerStatus;
     if (marker != null) {
@@ -65,7 +67,8 @@ class MavlinkNotifier extends StateNotifier<MavlinkState> {
       if (markerStatus != null) {
         state = state.copyWith(isLoading: false, status: markerStatus);
       } else {
-        state = state.copyWith(isLoading: false, error: 'Failed to load MAVLink status.');
+        state = state.copyWith(
+            isLoading: false, error: 'Failed to load MAVLink status.');
       }
     }
   }
@@ -105,6 +108,7 @@ class MavlinkNotifier extends StateNotifier<MavlinkState> {
   void clear() => state = const MavlinkState();
 }
 
-final mavlinkProvider = StateNotifierProvider<MavlinkNotifier, MavlinkState>((ref) {
+final mavlinkProvider =
+    StateNotifierProvider<MavlinkNotifier, MavlinkState>((ref) {
   return MavlinkNotifier(ref.watch(mavlinkRepositoryProvider));
 });

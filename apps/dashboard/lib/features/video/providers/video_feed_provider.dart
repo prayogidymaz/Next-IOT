@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../map/widgets/tactical_tile_layer.dart' show isFlutterTestEnvironment;
+import '../../map/widgets/tactical_tile_layer.dart'
+    show isFlutterTestEnvironment;
 import '../data/video_feed_repository.dart';
 import '../models/video_feed_models.dart';
 import '../utils/video_feed_parser.dart';
@@ -140,6 +141,7 @@ class VideoFeedNotifier extends StateNotifier<VideoFeedState> {
   }
 }
 
-final videoFeedProvider = StateNotifierProvider<VideoFeedNotifier, VideoFeedState>((ref) {
+final videoFeedProvider =
+    StateNotifierProvider<VideoFeedNotifier, VideoFeedState>((ref) {
   return VideoFeedNotifier(ref.watch(videoFeedConnectionProvider));
 });

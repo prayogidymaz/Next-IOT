@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Any
+
+from pydantic import JsonValue
 
 COLLISION_RISK_THRESHOLD_M = 20.0
 COLLISION_RISK_WARNING = "COLLISION_RISK_WARNING"
@@ -59,7 +60,7 @@ class SwarmDistanceCalculator:
                 )
         return links
 
-    def compute_matrix(self, nodes: list[SwarmNode]) -> dict[str, Any]:
+    def compute_matrix(self, nodes: list[SwarmNode]) -> dict[str, JsonValue]:
         links = self.compute_links(nodes)
         return {
             "node_count": len(nodes),

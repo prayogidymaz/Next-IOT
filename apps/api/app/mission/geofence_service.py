@@ -10,9 +10,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import CurrentUser
-from app.models.geofence_zone import GeofenceAction, GeofenceZone
 from app.mission.geofence_checker import GeofenceZoneSnapshot
 from app.mission.schemas import GeofenceCreateRequest, GeofenceUpdateRequest
+from app.models.geofence_zone import GeofenceZone
 
 
 def _validate_polygon(polygon_coords: list) -> None:

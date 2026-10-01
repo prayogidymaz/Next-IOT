@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/rule_repository.dart';
 import '../models/rule_models.dart';
 
-final ruleRepositoryProvider = Provider<RuleRepository>((ref) => RuleRepository());
+final ruleRepositoryProvider =
+    Provider<RuleRepository>((ref) => RuleRepository());
 
 class RuleListState {
   const RuleListState({
@@ -57,6 +58,24 @@ class RuleNotifier extends StateNotifier<RuleListState> {
       state = state.copyWith(
         rules: [rule, ...state.rules],
         isSaving: false,
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(isSaving: false, error: _mapError(e));
+      return false;
+    }
+  }
+
+  Future<bool> toggleRuleActive(AlertRule rule) async {
+    state = state.copyWith(isSaving: true, clearError: true);
+    try {
+      final updated =
+          await _repository.updateRule(rule.id, isActive: !rule.isActive);
+      state = state.copyWith(
+        isSaving: false,
+        rules: state.rules
+            .map((r) => r.id == updated.id ? updated : r)
+            .toList(),
       );
       return true;
     } catch (e) {

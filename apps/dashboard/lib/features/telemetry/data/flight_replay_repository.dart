@@ -4,7 +4,8 @@ import '../../../core/network/api_client.dart';
 import '../models/flight_replay_models.dart';
 
 class FlightReplayRepository {
-  FlightReplayRepository({ApiClient? apiClient}) : _api = (apiClient ?? ApiClient()).dio;
+  FlightReplayRepository({ApiClient? apiClient})
+      : _api = (apiClient ?? ApiClient()).dio;
 
   final Dio _api;
 
@@ -21,7 +22,8 @@ class FlightReplayRepository {
       if (endTime != null) 'end_time': endTime.toUtc().toIso8601String(),
     };
 
-    final response = await _api.get('/api/v1/telemetry/flight-replay', queryParameters: params);
+    final response = await _api.get('/api/v1/telemetry/flight-replay',
+        queryParameters: params);
     return FlightReplayData.fromJson(response.data as Map<String, dynamic>);
   }
 }

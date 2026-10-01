@@ -3,11 +3,9 @@ import uuid
 
 import pytest
 import redis.asyncio as aioredis
-from httpx import AsyncClient
-
-from app.config import settings
 from app.devices.liveness import liveness_key
 from app.devices.worker import mark_stale_devices_offline
+from httpx import AsyncClient
 
 PASSWORD = "SecurePass123!"
 
@@ -58,20 +56,20 @@ def _basic(client_id: str, secret: str) -> dict:
     return {"Authorization": f"Basic {token}"}
 
 
-async def _pop_events() -> list[dict]:
-    redis = aioredis.from_url(settings.redis_url, decode_responses=True)
-    events = []
+async def _pop_events(test_redis: aioredis.Redis) -> list[dict]:
+    events: list[dict] = []
     while True:
-        raw = await redis.rpop("device:events")
+        raw = await test_redis.rpop("device:events")
         if raw is None:
             break
         events.append(json.loads(raw))
-    await redis.aclose()
     return events
 
 
 @pytest.mark.asyncio
-async def test_provision_heartbeat_online_e2e(client: AsyncClient, unique_slug: str, unique_email: str):
+async def test_provision_heartbeat_online_e2e(
+    client: AsyncClient, test_redis: aioredis.Redis, unique_slug: str, unique_email: str
+):
     ctx = await _register_and_provision(client, unique_slug, unique_email)
 
     hb = await client.post(
@@ -95,12 +93,14 @@ async def test_provision_heartbeat_online_e2e(client: AsyncClient, unique_slug: 
     assert meta["firmware_version"] == "2.1.0"
     assert meta["ip"] == "192.168.1.50"
 
-    events = await _pop_events()
+    events = await _pop_events(test_redis)
     assert any(e["event"] == "device.online" for e in events)
 
 
 @pytest.mark.asyncio
-async def test_online_to_offline_via_liveness_expiry(client: AsyncClient, unique_slug: str, unique_email: str):
+async def test_online_to_offline_via_liveness_expiry(
+    client: AsyncClient, test_redis: aioredis.Redis, unique_slug: str, unique_email: str
+):
     ctx = await _register_and_provision(client, unique_slug, unique_email)
 
     hb = await client.post(
@@ -110,10 +110,8 @@ async def test_online_to_offline_via_liveness_expiry(client: AsyncClient, unique
     )
     assert hb.status_code == 200
 
-    redis = aioredis.from_url(settings.redis_url, decode_responses=True)
-    await redis.delete(liveness_key(ctx["device_id"]))
-    marked = await mark_stale_devices_offline(redis)
-    await redis.aclose()
+    await test_redis.delete(liveness_key(ctx["device_id"]))
+    marked = await mark_stale_devices_offline(test_redis)
     assert marked >= 1
 
     detail = await client.get(
@@ -122,12 +120,14 @@ async def test_online_to_offline_via_liveness_expiry(client: AsyncClient, unique
     )
     assert detail.json()["status"] == "offline"
 
-    events = await _pop_events()
+    events = await _pop_events(test_redis)
     assert any(e["event"] == "device.offline" for e in events)
 
 
 @pytest.mark.asyncio
-async def test_offline_heartbeat_returns_online(client: AsyncClient, unique_slug: str, unique_email: str):
+async def test_offline_heartbeat_returns_online(
+    client: AsyncClient, test_redis: aioredis.Redis, unique_slug: str, unique_email: str
+):
     ctx = await _register_and_provision(client, unique_slug, unique_email)
 
     await client.post(
@@ -136,9 +136,8 @@ async def test_offline_heartbeat_returns_online(client: AsyncClient, unique_slug
         json={},
     )
 
-    redis = aioredis.from_url(settings.redis_url, decode_responses=True)
-    await redis.delete(liveness_key(ctx["device_id"]))
-    await mark_stale_devices_offline(redis)
+    await test_redis.delete(liveness_key(ctx["device_id"]))
+    await mark_stale_devices_offline(test_redis)
 
     hb = await client.post(
         f"/api/v1/devices/{ctx['device_id']}/heartbeat",

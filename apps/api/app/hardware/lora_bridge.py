@@ -7,16 +7,18 @@ import base64
 import logging
 import uuid
 from datetime import UTC, datetime
-from typing import Any
 
 import httpx
 import redis.asyncio as aioredis
+from pydantic import JsonValue
 from sqlalchemy import select
+
 from app.config import settings
 from app.database import async_session
-from app.devices.liveness import touch_liveness
-from app.devices.state_machine import should_emit_online
 from app.devices.events import emit_device_event
+from app.devices.liveness import touch_liveness
+from app.devices.security import verify_device_secret
+from app.devices.state_machine import should_emit_online
 from app.hardware.events import get_gateway_status, publish_lora_telemetry, update_gateway_status
 from app.hardware.lora_crypto import parse_aes128_key
 from app.hardware.parser import LoRaPacket, normalize_serial_line, packet_to_metrics, parse_serial_line
@@ -130,7 +132,7 @@ class LoRaBridge:
         )
         await self._publish_status(serial_connected=self._serial_connected, lora_link="connected")
 
-    async def _resolve_device(self, node_id: str) -> dict[str, Any] | None:
+    async def _resolve_device(self, node_id: str) -> dict[str, JsonValue] | None:
         async with async_session() as db:
             meta = await db.scalar(
                 select(DeviceMetadata)
@@ -158,7 +160,6 @@ class LoRaBridge:
                 logger.warning("Device %s has no credentials for LoRa ingest", device.id)
                 return None
 
-            from app.devices.security import verify_device_secret
 
             # Credentials are hashed; bridge needs plaintext secret from env mapping or metadata.
             secret = await self._lookup_device_secret(db, device.id)
@@ -214,7 +215,7 @@ class LoRaBridge:
                 )
             await db.commit()
 
-    async def _forward_to_api(self, *, client_id: str, client_secret: str, metrics: dict[str, Any]) -> None:
+    async def _forward_to_api(self, *, client_id: str, client_secret: str, metrics: dict[str, JsonValue]) -> None:
         payload = {
             "timestamp": datetime.now(UTC).isoformat(),
             "metrics": metrics,
@@ -247,7 +248,7 @@ class LoRaBridge:
         )
 
 
-async def read_gateway_status(redis: aioredis.Redis) -> dict[str, Any]:
+async def read_gateway_status(redis: aioredis.Redis) -> dict[str, JsonValue]:
     status = await get_gateway_status(redis)
     if status is None:
         return {

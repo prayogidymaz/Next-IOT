@@ -74,8 +74,8 @@ void main() {
 
     expect(find.text('EXPORT TELEMETRY DATA'), findsOneWidget);
     expect(find.text('ALPHA DRONE'), findsOneWidget);
-    expect(find.text('1 Hour'), findsOneWidget);
-    expect(find.text('24 Hours'), findsOneWidget);
+    expect(find.text('1H'), findsOneWidget);
+    expect(find.text('24H'), findsOneWidget);
     expect(find.text('Download'), findsOneWidget);
     expect(find.text('CSV'), findsOneWidget);
   });

@@ -17,7 +17,8 @@ class SignalHeatmapPoint {
   final String signalStrength;
   final DateTime recordedAt;
 
-  factory SignalHeatmapPoint.fromJson(Map<String, dynamic> json) => SignalHeatmapPoint(
+  factory SignalHeatmapPoint.fromJson(Map<String, dynamic> json) =>
+      SignalHeatmapPoint(
         lat: (json['lat'] as num).toDouble(),
         lon: (json['lon'] as num).toDouble(),
         rssi: (json['rssi'] as num).toDouble(),
@@ -39,7 +40,8 @@ class SignalHeatmapData {
   final int hours;
   final List<SignalHeatmapPoint> points;
 
-  factory SignalHeatmapData.fromJson(Map<String, dynamic> json) => SignalHeatmapData(
+  factory SignalHeatmapData.fromJson(Map<String, dynamic> json) =>
+      SignalHeatmapData(
         deviceId: json['device_id'] as String,
         hours: json['hours'] as int,
         points: (json['points'] as List<dynamic>)

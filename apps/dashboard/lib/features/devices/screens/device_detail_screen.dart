@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/tactical_theme.dart';
 import '../../../core/widgets/pill_tab_bar.dart';
 import '../../../core/widgets/tactical_card.dart';
+import '../../dashboard/widgets/smart_home_bento_telemetry.dart';
 import '../../map/widgets/device_map_view.dart';
 import '../../telemetry/models/telemetry_models.dart';
 import '../../telemetry/providers/telemetry_analytics_provider.dart';
@@ -13,6 +14,8 @@ import '../../telemetry/providers/telemetry_provider.dart';
 import '../../telemetry/widgets/metric_gauge_card.dart';
 import '../../telemetry/widgets/tactical_indicator.dart';
 import '../../telemetry/widgets/telemetry_analytics_card.dart';
+import '../../telemetry/widgets/telemetry_metric_summary_cards.dart';
+import '../../telemetry/widgets/telemetry_timeseries_chart.dart';
 import '../../telemetry/widgets/telemetry_export_dialog.dart';
 import '../../telemetry/widgets/telemetry_line_chart.dart';
 import '../models/device_models.dart';
@@ -38,7 +41,8 @@ class _DeviceDetailScreenState extends ConsumerState<DeviceDetailScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(telemetryProvider(widget.deviceId).notifier).load());
+    Future.microtask(
+        () => ref.read(telemetryProvider(widget.deviceId).notifier).load());
     _refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) {
       ref.read(telemetryProvider(widget.deviceId).notifier).load();
     });
@@ -59,7 +63,7 @@ class _DeviceDetailScreenState extends ConsumerState<DeviceDetailScreen> {
     return Scaffold(
       backgroundColor: TacticalColors.background,
       appBar: AppBar(
-        title: Text(title.toUpperCase()),
+        title: Text(title),
         actions: [
           IconButton(
             tooltip: 'Export Data',
@@ -73,12 +77,14 @@ class _DeviceDetailScreenState extends ConsumerState<DeviceDetailScreen> {
           if (device != null)
             Padding(
               padding: const EdgeInsets.only(right: 16),
-              child: Center(child: DeviceStatusBadge(status: device.connectionStatus)),
+              child: Center(
+                  child: DeviceStatusBadge(status: device.connectionStatus)),
             ),
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () => ref.read(telemetryProvider(widget.deviceId).notifier).load(),
+        onRefresh: () =>
+            ref.read(telemetryProvider(widget.deviceId).notifier).load(),
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
@@ -93,7 +99,10 @@ class _DeviceDetailScreenState extends ConsumerState<DeviceDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('MAP TRACKING', style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      _mapSectionTitle(device, telemetry.latest),
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                     const SizedBox(height: 12),
                     DeviceMapView(
                       device: device,
@@ -106,14 +115,19 @@ class _DeviceDetailScreenState extends ConsumerState<DeviceDetailScreen> {
             ],
             const SizedBox(height: 16),
             if (telemetry.isLoading && telemetry.latest == null)
-              const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator()))
+              const Center(
+                  child: Padding(
+                      padding: EdgeInsets.all(32),
+                      child: CircularProgressIndicator()))
             else if (telemetry.error != null && telemetry.latest == null)
               _ErrorBanner(
                 message: telemetry.error!,
-                onRetry: () => ref.read(telemetryProvider(widget.deviceId).notifier).load(),
+                onRetry: () => ref
+                    .read(telemetryProvider(widget.deviceId).notifier)
+                    .load(),
               )
             else ...[
-              _LiveMetricsSection(latest: telemetry.latest),
+              _LiveMetricsSection(device: device, latest: telemetry.latest),
               const SizedBox(height: 16),
               _HistorySection(deviceId: widget.deviceId, state: telemetry),
             ],
@@ -124,9 +138,27 @@ class _DeviceDetailScreenState extends ConsumerState<DeviceDetailScreen> {
   }
 }
 
-class _LiveMetricsSection extends StatelessWidget {
-  const _LiveMetricsSection({required this.latest});
+String _mapSectionTitle(Device device, TelemetryLatest? latest) {
+  final hasGps = latest?.metrics['latitude'] != null &&
+      latest?.metrics['longitude'] != null;
+  if (hasGps) return 'Map tracking';
+  if (DeviceType.fromApiValue(device.deviceType) == DeviceType.smartHome) {
+    return 'Indoor placement';
+  }
+  return 'Location';
+}
 
+bool _showSmartHomeBento(Device? device, Map<String, dynamic> metrics) {
+  if (metricsLookLikeSmartHome(metrics)) return true;
+  final type = device?.deviceType;
+  if (type == null) return false;
+  return DeviceType.fromApiValue(type) == DeviceType.smartHome;
+}
+
+class _LiveMetricsSection extends StatelessWidget {
+  const _LiveMetricsSection({required this.device, required this.latest});
+
+  final Device? device;
   final TelemetryLatest? latest;
 
   @override
@@ -136,13 +168,19 @@ class _LiveMetricsSection extends StatelessWidget {
       return const Text('No live metrics available.');
     }
 
+    if (_showSmartHomeBento(device, metrics)) {
+      return TacticalCard(
+        child: SmartHomeBentoTelemetry(latest: latest),
+      );
+    }
+
     final gaugeDefs = resolveGaugeMetrics(metrics);
 
     return TacticalCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('LIVE GAUGES', style: Theme.of(context).textTheme.titleMedium),
+          Text('Live gauges', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 12),
           Wrap(
             spacing: 12,
@@ -177,16 +215,22 @@ class _HistorySectionState extends ConsumerState<_HistorySection> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-      () => ref.read(telemetryAnalyticsProvider(widget.deviceId).notifier).loadForTimeRange(widget.state.timeRange),
-    );
+    Future.microtask(() {
+      ref.read(telemetryAnalyticsProvider(widget.deviceId).notifier).load(
+            range: widget.state.timeRange,
+            metrics: [widget.state.selectedChartMetric],
+          );
+    });
   }
 
   @override
   void didUpdateWidget(covariant _HistorySection oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.state.timeRange != widget.state.timeRange) {
-      ref.read(telemetryAnalyticsProvider(widget.deviceId).notifier).loadForTimeRange(widget.state.timeRange);
+      ref.read(telemetryAnalyticsProvider(widget.deviceId).notifier).load(
+            range: widget.state.timeRange,
+            metrics: [widget.state.selectedChartMetric],
+          );
     }
   }
 
@@ -203,7 +247,8 @@ class _HistorySectionState extends ConsumerState<_HistorySection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('TELEMETRY LOG PANEL', style: Theme.of(context).textTheme.titleMedium),
+          Text('TELEMETRY LOG PANEL',
+              style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 12),
           TelemetryAnalyticsCard(
             analytics: analytics.data,
@@ -217,7 +262,10 @@ class _HistorySectionState extends ConsumerState<_HistorySection> {
             selected: state.timeRange,
             onSelected: (range) {
               notifier.setTimeRange(range);
-              ref.read(telemetryAnalyticsProvider(deviceId).notifier).loadForTimeRange(range);
+              ref.read(telemetryAnalyticsProvider(deviceId).notifier).load(
+                    range: range,
+                    metrics: [state.selectedChartMetric],
+                  );
             },
           ),
           const SizedBox(height: 12),
@@ -235,12 +283,28 @@ class _HistorySectionState extends ConsumerState<_HistorySection> {
                       ))
                   .toList(),
               onChanged: (value) {
-                if (value != null) notifier.setChartMetric(value);
+                if (value == null) return;
+                notifier.setChartMetric(value);
+                ref.read(telemetryAnalyticsProvider(deviceId).notifier).load(
+                      range: state.timeRange,
+                      metrics: [value],
+                    );
               },
             ),
           const SizedBox(height: 12),
+          TelemetryMetricSummaryCards(
+            series: analytics.data?.seriesFor(state.selectedChartMetric),
+            metricKey: state.selectedChartMetric,
+          ),
+          const SizedBox(height: 12),
           if (state.isLoading && state.history.isEmpty)
             const Center(child: CircularProgressIndicator())
+          else if (analytics.data != null &&
+              (analytics.data!.seriesFor(state.selectedChartMetric)?.points.isNotEmpty ??
+                  false))
+            TelemetryTimeseriesChart(
+              seriesList: analytics.data!.series,
+            )
           else
             TelemetryLineChart(
               history: state.chronologicalHistory,

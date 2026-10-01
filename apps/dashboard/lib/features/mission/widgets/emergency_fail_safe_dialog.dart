@@ -7,7 +7,8 @@ import '../providers/mission_provider.dart';
 
 enum FailSafeAction { returnToHome, emergencyLand }
 
-Future<void> showEmergencyFailSafeDialog(BuildContext context, WidgetRef ref) async {
+Future<void> showEmergencyFailSafeDialog(
+    BuildContext context, WidgetRef ref) async {
   await showDialog<void>(
     context: context,
     barrierDismissible: false,
@@ -19,10 +20,12 @@ class EmergencyFailSafeDialog extends ConsumerStatefulWidget {
   const EmergencyFailSafeDialog({super.key});
 
   @override
-  ConsumerState<EmergencyFailSafeDialog> createState() => _EmergencyFailSafeDialogState();
+  ConsumerState<EmergencyFailSafeDialog> createState() =>
+      _EmergencyFailSafeDialogState();
 }
 
-class _EmergencyFailSafeDialogState extends ConsumerState<EmergencyFailSafeDialog> {
+class _EmergencyFailSafeDialogState
+    extends ConsumerState<EmergencyFailSafeDialog> {
   FailSafeAction _selected = FailSafeAction.returnToHome;
   bool _isDispatching = false;
 
@@ -42,7 +45,9 @@ class _EmergencyFailSafeDialogState extends ConsumerState<EmergencyFailSafeDialo
     final commandType = _selected == FailSafeAction.returnToHome
         ? DeviceCommandType.returnToHome
         : DeviceCommandType.emergencyLand;
-    final label = _selected == FailSafeAction.returnToHome ? 'RETURN TO HOME' : 'EMERGENCY LAND';
+    final label = _selected == FailSafeAction.returnToHome
+        ? 'RETURN TO HOME'
+        : 'EMERGENCY LAND';
 
     try {
       await repository.dispatchCommand(
@@ -103,22 +108,27 @@ class _EmergencyFailSafeDialogState extends ConsumerState<EmergencyFailSafeDialo
           RadioListTile<FailSafeAction>(
             dense: true,
             contentPadding: EdgeInsets.zero,
-            title: const Text('Return to Home (RTH)', style: TextStyle(fontSize: 13)),
-            subtitle: const Text('Recall drone to home position', style: TextStyle(fontSize: 11)),
+            title: const Text('Return to Home (RTH)',
+                style: TextStyle(fontSize: 13)),
+            subtitle: const Text('Recall drone to home position',
+                style: TextStyle(fontSize: 11)),
             value: FailSafeAction.returnToHome,
             groupValue: _selected,
             activeColor: TacticalColors.warning,
-            onChanged: _isDispatching ? null : (v) => setState(() => _selected = v!),
+            onChanged:
+                _isDispatching ? null : (v) => setState(() => _selected = v!),
           ),
           RadioListTile<FailSafeAction>(
             dense: true,
             contentPadding: EdgeInsets.zero,
             title: const Text('Emergency Land', style: TextStyle(fontSize: 13)),
-            subtitle: const Text('Immediate landing at current position', style: TextStyle(fontSize: 11)),
+            subtitle: const Text('Immediate landing at current position',
+                style: TextStyle(fontSize: 11)),
             value: FailSafeAction.emergencyLand,
             groupValue: _selected,
             activeColor: TacticalColors.critical,
-            onChanged: _isDispatching ? null : (v) => setState(() => _selected = v!),
+            onChanged:
+                _isDispatching ? null : (v) => setState(() => _selected = v!),
           ),
         ],
       ),
@@ -128,13 +138,15 @@ class _EmergencyFailSafeDialogState extends ConsumerState<EmergencyFailSafeDialo
           child: const Text('Cancel'),
         ),
         FilledButton.icon(
-          style: FilledButton.styleFrom(backgroundColor: TacticalColors.critical),
+          style:
+              FilledButton.styleFrom(backgroundColor: TacticalColors.critical),
           onPressed: _isDispatching ? null : _confirm,
           icon: _isDispatching
               ? const SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
                 )
               : const Icon(Icons.send, size: 18),
           label: Text(_isDispatching ? 'DISPATCHING...' : 'CONFIRM FAIL-SAFE'),

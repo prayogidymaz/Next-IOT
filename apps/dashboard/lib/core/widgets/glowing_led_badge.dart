@@ -17,14 +17,11 @@ class GlowingLedBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.45)),
-        boxShadow: [
-          BoxShadow(color: color.withOpacity(pulse ? 0.35 : 0.2), blurRadius: pulse ? 10 : 6),
-        ],
+        color: color.withOpacity( 0.14),
+        borderRadius: BorderRadius.circular(BentoTokens.radiusPill),
+        border: Border.all(color: color.withOpacity( 0.35)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -32,13 +29,7 @@ class GlowingLedBadge extends StatelessWidget {
           Container(
             width: 8,
             height: 8,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color,
-              boxShadow: [
-                BoxShadow(color: color.withOpacity(0.8), blurRadius: 6, spreadRadius: 1),
-              ],
-            ),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: color),
           ),
           const SizedBox(width: 8),
           Text(
@@ -47,7 +38,7 @@ class GlowingLedBadge extends StatelessWidget {
               color: color,
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              letterSpacing: 0.6,
+              letterSpacing: 0.5,
             ),
           ),
         ],
@@ -67,5 +58,5 @@ Color ledColorForStatus(String status) {
   if (normalized.contains('pending') || normalized.contains('warning')) {
     return TacticalColors.warning;
   }
-  return TacticalColors.info;
+  return TacticalColors.cyan;
 }

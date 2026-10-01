@@ -4,7 +4,8 @@ import '../../../core/network/api_client.dart';
 import '../models/signal_heatmap_models.dart';
 
 class SignalHeatmapRepository {
-  SignalHeatmapRepository({ApiClient? apiClient}) : _api = (apiClient ?? ApiClient()).dio;
+  SignalHeatmapRepository({ApiClient? apiClient})
+      : _api = (apiClient ?? ApiClient()).dio;
 
   final Dio _api;
 

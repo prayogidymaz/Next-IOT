@@ -14,12 +14,31 @@ class GeofenceLayer extends StatelessWidget {
     final layers = <Widget>[];
 
     for (final zone in zones) {
+      if (zone.isCircle) {
+        final center = zone.polygonCoords.first;
+        layers.add(
+          CircleLayer(
+            circles: [
+              CircleMarker(
+                point: LatLng(center.lat, center.lon),
+                radius: zone.radiusM!,
+                useRadiusInMeter: true,
+                color: TacticalColors.critical.withOpacity(0.12),
+                borderColor: TacticalColors.critical.withOpacity(0.85),
+                borderStrokeWidth: 2.5,
+              ),
+            ],
+          ),
+        );
+        continue;
+      }
       if (zone.polygonCoords.length < 3) continue;
       layers.add(
         PolygonLayer(
           polygons: [
             Polygon(
-              points: zone.polygonCoords.map((p) => LatLng(p.lat, p.lon)).toList(),
+              points:
+                  zone.polygonCoords.map((p) => LatLng(p.lat, p.lon)).toList(),
               color: TacticalColors.critical.withOpacity(0.12),
               borderColor: TacticalColors.critical.withOpacity(0.85),
               borderStrokeWidth: 2.5,

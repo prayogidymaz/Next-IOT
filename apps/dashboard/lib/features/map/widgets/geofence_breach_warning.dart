@@ -20,7 +20,8 @@ class GeofenceBreachWarning extends StatelessWidget {
         child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.warning_amber_rounded, color: TacticalColors.critical, size: 16),
+            Icon(Icons.warning_amber_rounded,
+                color: TacticalColors.critical, size: 16),
             SizedBox(width: 6),
             Text(
               'GEOFENCE BREACH',
@@ -71,7 +72,8 @@ class GeofenceBreachWarning extends StatelessWidget {
               SizedBox(height: 2),
               Text(
                 'Drone entered forbidden zone',
-                style: TextStyle(color: TacticalColors.textSecondary, fontSize: 10),
+                style: TextStyle(
+                    color: TacticalColors.textSecondary, fontSize: 10),
               ),
             ],
           ),

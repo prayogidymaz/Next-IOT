@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-from typing import Any
 
 import redis.asyncio as aioredis
+from pydantic import JsonValue
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.commands.events import publish_device_command
@@ -28,7 +28,7 @@ class FailSafeProtocol:
         self,
         anomaly_type: str,
         severity: str,
-        metadata: dict[str, Any] | None = None,
+        metadata: dict[str, JsonValue] | None = None,
     ) -> str | None:
         if severity != "critical":
             return None
@@ -51,9 +51,9 @@ class FailSafeProtocol:
         action: str,
         reason: str,
         anomaly_type: str | None = None,
-        metadata: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        params: dict[str, Any] = {
+        metadata: dict[str, JsonValue] | None = None,
+    ) -> dict[str, JsonValue]:
+        params: dict[str, JsonValue] = {
             "priority": FAIL_SAFE_PRIORITY,
             "fail_safe": True,
             "reason": reason,
@@ -75,7 +75,7 @@ class FailSafeProtocol:
         action: str,
         reason: str,
         anomaly_type: str | None = None,
-        metadata: dict[str, Any] | None = None,
+        metadata: dict[str, JsonValue] | None = None,
         issued_by_user_id: uuid.UUID | None = None,
     ) -> DeviceCommand:
         if action not in {CommandType.RETURN_TO_HOME, CommandType.EMERGENCY_LAND}:
@@ -118,7 +118,7 @@ class FailSafeProtocol:
         *,
         device_id: uuid.UUID,
         tenant_id: uuid.UUID,
-        anomalies: list[Any],
+        anomalies: list[JsonValue],
     ) -> list[DeviceCommand]:
         """Auto-dispatch fail-safe for each qualifying critical anomaly."""
         dispatched: list[DeviceCommand] = []

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-from typing import Any
 
 import redis.asyncio as aioredis
 from fastapi import HTTPException, status
+from pydantic import JsonValue
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,7 +24,7 @@ DEFAULT_LEG_SPACING_M = 100.0
 _AUTO_CRASH_ANOMALIES = frozenset({"speed_deviation", "altitude_deviation"})
 
 
-def _serialize_incident(incident: SarIncident) -> dict[str, Any]:
+def _serialize_incident(incident: SarIncident) -> dict[str, JsonValue]:
     return {
         "id": incident.id,
         "tenant_id": incident.tenant_id,
@@ -47,7 +47,7 @@ class SarEmergencyResponseService:
     def __init__(self) -> None:
         self._grid_service = SarGridService()
 
-    def _generate_sar_grid(self, lat: float, lon: float) -> dict[str, Any]:
+    def _generate_sar_grid(self, lat: float, lon: float) -> dict[str, JsonValue]:
         return self._grid_service.generate(
             lkp_lat=lat,
             lkp_lon=lon,
@@ -62,7 +62,7 @@ class SarEmergencyResponseService:
         user: CurrentUser,
         *,
         status_filter: str | None = None,
-    ) -> list[dict[str, Any]]:
+    ) -> list[dict[str, JsonValue]]:
         query = select(SarIncident).where(SarIncident.tenant_id == user.tenant_id)
         if status_filter:
             query = query.where(SarIncident.status == status_filter)
@@ -76,7 +76,7 @@ class SarEmergencyResponseService:
         redis: aioredis.Redis,
         user: CurrentUser,
         payload: SarIncidentCreateRequest,
-    ) -> dict[str, Any]:
+    ) -> dict[str, JsonValue]:
         assigned_device_id = payload.assigned_device_id
         if assigned_device_id is not None:
             await _get_device_for_user(db, assigned_device_id, user)
@@ -114,7 +114,7 @@ class SarEmergencyResponseService:
         user: CurrentUser,
         incident_id: uuid.UUID,
         payload: SarIncidentUpdateRequest,
-    ) -> dict[str, Any]:
+    ) -> dict[str, JsonValue]:
         incident = await self._get_incident_for_user(db, user, incident_id)
 
         if payload.status is not None:
@@ -159,8 +159,8 @@ class SarEmergencyResponseService:
         anomaly_type: str,
         severity: str,
         message: str,
-        metadata: dict[str, Any],
-    ) -> dict[str, Any] | None:
+        metadata: dict[str, JsonValue],
+    ) -> dict[str, JsonValue] | None:
         if severity != "critical" or anomaly_type not in _AUTO_CRASH_ANOMALIES:
             return None
 
@@ -217,7 +217,7 @@ class SarEmergencyResponseService:
         lat: float,
         lon: float,
         confidence: float,
-    ) -> dict[str, Any]:
+    ) -> dict[str, JsonValue]:
         detection = detection_class.lower()
         if detection in {"person", "human", "pedestrian"}:
             incident_type = SarIncidentType.PERSON_LOST

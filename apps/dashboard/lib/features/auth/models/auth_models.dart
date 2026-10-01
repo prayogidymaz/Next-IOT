@@ -33,9 +33,9 @@ class AuthUser {
   final String tenantId;
 
   factory AuthUser.fromMeJson(Map<String, dynamic> json) => AuthUser(
-        userId: json['user_id'] as String,
+        userId: json['user_id'].toString(),
         email: json['email'] as String,
         role: json['role'] as String,
-        tenantId: json['tenant_id'] as String,
+        tenantId: json['tenant_id'].toString(),
       );
 }

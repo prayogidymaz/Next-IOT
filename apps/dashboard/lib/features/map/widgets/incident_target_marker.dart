@@ -52,7 +52,10 @@ class IncidentTargetMarker extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: _accent, width: isSelected ? 3 : 2),
               boxShadow: isSelected
-                  ? [BoxShadow(color: _accent.withOpacity(0.45), blurRadius: 10)]
+                  ? [
+                      BoxShadow(
+                          color: _accent.withOpacity(0.45), blurRadius: 10)
+                    ]
                   : null,
             ),
             child: Icon(_icon, color: _accent, size: isSelected ? 24 : 20),

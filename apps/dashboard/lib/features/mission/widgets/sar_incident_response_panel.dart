@@ -28,7 +28,8 @@ class SarIncidentResponsePanel extends ConsumerWidget {
       decoration: BoxDecoration(
         color: TacticalColors.surface.withOpacity(0.95),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: TacticalColors.critical.withOpacity(0.6), width: 1.5),
+        border: Border.all(
+            color: TacticalColors.critical.withOpacity(0.6), width: 1.5),
         boxShadow: [
           BoxShadow(
             color: TacticalColors.critical.withOpacity(0.2),
@@ -41,7 +42,8 @@ class SarIncidentResponsePanel extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.emergency, color: TacticalColors.critical, size: 18),
+              const Icon(Icons.emergency,
+                  color: TacticalColors.critical, size: 18),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -62,15 +64,23 @@ class SarIncidentResponsePanel extends ConsumerWidget {
           ),
           if (state.error != null) ...[
             const SizedBox(height: 6),
-            Text(state.error!, style: const TextStyle(color: TacticalColors.warning, fontSize: 11)),
+            Text(state.error!,
+                style: const TextStyle(
+                    color: TacticalColors.warning, fontSize: 11)),
           ],
           const SizedBox(height: 8),
           if (state.isLoading)
-            const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator(strokeWidth: 2)))
+            const Center(
+                child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: CircularProgressIndicator(strokeWidth: 2)))
           else if (active.isEmpty)
             Text(
               'No active SAR incidents.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: TacticalColors.textSecondary),
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: TacticalColors.textSecondary),
             )
           else
             Flexible(
@@ -84,11 +94,14 @@ class SarIncidentResponsePanel extends ConsumerWidget {
                     incident: incident,
                     selectedDeviceId: selectedDeviceId,
                     onAssign: selectedDeviceId != null
-                        ? () => notifier.assignDrone(incident.id, selectedDeviceId!)
+                        ? () =>
+                            notifier.assignDrone(incident.id, selectedDeviceId!)
                         : null,
                     onDispatchGrid: () => notifier.dispatchSarGrid(incident.id),
                     onResolve: () => notifier.resolveIncident(incident.id),
-                    onCenter: onCenterIncident != null ? () => onCenterIncident!(incident) : null,
+                    onCenter: onCenterIncident != null
+                        ? () => onCenterIncident!(incident)
+                        : null,
                   );
                 },
               ),
@@ -144,18 +157,25 @@ class _IncidentCard extends StatelessWidget {
           ),
           if (incident.message != null) ...[
             const SizedBox(height: 4),
-            Text(incident.message!, style: Theme.of(context).textTheme.bodySmall),
+            Text(incident.message!,
+                style: Theme.of(context).textTheme.bodySmall),
           ],
           const SizedBox(height: 4),
           Text(
             'Target: ${incident.targetLat.toStringAsFixed(5)}, ${incident.targetLon.toStringAsFixed(5)}',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: TacticalColors.textSecondary),
+            style: Theme.of(context)
+                .textTheme
+                .labelSmall
+                ?.copyWith(color: TacticalColors.textSecondary),
           ),
           if (incident.assignedDeviceId != null) ...[
             const SizedBox(height: 2),
             Text(
               'Assigned: ${_shortId(incident.assignedDeviceId!)}',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(color: TacticalColors.cyan),
+              style: Theme.of(context)
+                  .textTheme
+                  .labelSmall
+                  ?.copyWith(color: TacticalColors.cyan),
             ),
           ],
           const SizedBox(height: 8),
@@ -164,13 +184,24 @@ class _IncidentCard extends StatelessWidget {
             runSpacing: 6,
             children: [
               if (onCenter != null)
-                _ActionChip(label: 'Center', icon: Icons.my_location, onTap: onCenter!),
+                _ActionChip(
+                    label: 'Center', icon: Icons.my_location, onTap: onCenter!),
               if (onAssign != null)
-                _ActionChip(label: 'Assign Drone', icon: Icons.flight, onTap: onAssign!),
+                _ActionChip(
+                    label: 'Assign Drone',
+                    icon: Icons.flight,
+                    onTap: onAssign!),
               if (onDispatchGrid != null)
-                _ActionChip(label: 'SAR Grid', icon: Icons.grid_on, onTap: onDispatchGrid!),
+                _ActionChip(
+                    label: 'SAR Grid',
+                    icon: Icons.grid_on,
+                    onTap: onDispatchGrid!),
               if (onResolve != null)
-                _ActionChip(label: 'Resolve', icon: Icons.check_circle, onTap: onResolve!, accent: TacticalColors.success),
+                _ActionChip(
+                    label: 'Resolve',
+                    icon: Icons.check_circle,
+                    onTap: onResolve!,
+                    accent: TacticalColors.success),
             ],
           ),
         ],

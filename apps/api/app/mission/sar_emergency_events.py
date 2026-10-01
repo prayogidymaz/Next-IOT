@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime
-from typing import Any
 
 import redis.asyncio as aioredis
+from pydantic import JsonValue
 
 SAR_EMERGENCY_CHANNEL = "mission:sar:emergency:pubsub"
 
@@ -20,7 +20,7 @@ async def publish_sar_emergency_alert(
     *,
     tenant_id: str,
     event_type: str,
-    incident: dict[str, Any],
+    incident: dict[str, JsonValue],
 ) -> None:
     payload = {
         "event": event_type,

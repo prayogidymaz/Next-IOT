@@ -1,6 +1,7 @@
 import asyncio
 import logging
-from typing import Any
+
+from pydantic import JsonValue
 
 from app.config import settings
 from app.notifications.providers.base import NotificationResult, Notifier
@@ -31,14 +32,14 @@ class NotificationDispatcher:
     def __init__(self, notifiers: list[Notifier] | None = None) -> None:
         self._notifiers = notifiers if notifiers is not None else build_notifiers()
 
-    async def dispatch(self, alert: dict[str, Any]) -> list[NotificationResult]:
+    async def dispatch(self, alert: dict[str, JsonValue]) -> list[NotificationResult]:
         results: list[NotificationResult] = []
         for notifier in self._notifiers:
             result = await self._send_with_retry(notifier, alert)
             results.append(result)
         return results
 
-    async def _send_with_retry(self, notifier: Notifier, alert: dict[str, Any]) -> NotificationResult:
+    async def _send_with_retry(self, notifier: Notifier, alert: dict[str, JsonValue]) -> NotificationResult:
         max_retries = settings.notification_max_retries
         delay = settings.notification_retry_delay_seconds
         last_error: str | None = None
@@ -53,7 +54,7 @@ class NotificationDispatcher:
                 if result.success:
                     return result
                 last_error = result.error
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 last_error = f"{notifier.name} dispatch timed out"
             except Exception as exc:
                 last_error = str(exc)

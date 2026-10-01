@@ -111,8 +111,16 @@ class MockVideoFeedConnection implements VideoFeedConnection {
           });
         } else {
           detections.addAll([
-            {'target_type': 'person', 'confidence': 0.91, 'bbox': [0.22, 0.35, 0.12, 0.34]},
-            {'target_type': 'vehicle', 'confidence': 0.89, 'bbox': [0.58, 0.50, 0.24, 0.20]},
+            {
+              'target_type': 'person',
+              'confidence': 0.91,
+              'bbox': [0.22, 0.35, 0.12, 0.34]
+            },
+            {
+              'target_type': 'vehicle',
+              'confidence': 0.89,
+              'bbox': [0.58, 0.50, 0.24, 0.20]
+            },
           ]);
         }
 

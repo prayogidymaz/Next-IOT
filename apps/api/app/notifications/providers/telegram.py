@@ -1,7 +1,7 @@
 import logging
-from typing import Any
 
 import httpx
+from pydantic import JsonValue
 
 from app.config import settings
 from app.notifications.formatter import format_telegram_html
@@ -30,7 +30,7 @@ class TelegramNotifier:
     def enabled(self) -> bool:
         return settings.telegram_enabled and bool(self._bot_token) and bool(self._chat_id)
 
-    async def send(self, alert: dict[str, Any]) -> NotificationResult:
+    async def send(self, alert: dict[str, JsonValue]) -> NotificationResult:
         if not self.enabled:
             return NotificationResult(
                 provider=self.name,

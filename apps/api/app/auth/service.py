@@ -6,6 +6,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.rbac import UserRole
 from app.auth.schemas import LoginRequest, RegisterRequest, RegisterResponse, TokenResponse, UserResponse
 from app.auth.security import (
     TOKEN_TYPE_ACCESS,
@@ -16,9 +17,12 @@ from app.auth.security import (
     hash_password,
     verify_password,
 )
+from app.auth.session_context import resolve_active_session
 from app.config import settings
 from app.models.tenant import Tenant
+from app.models.tenant_membership import TenantMembership
 from app.models.user import User
+from app.tenants.service import user_can_access_tenant
 
 REFRESH_KEY_PREFIX = "refresh:"
 
@@ -41,17 +45,29 @@ async def _revoke_refresh_token(redis: aioredis.Redis, jti: str) -> None:
     await redis.delete(f"{REFRESH_KEY_PREFIX}{jti}")
 
 
-async def _issue_tokens(redis: aioredis.Redis, user: User) -> TokenResponse:
-    access_token = create_access_token(user_id=user.id, tenant_id=user.tenant_id, role=user.role)
-    refresh_token, jti = create_refresh_token(user_id=user.id, tenant_id=user.tenant_id)
-    await _store_refresh_token(redis, jti, user.id, user.tenant_id)
+async def _issue_tokens(
+    redis: aioredis.Redis,
+    user: User,
+    *,
+    tenant_id: uuid.UUID | None = None,
+    role: str | None = None,
+) -> TokenResponse:
+    active_tenant = tenant_id or user.tenant_id
+    active_role = role or user.role
+    access_token = create_access_token(
+        user_id=user.id, tenant_id=active_tenant, role=active_role
+    )
+    refresh_token, jti = create_refresh_token(user_id=user.id, tenant_id=active_tenant)
+    await _store_refresh_token(redis, jti, user.id, active_tenant)
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
 
 async def register(db: AsyncSession, redis: aioredis.Redis, payload: RegisterRequest) -> RegisterResponse:
-    existing_slug = await db.scalar(select(Tenant).where(Tenant.slug == payload.tenant_slug))
-    if existing_slug:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Tenant slug already exists")
+    slug = payload.tenant_slug or "workspace"
+    slug_base = slug
+    while await db.scalar(select(Tenant).where(Tenant.slug == slug)):
+        slug = f"{slug_base}-{uuid.uuid4().hex[:6]}"
+    payload.tenant_slug = slug
 
     existing_email = await db.scalar(select(User).where(User.email == payload.email))
     if existing_email:
@@ -67,6 +83,16 @@ async def register(db: AsyncSession, redis: aioredis.Redis, payload: RegisterReq
     db.add(tenant)
     db.add(user)
     await db.flush()
+
+    db.add(
+        TenantMembership(
+            user_id=user.id,
+            tenant_id=tenant.id,
+            role=UserRole.TENANT_ADMIN,
+        )
+    )
+    await db.commit()
+    await db.refresh(user)
 
     tokens = await _issue_tokens(redis, user)
 
@@ -90,7 +116,15 @@ async def login(db: AsyncSession, redis: aioredis.Redis, payload: LoginRequest) 
     if not tenant or not tenant.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tenant is inactive")
 
-    return await _issue_tokens(redis, user)
+    tokens = await _issue_tokens(redis, user)
+    return TokenResponse(
+        access_token=tokens.access_token,
+        refresh_token=tokens.refresh_token,
+        token_type=tokens.token_type,
+        role=user.role,
+        user_id=user.id,
+        email=user.email,
+    )
 
 
 async def refresh_tokens(db: AsyncSession, redis: aioredis.Redis, refresh_token: str) -> TokenResponse:
@@ -116,11 +150,41 @@ async def refresh_tokens(db: AsyncSession, redis: aioredis.Redis, refresh_token:
     if not user or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
 
-    if str(user.tenant_id) != tenant_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Tenant mismatch")
+    active_tenant_id, effective_role = await resolve_active_session(
+        db, user, uuid.UUID(tenant_id), None
+    )
 
     await _revoke_refresh_token(redis, jti)
-    return await _issue_tokens(redis, user)
+    return await _issue_tokens(
+        redis,
+        user,
+        tenant_id=active_tenant_id,
+        role=effective_role,
+    )
+
+
+async def switch_tenant(
+    db: AsyncSession,
+    redis: aioredis.Redis,
+    user_id: uuid.UUID,
+    target_tenant_id: uuid.UUID,
+) -> TokenResponse:
+    user = await db.scalar(select(User).where(User.id == user_id))
+    if not user or not user.is_active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
+
+    if not await user_can_access_tenant(db, user, target_tenant_id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tenant access denied")
+
+    active_tenant_id, effective_role = await resolve_active_session(
+        db, user, target_tenant_id, None
+    )
+    return await _issue_tokens(
+        redis,
+        user,
+        tenant_id=active_tenant_id,
+        role=effective_role,
+    )
 
 
 async def logout(redis: aioredis.Redis, refresh_token: str) -> None:

@@ -1,12 +1,9 @@
 import json
-from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
 import redis.asyncio as aioredis
-from httpx import AsyncClient
-
 from app.config import settings
 from app.notifications.dispatcher import NotificationDispatcher
 from app.notifications.formatter import build_webhook_payload, format_telegram_html
@@ -15,6 +12,7 @@ from app.notifications.providers.telegram import TelegramNotifier
 from app.notifications.providers.webhook import WebhookNotifier, compute_webhook_signature
 from app.notifications.worker import process_alert_queue_once
 from app.rules.alerts import ALERTS_QUEUE, emit_alert
+from httpx import AsyncClient
 
 PASSWORD = "SecurePass123!"
 
@@ -139,16 +137,15 @@ async def test_dispatcher_retries_on_failure():
 
 
 @pytest.mark.asyncio
-async def test_worker_consumes_alert_from_queue():
-    redis = aioredis.from_url(settings.redis_url, decode_responses=True)
-    await redis.delete(ALERTS_QUEUE, "device:alerts:history")
+async def test_worker_consumes_alert_from_queue(test_redis: aioredis.Redis):
+    await test_redis.delete(ALERTS_QUEUE, "device:alerts:history")
 
     mock_notifier = AsyncMock()
     mock_notifier.name = "mock"
     mock_notifier.send.return_value = NotificationResult(provider="mock", success=True)
 
     await emit_alert(
-        redis,
+        test_redis,
         rule_id="r1",
         device_id="d1",
         tenant_id="t1",
@@ -161,12 +158,11 @@ async def test_worker_consumes_alert_from_queue():
     )
 
     dispatcher = NotificationDispatcher(notifiers=[mock_notifier])
-    processed = await process_alert_queue_once(redis, dispatcher)
+    processed = await process_alert_queue_once(test_redis, dispatcher)
 
     assert processed == 1
     mock_notifier.send.assert_awaited_once()
-    assert await redis.rpop(ALERTS_QUEUE) is None
-    await redis.aclose()
+    assert await test_redis.rpop(ALERTS_QUEUE) is None
 
 
 @pytest.mark.asyncio

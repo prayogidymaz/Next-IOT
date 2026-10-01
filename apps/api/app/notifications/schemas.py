@@ -1,6 +1,6 @@
-from typing import Any, Literal
+from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, JsonValue
 
 
 class NotificationTestRequest(BaseModel):
@@ -16,7 +16,7 @@ class ProviderDispatchResult(BaseModel):
 
 
 class NotificationTestResponse(BaseModel):
-    alert: dict[str, Any]
+    alert: dict[str, JsonValue]
     results: list[ProviderDispatchResult]
 
 

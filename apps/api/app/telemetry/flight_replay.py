@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Any
 
 from fastapi import HTTPException, status
+from pydantic import JsonValue
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,7 +24,7 @@ ALLOWED_HOURS = frozenset({1, 24})
 MAX_SAMPLES = 2000
 
 
-def _metric_float(metrics: dict[str, Any], *keys: str) -> float | None:
+def _metric_float(metrics: dict[str, JsonValue], *keys: str) -> float | None:
     for key in keys:
         if key in metrics and metrics[key] is not None:
             try:

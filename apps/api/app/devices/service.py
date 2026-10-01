@@ -9,11 +9,15 @@ from sqlalchemy.orm import selectinload
 
 from app.auth.dependencies import CurrentUser
 from app.config import settings
+from app.devices.bulk_import import BulkImportRequest
 from app.devices.dependencies import CurrentDevice
 from app.devices.events import emit_device_event
 from app.devices.liveness import clear_liveness, touch_liveness
 from app.devices.provisioning import consume_provisioning_token, store_provisioning_token
 from app.devices.schemas import (
+    BulkImportErrorItem,
+    BulkImportResponse,
+    BulkImportResultItem,
     DeviceCredentialsResponse,
     DeviceMetadataItem,
     DeviceRegisterRequest,
@@ -23,14 +27,15 @@ from app.devices.schemas import (
     HeartbeatRequest,
     HeartbeatResponse,
 )
-from app.devices.state_machine import ADMIN_STATUS_TARGETS, can_send_heartbeat, should_emit_online
 from app.devices.security import (
     generate_client_id,
     generate_client_secret,
     generate_provisioning_token,
     hash_device_secret,
 )
+from app.devices.state_machine import ADMIN_STATUS_TARGETS, can_send_heartbeat, should_emit_online
 from app.models.device import Device, DeviceStatus
+from app.models.device_category import DeviceCategory, infer_device_category
 from app.models.device_credential import DeviceCredential
 from app.models.device_metadata import DeviceMetadata
 
@@ -44,6 +49,7 @@ def _to_device_response(device: Device) -> DeviceResponse:
         tenant_id=device.tenant_id,
         name=device.name,
         device_type=device.device_type,
+        device_category=device.device_category,
         status=device.status,
         last_seen_at=device.last_seen_at,
         metadata=metadata,
@@ -74,10 +80,23 @@ async def register_device(
     user: CurrentUser,
     payload: DeviceRegisterRequest,
 ) -> DeviceRegisterResponse:
+    category = payload.device_category
+    if category is not None:
+        try:
+            resolved_category = DeviceCategory(category.upper())
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid device_category '{category}'",
+            ) from exc
+    else:
+        resolved_category = infer_device_category(payload.device_type)
+
     device = Device(
         tenant_id=user.tenant_id,
         name=payload.name,
         device_type=payload.device_type,
+        device_category=resolved_category.value,
         status=DeviceStatus.PENDING,
     )
     db.add(device)
@@ -96,6 +115,47 @@ async def register_device(
         device=_to_device_response(device),
         provisioning_token=token,
         provisioning_expires_in_hours=settings.device_provisioning_token_expire_hours,
+    )
+
+
+async def bulk_import_devices(
+    db: AsyncSession,
+    redis: aioredis.Redis,
+    user: CurrentUser,
+    payload: BulkImportRequest,
+) -> BulkImportResponse:
+    items: list[BulkImportResultItem] = []
+    errors: list[BulkImportErrorItem] = []
+
+    for index, row in enumerate(payload.devices, start=1):
+        try:
+            register_payload = DeviceRegisterRequest(
+                name=row.name,
+                device_type=row.device_type,
+                device_category=row.device_category,
+                metadata=row.metadata,
+            )
+            result = await register_device(db, redis, user, register_payload)
+            await db.commit()
+            items.append(
+                BulkImportResultItem(
+                    name=row.name,
+                    device_id=result.device.id,
+                    provisioning_token=result.provisioning_token,
+                )
+            )
+        except HTTPException as exc:
+            await db.rollback()
+            detail = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
+            errors.append(BulkImportErrorItem(row=index, name=row.name, detail=detail))
+        except Exception as exc:  # noqa: BLE001 — per-row isolation for bulk import
+            await db.rollback()
+            errors.append(BulkImportErrorItem(row=index, name=row.name, detail=str(exc)))
+    return BulkImportResponse(
+        imported_count=len(items),
+        failed_count=len(errors),
+        items=items,
+        errors=errors,
     )
 
 

@@ -1,4 +1,4 @@
-from app.hardware.parser import parse_json_packet, parse_nmea_gpgga, parse_serial_line, packet_to_metrics
+from app.hardware.parser import packet_to_metrics, parse_json_packet, parse_nmea_gpgga, parse_serial_line
 
 
 def test_parse_json_lora_packet():

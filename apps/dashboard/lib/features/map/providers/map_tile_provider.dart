@@ -17,7 +17,8 @@ class MapTileModeNotifier extends StateNotifier<MapTileMode> {
   }
 
   Future<void> toggle() async {
-    final next = state == MapTileMode.online ? MapTileMode.offline : MapTileMode.online;
+    final next =
+        state == MapTileMode.online ? MapTileMode.offline : MapTileMode.online;
     state = next;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_offlineModeKey, next == MapTileMode.offline);
@@ -30,8 +31,10 @@ class MapTileModeNotifier extends StateNotifier<MapTileMode> {
   }
 }
 
-final mapTileModeProvider = StateNotifierProvider<MapTileModeNotifier, MapTileMode>((ref) {
+final mapTileModeProvider =
+    StateNotifierProvider<MapTileModeNotifier, MapTileMode>((ref) {
   return MapTileModeNotifier();
 });
 
-final tileUrlResolverProvider = Provider<TileUrlResolver>((ref) => TileUrlResolver());
+final tileUrlResolverProvider =
+    Provider<TileUrlResolver>((ref) => TileUrlResolver());

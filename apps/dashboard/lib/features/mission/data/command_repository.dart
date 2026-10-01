@@ -4,7 +4,8 @@ import '../../../core/network/api_client.dart';
 import '../models/mission_models.dart';
 
 class CommandRepository {
-  CommandRepository({ApiClient? apiClient}) : _api = (apiClient ?? ApiClient()).dio;
+  CommandRepository({ApiClient? apiClient})
+      : _api = (apiClient ?? ApiClient()).dio;
 
   final Dio _api;
 

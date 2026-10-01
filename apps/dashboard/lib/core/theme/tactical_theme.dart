@@ -1,29 +1,43 @@
 import 'package:flutter/material.dart';
 
-/// Tactical Control Center palette.
+/// Modern Bento Grid design tokens (Behance-style dark UI).
+abstract final class BentoTokens {
+  static const background = Color(0xFF0F1015);
+  static const backgroundAlt = Color(0xFF16171D);
+  static const surfaceSecondary = Color(0xFF1C1D24);
+  static const accentLime = Color(0xFFD0F500);
+  static const accentLimeAlt = Color(0xFFC8F902);
+  static const accentLavender = Color(0xFFE5D4FF);
+  static const accentSoftBlue = Color(0xFFB4E4FF);
+  static const borderSubtle = Color(0xFF2A2B33);
+  static const radius = 24.0;
+  static const radiusPill = 999.0;
+}
+
+/// Semantic palette — mapped to Bento accents for minimal churn across the app.
 abstract final class TacticalColors {
-  static const background = Color(0xFF0F172A);
-  static const surface = Color(0xFF1E293B);
-  static const surfaceElevated = Color(0xFF243044);
-  static const border = Color(0xFF334155);
-  static const borderNeon = Color(0xFF22D3EE);
-  static const cyan = Color(0xFF06B6D4);
-  static const cyanGlow = Color(0x6622D3EE);
-  static const textPrimary = Color(0xFFF1F5F9);
-  static const textSecondary = Color(0xFF94A3B8);
-  static const critical = Color(0xFFEF4444);
-  static const warning = Color(0xFFF59E0B);
-  static const success = Color(0xFF22C55E);
-  static const info = Color(0xFF3B82F6);
+  static const background = BentoTokens.background;
+  static const surface = BentoTokens.backgroundAlt;
+  static const surfaceElevated = BentoTokens.surfaceSecondary;
+  static const border = BentoTokens.borderSubtle;
+  static const borderNeon = BentoTokens.accentSoftBlue;
+  static const cyan = BentoTokens.accentSoftBlue;
+  static const cyanGlow = Color(0x00000000);
+  static const textPrimary = Color(0xFFF4F4F6);
+  static const textSecondary = Color(0xFF9CA3AF);
+  static const critical = Color(0xFFF87171);
+  static const warning = Color(0xFFFBBF24);
+  static const success = BentoTokens.accentLime;
+  static const info = BentoTokens.accentLavender;
 }
 
 ThemeData buildTacticalTheme() {
   const scheme = ColorScheme.dark(
     surface: TacticalColors.surface,
-    primary: TacticalColors.cyan,
-    onPrimary: TacticalColors.background,
-    secondary: TacticalColors.borderNeon,
-    onSecondary: TacticalColors.background,
+    primary: TacticalColors.success,
+    onPrimary: Color(0xFF0F1015),
+    secondary: BentoTokens.accentLavender,
+    onSecondary: Color(0xFF0F1015),
     error: TacticalColors.critical,
     onSurface: TacticalColors.textPrimary,
     outline: TacticalColors.border,
@@ -38,12 +52,12 @@ ThemeData buildTacticalTheme() {
     textTheme: const TextTheme(
       headlineSmall: TextStyle(
         fontWeight: FontWeight.w700,
-        letterSpacing: 0.5,
+        letterSpacing: -0.2,
         color: TacticalColors.textPrimary,
       ),
       titleLarge: TextStyle(
         fontWeight: FontWeight.w700,
-        letterSpacing: 0.3,
+        letterSpacing: -0.3,
         color: TacticalColors.textPrimary,
       ),
       titleMedium: TextStyle(
@@ -56,10 +70,14 @@ ThemeData buildTacticalTheme() {
       ),
       bodyMedium: TextStyle(color: TacticalColors.textSecondary),
       bodySmall: TextStyle(color: TacticalColors.textSecondary, fontSize: 12),
-      labelLarge: TextStyle(fontWeight: FontWeight.w600, letterSpacing: 0.8),
+      labelLarge: TextStyle(
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.4,
+        color: TacticalColors.textSecondary,
+      ),
     ),
     appBarTheme: const AppBarTheme(
-      backgroundColor: TacticalColors.surface,
+      backgroundColor: TacticalColors.background,
       foregroundColor: TacticalColors.textPrimary,
       elevation: 0,
       centerTitle: false,
@@ -67,51 +85,61 @@ ThemeData buildTacticalTheme() {
     cardTheme: CardTheme(
       color: TacticalColors.surfaceElevated,
       elevation: 0,
+      margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: TacticalColors.border),
+        borderRadius: BorderRadius.circular(BentoTokens.radius),
+        side: BorderSide(color: TacticalColors.border.withOpacity(0.85)),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: TacticalColors.background,
+      fillColor: TacticalColors.surface,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: TacticalColors.border),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: TacticalColors.border),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: TacticalColors.borderNeon, width: 1.5),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: BentoTokens.accentSoftBlue, width: 1.5),
       ),
       labelStyle: const TextStyle(color: TacticalColors.textSecondary),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: TacticalColors.cyan,
-        foregroundColor: TacticalColors.background,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        backgroundColor: TacticalColors.success,
+        foregroundColor: const Color(0xFF0F1015),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(BentoTokens.radiusPill),
+        ),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: TacticalColors.borderNeon,
-        side: const BorderSide(color: TacticalColors.borderNeon),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        foregroundColor: TacticalColors.textPrimary,
+        side: const BorderSide(color: TacticalColors.border),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(BentoTokens.radiusPill),
+        ),
       ),
     ),
-    dividerTheme: const DividerThemeData(color: TacticalColors.border, thickness: 1),
-    navigationRailTheme: const NavigationRailThemeData(
+    dividerTheme:
+        const DividerThemeData(color: TacticalColors.border, thickness: 1),
+    navigationRailTheme: NavigationRailThemeData(
       backgroundColor: TacticalColors.surface,
-      selectedIconTheme: IconThemeData(color: TacticalColors.borderNeon),
-      unselectedIconTheme: IconThemeData(color: TacticalColors.textSecondary),
-      selectedLabelTextStyle: TextStyle(color: TacticalColors.borderNeon, fontWeight: FontWeight.w600),
-      unselectedLabelTextStyle: TextStyle(color: TacticalColors.textSecondary),
-      indicatorColor: TacticalColors.cyanGlow,
+      selectedIconTheme: const IconThemeData(color: TacticalColors.success),
+      unselectedIconTheme: const IconThemeData(color: TacticalColors.textSecondary),
+      selectedLabelTextStyle: const TextStyle(
+        color: TacticalColors.success,
+        fontWeight: FontWeight.w600,
+      ),
+      unselectedLabelTextStyle: const TextStyle(color: TacticalColors.textSecondary),
+      indicatorColor: TacticalColors.success.withOpacity(0.12),
     ),
   );
 }

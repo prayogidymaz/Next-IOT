@@ -18,7 +18,8 @@ class AnomalyAlertBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     if (count <= 0) return const SizedBox.shrink();
 
-    final color = hasCritical ? TacticalColors.critical : TacticalColors.warning;
+    final color =
+        hasCritical ? TacticalColors.critical : TacticalColors.warning;
 
     if (compact) {
       return Container(

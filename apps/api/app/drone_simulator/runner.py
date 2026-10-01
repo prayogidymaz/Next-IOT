@@ -7,9 +7,9 @@ import json
 import logging
 import uuid
 from dataclasses import dataclass, field
-from typing import Any
 
 import redis.asyncio as aioredis
+from pydantic import JsonValue
 from sqlalchemy import select
 
 from app.commands.events import DEVICE_COMMANDS_CHANNEL
@@ -21,10 +21,10 @@ from app.drone_simulator.telemetry import ensure_device_online, publish_simulate
 from app.models.device import Device
 from app.seed_telemetry import DEMO_DEVICE_NAME
 from app.telemetry.cache import get_latest_telemetry
-from app.telemetry.weather_generator import weather_metrics_for_telemetry
 from app.telemetry.video_feed.events import publish_video_frame
 from app.telemetry.video_feed.generator import MockVideoFrameGenerator
 from app.telemetry.video_feed.parser import serialize_video_frame
+from app.telemetry.weather_generator import weather_metrics_for_telemetry
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +80,7 @@ class DroneSimulator:
         params = payload.get("params") or {}
         await self._start_flight(device_id, command_type, params)
 
-    async def _start_flight(self, device_id: str, command_type: str, params: dict[str, Any]) -> None:
+    async def _start_flight(self, device_id: str, command_type: str, params: dict[str, JsonValue]) -> None:
         existing = self._tasks.pop(device_id, None)
         if existing and not existing.done():
             existing.cancel()
@@ -92,7 +92,7 @@ class DroneSimulator:
         task = asyncio.create_task(self._execute_flight(device_id, command_type, params))
         self._tasks[device_id] = task
 
-    async def _execute_flight(self, device_id: str, command_type: str, params: dict[str, Any]) -> None:
+    async def _execute_flight(self, device_id: str, command_type: str, params: dict[str, JsonValue]) -> None:
         try:
             async with async_session() as db:
                 device = await self._resolve_device(db, device_id)
@@ -280,7 +280,7 @@ class DroneSimulator:
         await publish_encrypted_lora_mock(self.redis, plaintext)
 
     @staticmethod
-    def _parse_waypoints(params: dict[str, Any]) -> list[tuple[float, float]]:
+    def _parse_waypoints(params: dict[str, JsonValue]) -> list[tuple[float, float]]:
         raw = params.get("waypoints")
         if not isinstance(raw, list):
             return []

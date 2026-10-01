@@ -4,7 +4,8 @@ import '../../../core/network/api_client.dart';
 import '../models/weather_vector_models.dart';
 
 class WeatherVectorRepository {
-  WeatherVectorRepository({ApiClient? apiClient}) : _api = (apiClient ?? ApiClient()).dio;
+  WeatherVectorRepository({ApiClient? apiClient})
+      : _api = (apiClient ?? ApiClient()).dio;
 
   final Dio _api;
 

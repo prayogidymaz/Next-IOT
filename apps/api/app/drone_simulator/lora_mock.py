@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import json
-from typing import Any
 
 import redis.asyncio as aioredis
+from pydantic import JsonValue
 
 from app.config import settings
 from app.hardware.lora_crypto import LoRaCipherMode, encrypt_serial_payload, parse_aes128_key
@@ -21,7 +21,7 @@ def build_lora_json_payload(
     altitude_m: float,
     rssi: float | None = None,
     snr: float | None = None,
-    extra: dict[str, Any] | None = None,
+    extra: dict[str, JsonValue] | None = None,
 ) -> str:
     payload = {
         "node_id": node_id,

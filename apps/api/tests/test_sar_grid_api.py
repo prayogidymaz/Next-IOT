@@ -1,7 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
-from tests.test_commands import PASSWORD, _register_and_create_device
+from tests.test_commands import _register_and_create_device
 
 
 @pytest.mark.asyncio

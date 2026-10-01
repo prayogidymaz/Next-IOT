@@ -63,6 +63,26 @@ class RuleUpdateRequest(BaseModel):
         return value
 
 
+class PipelineValidateRequest(BaseModel):
+    document: dict = Field(default_factory=dict)
+
+
+class PipelineValidateResponse(BaseModel):
+    valid: bool
+    errors: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+
+
+class PipelineImportRequest(BaseModel):
+    document: dict = Field(default_factory=dict)
+
+
+class PipelineExportResponse(BaseModel):
+    schema_version: str
+    exported_at: datetime | None = None
+    pipeline: dict
+
+
 class RuleResponse(BaseModel):
     id: uuid.UUID
     tenant_id: uuid.UUID

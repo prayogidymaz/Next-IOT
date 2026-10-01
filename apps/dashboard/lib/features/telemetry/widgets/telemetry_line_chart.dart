@@ -21,9 +21,8 @@ class TelemetryLineChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sorted = sortHistoryChronologically(history);
-    final points = sorted
-        .where((item) => item.metrics.containsKey(metricKey))
-        .toList();
+    final points =
+        sorted.where((item) => item.metrics.containsKey(metricKey)).toList();
 
     if (points.isEmpty) {
       return const SizedBox(
@@ -47,7 +46,8 @@ class TelemetryLineChart extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('$metricLabel ($unit)', style: Theme.of(context).textTheme.titleSmall),
+            Text('$metricLabel ($unit)',
+                style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 12),
             SizedBox(
               height: 220,
@@ -57,8 +57,10 @@ class TelemetryLineChart extends StatelessWidget {
                   maxY: maxY + yPad,
                   gridData: FlGridData(show: true, drawVerticalLine: false),
                   titlesData: FlTitlesData(
-                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false)),
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
@@ -73,14 +75,19 @@ class TelemetryLineChart extends StatelessWidget {
                       sideTitles: SideTitles(
                         showTitles: true,
                         reservedSize: 28,
-                        interval: (points.length / 4).clamp(1, points.length).toDouble(),
+                        interval: (points.length / 4)
+                            .clamp(1, points.length)
+                            .toDouble(),
                         getTitlesWidget: (value, meta) {
                           final index = value.toInt();
-                          if (index < 0 || index >= points.length) return const SizedBox.shrink();
-                          final time = DateFormat('HH:mm').format(points[index].recordedAt.toLocal());
+                          if (index < 0 || index >= points.length)
+                            return const SizedBox.shrink();
+                          final time = DateFormat('HH:mm')
+                              .format(points[index].recordedAt.toLocal());
                           return Padding(
                             padding: const EdgeInsets.only(top: 6),
-                            child: Text(time, style: const TextStyle(fontSize: 10)),
+                            child: Text(time,
+                                style: const TextStyle(fontSize: 10)),
                           );
                         },
                       ),
@@ -96,7 +103,10 @@ class TelemetryLineChart extends StatelessWidget {
                       dotData: const FlDotData(show: false),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.12),
                       ),
                     ),
                   ],

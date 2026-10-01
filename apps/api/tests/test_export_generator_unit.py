@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 
 from app.models.telemetry_reading import TelemetryReading
 from app.telemetry.analytics import _aggregate_readings, _compute_total_distance_m
-from app.telemetry.export_generator import generate_csv, generate_json_export, generate_kml, render_export
+from app.telemetry.export_generator import generate_csv, generate_kml, render_export
 
 
 def _reading(metrics: dict, *, offset_minutes: int = 0) -> TelemetryReading:

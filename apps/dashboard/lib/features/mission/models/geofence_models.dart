@@ -39,6 +39,7 @@ class GeofenceZone {
     required this.maxAltitude,
     required this.minAltitude,
     required this.actionOnBreach,
+    this.radiusM,
   });
 
   final String id;
@@ -48,6 +49,9 @@ class GeofenceZone {
   final double maxAltitude;
   final double minAltitude;
   final GeofenceAction actionOnBreach;
+  final double? radiusM;
+
+  bool get isCircle => radiusM != null && polygonCoords.isNotEmpty;
 
   factory GeofenceZone.fromJson(Map<String, dynamic> json) {
     final coords = (json['polygon_coords'] as List<dynamic>? ?? [])
@@ -60,7 +64,9 @@ class GeofenceZone {
       polygonCoords: coords,
       maxAltitude: (json['max_altitude'] as num).toDouble(),
       minAltitude: (json['min_altitude'] as num).toDouble(),
-      actionOnBreach: GeofenceAction.fromApi(json['action_on_breach'] as String),
+      actionOnBreach:
+          GeofenceAction.fromApi(json['action_on_breach'] as String),
+      radiusM: (json['radius_m'] as num?)?.toDouble(),
     );
   }
 }
@@ -75,6 +81,7 @@ class GeofenceListData {
     final items = (json['items'] as List<dynamic>? ?? [])
         .map((e) => GeofenceZone.fromJson(e as Map<String, dynamic>))
         .toList();
-    return GeofenceListData(count: json['count'] as int? ?? items.length, zones: items);
+    return GeofenceListData(
+        count: json['count'] as int? ?? items.length, zones: items);
   }
 }

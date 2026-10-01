@@ -35,6 +35,20 @@ class DeviceGpsFix {
   final double longitude;
   final double? altitudeM;
   final double? speed;
+
+  DeviceGpsFix copyWith({
+    double? latitude,
+    double? longitude,
+    double? altitudeM,
+    double? speed,
+  }) {
+    return DeviceGpsFix(
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      altitudeM: altitudeM ?? this.altitudeM,
+      speed: speed ?? this.speed,
+    );
+  }
 }
 
 class DeviceMapMarker {
@@ -48,6 +62,9 @@ class DeviceMapMarker {
     this.speed,
     this.hasActiveAlert = false,
     this.recordedAt,
+    this.doMgL,
+    this.ph,
+    this.rssi,
   });
 
   final Device device;
@@ -59,6 +76,39 @@ class DeviceMapMarker {
   final double? speed;
   final bool hasActiveAlert;
   final DateTime? recordedAt;
+  final double? doMgL;
+  final double? ph;
+  final double? rssi;
+
+  DeviceMapMarker copyWith({
+    Device? device,
+    DeviceGpsFix? fix,
+    double? battery,
+    double? roll,
+    double? pitch,
+    double? yaw,
+    double? speed,
+    bool? hasActiveAlert,
+    DateTime? recordedAt,
+    double? doMgL,
+    double? ph,
+    double? rssi,
+  }) {
+    return DeviceMapMarker(
+      device: device ?? this.device,
+      fix: fix ?? this.fix,
+      battery: battery ?? this.battery,
+      roll: roll ?? this.roll,
+      pitch: pitch ?? this.pitch,
+      yaw: yaw ?? this.yaw,
+      speed: speed ?? this.speed,
+      hasActiveAlert: hasActiveAlert ?? this.hasActiveAlert,
+      recordedAt: recordedAt ?? this.recordedAt,
+      doMgL: doMgL ?? this.doMgL,
+      ph: ph ?? this.ph,
+      rssi: rssi ?? this.rssi,
+    );
+  }
 
   MapMarkerStatus get status => resolveMarkerStatusFromDevice(
         connectionStatus: device.connectionStatus,

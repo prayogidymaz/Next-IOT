@@ -51,7 +51,8 @@ class DeviceCommandResult {
   final String commandType;
   final String status;
 
-  factory DeviceCommandResult.fromJson(Map<String, dynamic> json) => DeviceCommandResult(
+  factory DeviceCommandResult.fromJson(Map<String, dynamic> json) =>
+      DeviceCommandResult(
         id: json['id'] as String,
         commandType: json['command_type'] as String,
         status: json['status'] as String,

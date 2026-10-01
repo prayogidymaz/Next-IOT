@@ -13,7 +13,8 @@ class HardwareGatewayIndicator extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = ref.watch(gatewayStatusProvider);
-    final linkColor = status.isLinkHealthy ? TacticalColors.success : TacticalColors.critical;
+    final linkColor =
+        status.isLinkHealthy ? TacticalColors.success : TacticalColors.critical;
 
     if (compact) {
       return _CompactGatewayBadge(status: status, linkColor: linkColor);
@@ -22,7 +23,8 @@ class HardwareGatewayIndicator extends ConsumerWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _SerialBadge(connected: status.serialConnected, port: status.serialPort),
+        _SerialBadge(
+            connected: status.serialConnected, port: status.serialPort),
         const SizedBox(width: 10),
         _LoRaBadge(status: status, linkColor: linkColor),
         const SizedBox(width: 10),
@@ -50,7 +52,11 @@ class _CompactGatewayBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.usb, size: 12, color: status.serialConnected ? TacticalColors.success : TacticalColors.textSecondary),
+          Icon(Icons.usb,
+              size: 12,
+              color: status.serialConnected
+                  ? TacticalColors.success
+                  : TacticalColors.textSecondary),
           const SizedBox(width: 4),
           Icon(Icons.settings_input_antenna, size: 12, color: linkColor),
         ],
@@ -67,7 +73,8 @@ class _SerialBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = connected ? TacticalColors.success : TacticalColors.textSecondary;
+    final color =
+        connected ? TacticalColors.success : TacticalColors.textSecondary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -82,7 +89,8 @@ class _SerialBadge extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             connected ? 'SERIAL ${port ?? 'OK'}' : 'SERIAL OFF',
-            style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700),
+            style: TextStyle(
+                color: color, fontSize: 10, fontWeight: FontWeight.w700),
           ),
         ],
       ),
@@ -112,7 +120,8 @@ class _LoRaBadge extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             'LoRa ${status.loraLink.toUpperCase()}',
-            style: TextStyle(color: linkColor, fontSize: 10, fontWeight: FontWeight.w700),
+            style: TextStyle(
+                color: linkColor, fontSize: 10, fontWeight: FontWeight.w700),
           ),
         ],
       ),
@@ -129,8 +138,20 @@ class _SignalMeter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rssiValue = rssi ?? -999.0;
-    final bars = rssiValue >= -70 ? 4 : rssiValue >= -80 ? 3 : rssiValue >= -90 ? 2 : rssiValue > -999 ? 1 : 0;
-    final color = bars >= 3 ? TacticalColors.success : bars >= 2 ? TacticalColors.warning : TacticalColors.critical;
+    final bars = rssiValue >= -70
+        ? 4
+        : rssiValue >= -80
+            ? 3
+            : rssiValue >= -90
+                ? 2
+                : rssiValue > -999
+                    ? 1
+                    : 0;
+    final color = bars >= 3
+        ? TacticalColors.success
+        : bars >= 2
+            ? TacticalColors.warning
+            : TacticalColors.critical;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -155,11 +176,16 @@ class _SignalMeter extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             rssi != null ? '${rssi!.round()} dBm' : 'NO SIG',
-            style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700),
+            style: TextStyle(
+                color: color, fontSize: 10, fontWeight: FontWeight.w700),
           ),
           if (snr != null) ...[
             const SizedBox(width: 6),
-            Text('SNR ${snr!.toStringAsFixed(1)}', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10)),
+            Text('SNR ${snr!.toStringAsFixed(1)}',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(fontSize: 10)),
           ],
         ],
       ),

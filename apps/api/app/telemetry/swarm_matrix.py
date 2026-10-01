@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
-
 import redis.asyncio as aioredis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession

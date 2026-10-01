@@ -32,7 +32,10 @@ class TelemetryAnalyticsCard extends StatelessWidget {
     if (analytics == null) {
       return Text(
         'No analytics available for this window.',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: TacticalColors.textSecondary),
+        style: Theme.of(context)
+            .textTheme
+            .bodySmall
+            ?.copyWith(color: TacticalColors.textSecondary),
       );
     }
 
@@ -49,10 +52,11 @@ class TelemetryAnalyticsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.analytics_outlined, size: 16, color: TacticalColors.cyan),
+              const Icon(Icons.analytics_outlined,
+                  size: 16, color: TacticalColors.cyan),
               const SizedBox(width: 6),
               Text(
-                'FLIGHT ANALYTICS (${data.hours}h)',
+                'FLIGHT ANALYTICS (${data.hours ?? 24}h)',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: TacticalColors.cyan,
                       fontWeight: FontWeight.w700,
@@ -73,12 +77,16 @@ class TelemetryAnalyticsCard extends StatelessWidget {
               ),
               _MetricTile(
                 label: 'Kecepatan Maks',
-                value: data.maxSpeedMs != null ? '${data.maxSpeedMs!.toStringAsFixed(1)} m/s' : '—',
+                value: data.maxSpeedMs != null
+                    ? '${data.maxSpeedMs!.toStringAsFixed(1)} m/s'
+                    : '—',
                 icon: Icons.speed,
               ),
               _MetricTile(
                 label: 'Baterai Terendah',
-                value: data.minVoltageV != null ? '${data.minVoltageV!.toStringAsFixed(1)} V' : '—',
+                value: data.minVoltageV != null
+                    ? '${data.minVoltageV!.toStringAsFixed(1)} V'
+                    : '—',
                 icon: Icons.battery_alert,
                 accent: data.minVoltageV != null && data.minVoltageV! < 11.5
                     ? TacticalColors.warning
@@ -88,7 +96,9 @@ class TelemetryAnalyticsCard extends StatelessWidget {
                 label: 'Anomali',
                 value: '${data.anomalyCount}',
                 icon: Icons.warning_amber,
-                accent: data.anomalyCount > 0 ? TacticalColors.warning : TacticalColors.textSecondary,
+                accent: data.anomalyCount > 0
+                    ? TacticalColors.warning
+                    : TacticalColors.textSecondary,
               ),
             ],
           ),

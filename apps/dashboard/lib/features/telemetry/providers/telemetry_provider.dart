@@ -57,14 +57,16 @@ class TelemetryState {
 }
 
 class TelemetryNotifier extends StateNotifier<TelemetryState> {
-  TelemetryNotifier(this._repository, this.deviceId) : super(const TelemetryState());
+  TelemetryNotifier(this._repository, this.deviceId)
+      : super(const TelemetryState());
 
   final TelemetryRepository _repository;
   final String deviceId;
 
   Future<void> load({TelemetryTimeRange? range}) async {
     final activeRange = range ?? state.timeRange;
-    state = state.copyWith(isLoading: true, timeRange: activeRange, clearError: true);
+    state = state.copyWith(
+        isLoading: true, timeRange: activeRange, clearError: true);
 
     try {
       final now = DateTime.now().toUtc();
@@ -83,7 +85,8 @@ class TelemetryNotifier extends StateNotifier<TelemetryState> {
       final latest = results[0] as TelemetryLatest;
       final historyResponse = results[1] as TelemetryHistory;
       final chartMetric = state.selectedChartMetric;
-      final options = historyResponse.items.expand((e) => e.metrics.keys).toSet();
+      final options =
+          historyResponse.items.expand((e) => e.metrics.keys).toSet();
 
       state = TelemetryState(
         latest: latest,
@@ -115,5 +118,6 @@ class TelemetryNotifier extends StateNotifier<TelemetryState> {
 
 final telemetryProvider =
     StateNotifierProvider.family<TelemetryNotifier, TelemetryState, String>(
-  (ref, deviceId) => TelemetryNotifier(ref.watch(telemetryRepositoryProvider), deviceId),
+  (ref, deviceId) =>
+      TelemetryNotifier(ref.watch(telemetryRepositoryProvider), deviceId),
 );

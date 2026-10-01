@@ -34,13 +34,15 @@ class MissionControlOverlay extends ConsumerWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: TacticalColors.borderNeon.withOpacity(0.45)),
+            border:
+                Border.all(color: TacticalColors.borderNeon.withOpacity(0.45)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('MISSION CONTROL', style: Theme.of(context).textTheme.titleSmall),
+              Text('MISSION CONTROL',
+                  style: Theme.of(context).textTheme.titleSmall),
               const SizedBox(height: 10),
               if (devices.isEmpty)
                 const Text('No devices available.')
@@ -54,7 +56,8 @@ class MissionControlOverlay extends ConsumerWidget {
                       .map(
                         (d) => DropdownMenuItem(
                           value: d.id,
-                          child: Text('${d.name} (${d.connectionStatus.label})'),
+                          child:
+                              Text('${d.name} (${d.connectionStatus.label})'),
                         ),
                       )
                       .toList(),
@@ -63,7 +66,8 @@ class MissionControlOverlay extends ConsumerWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Text('Altitude', style: Theme.of(context).textTheme.bodySmall),
+                  Text('Altitude',
+                      style: Theme.of(context).textTheme.bodySmall),
                   const Spacer(),
                   Text(
                     '${mission.altitudeM.round()} m',
@@ -82,7 +86,8 @@ class MissionControlOverlay extends ConsumerWidget {
                 label: '${mission.altitudeM.round()} m',
                 onChanged: notifier.setAltitude,
               ),
-              Text('Waypoints (${mission.waypoints.length})', style: Theme.of(context).textTheme.bodySmall),
+              Text('Waypoints (${mission.waypoints.length})',
+                  style: Theme.of(context).textTheme.bodySmall),
               const SizedBox(height: 6),
               if (mission.waypoints.isEmpty)
                 const Text('Tap map to add P1, P2, P3…')
@@ -97,7 +102,9 @@ class MissionControlOverlay extends ConsumerWidget {
                       return ListTile(
                         dense: true,
                         contentPadding: EdgeInsets.zero,
-                        leading: Text(wp.label, style: const TextStyle(color: TacticalColors.warning)),
+                        leading: Text(wp.label,
+                            style:
+                                const TextStyle(color: TacticalColors.warning)),
                         title: Text(
                           '${wp.latitude.toStringAsFixed(5)}, ${wp.longitude.toStringAsFixed(5)}',
                           style: Theme.of(context).textTheme.bodySmall,
@@ -114,7 +121,8 @@ class MissionControlOverlay extends ConsumerWidget {
                               onPressed: () => notifier.moveWaypointDown(wp.id),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.delete_outline, size: 16, color: TacticalColors.critical),
+                              icon: const Icon(Icons.delete_outline,
+                                  size: 16, color: TacticalColors.critical),
                               onPressed: () => notifier.removeWaypoint(wp.id),
                             ),
                           ],
@@ -125,15 +133,21 @@ class MissionControlOverlay extends ConsumerWidget {
                 ),
               const SizedBox(height: 10),
               FilledButton.icon(
-                onPressed: mission.isDispatching ? null : () => notifier.dispatchMission(),
+                onPressed: mission.isDispatching
+                    ? null
+                    : () => notifier.dispatchMission(),
                 icon: const Icon(Icons.flight_takeoff, size: 18),
                 label: const Text('Dispatch Mission to Drone'),
               ),
               const SizedBox(height: 8),
               OutlinedButton.icon(
-                onPressed: mission.isDispatching ? null : () => notifier.emergencyRtl(),
-                icon: const Icon(Icons.home, size: 18, color: TacticalColors.critical),
-                label: const Text('Emergency RTL', style: TextStyle(color: TacticalColors.critical)),
+                onPressed: mission.isDispatching
+                    ? null
+                    : () => notifier.emergencyRtl(),
+                icon: const Icon(Icons.home,
+                    size: 18, color: TacticalColors.critical),
+                label: const Text('Emergency RTL',
+                    style: TextStyle(color: TacticalColors.critical)),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: TacticalColors.critical),
                 ),

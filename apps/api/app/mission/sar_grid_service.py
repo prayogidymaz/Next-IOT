@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import math
 from enum import StrEnum
-from typing import Any
+
+from pydantic import JsonValue
 
 METERS_PER_DEG_LAT = 111_320.0
 
@@ -25,7 +26,7 @@ class SarGridService:
         radius_m: float,
         pattern: SarGridPattern | str = SarGridPattern.EXPANDING_SQUARE,
         leg_spacing_m: float = 100.0,
-    ) -> dict[str, Any]:
+    ) -> dict[str, JsonValue]:
         if radius_m <= 0:
             raise ValueError("radius_m must be positive")
         if leg_spacing_m <= 0:
@@ -82,9 +83,9 @@ class SarGridService:
         center_lon: float,
         radius_m: float,
         leg_spacing_m: float,
-    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    ) -> tuple[list[dict[str, JsonValue]], list[dict[str, JsonValue]]]:
         lat, lon = center_lat, center_lon
-        waypoints: list[dict[str, Any]] = [
+        waypoints: list[dict[str, JsonValue]] = [
             {"sequence": 1, "lat": round(lat, 7), "lon": round(lon, 7), "label": "LKP"},
         ]
         track_points: list[dict[str, float]] = [{"lat": round(lat, 7), "lon": round(lon, 7)}]
@@ -127,11 +128,11 @@ class SarGridService:
         center_lon: float,
         radius_m: float,
         track_spacing_m: float,
-    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-        waypoints: list[dict[str, Any]] = [
+    ) -> tuple[list[dict[str, JsonValue]], list[dict[str, JsonValue]]]:
+        waypoints: list[dict[str, JsonValue]] = [
             {"sequence": 1, "lat": round(center_lat, 7), "lon": round(center_lon, 7), "label": "LKP"},
         ]
-        tracks: list[dict[str, Any]] = []
+        tracks: list[dict[str, JsonValue]] = []
         seq = 2
         track_index = 0
         north = -radius_m

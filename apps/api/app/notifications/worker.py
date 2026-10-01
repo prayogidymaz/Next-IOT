@@ -60,11 +60,11 @@ async def notification_dispatcher_loop(
             if processed == 0:
                 try:
                     await asyncio.wait_for(stop_event.wait(), timeout=poll)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     continue
         except Exception:
             logger.exception("Notification dispatcher iteration failed")
             try:
                 await asyncio.wait_for(stop_event.wait(), timeout=poll)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue

@@ -1,9 +1,9 @@
 import uuid
 from datetime import UTC, datetime
-from typing import Any
 
 import redis.asyncio as aioredis
 from fastapi import HTTPException, status
+from pydantic import JsonValue
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,7 +14,7 @@ from app.models.device import Device
 from app.models.device_command import CommandStatus, CommandType, DeviceCommand
 
 
-def _validate_params(command_type: str, params: dict[str, Any]) -> None:
+def _validate_params(command_type: str, params: dict[str, JsonValue]) -> None:
     if command_type == CommandType.GO_TO_WAYPOINT:
         lat = params.get("lat") if "lat" in params else params.get("latitude")
         lon = params.get("lon") if "lon" in params else params.get("longitude")
@@ -51,6 +51,20 @@ def _validate_params(command_type: str, params: dict[str, Any]) -> None:
         CommandType.RETURN_TO_HOME,
         CommandType.EMERGENCY_LAND,
     }:
+        return
+
+    if command_type in {CommandType.RELAY_ON, CommandType.RELAY_OFF, CommandType.SET_ACTUATOR}:
+        channel = params.get("channel") or params.get("relay") or params.get("pin")
+        if channel is None and command_type != CommandType.SET_ACTUATOR:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"{command_type} requires params.channel (or relay/pin)",
+            )
+        if command_type == CommandType.SET_ACTUATOR and params.get("value") is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="SET_ACTUATOR requires params.value",
+            )
         return
 
     raise HTTPException(status_code=422, detail=f"Unsupported command_type: {command_type}")

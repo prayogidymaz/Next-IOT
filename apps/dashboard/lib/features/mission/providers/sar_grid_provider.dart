@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/sar_grid_repository.dart';
 import '../models/sar_grid_models.dart';
 
-final sarGridRepositoryProvider = Provider<SarGridRepository>((ref) => SarGridRepository());
+final sarGridRepositoryProvider =
+    Provider<SarGridRepository>((ref) => SarGridRepository());
 
 class SarGridState {
   const SarGridState({
@@ -93,6 +94,7 @@ class SarGridNotifier extends StateNotifier<SarGridState> {
   }
 }
 
-final sarGridProvider = StateNotifierProvider<SarGridNotifier, SarGridState>((ref) {
+final sarGridProvider =
+    StateNotifierProvider<SarGridNotifier, SarGridState>((ref) {
   return SarGridNotifier(ref.watch(sarGridRepositoryProvider));
 });

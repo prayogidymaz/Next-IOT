@@ -12,7 +12,9 @@ class AiDetectionBox {
   factory AiDetectionBox.fromJson(Map<String, dynamic> json) => AiDetectionBox(
         targetType: json['target_type'] as String,
         confidence: (json['confidence'] as num).toDouble(),
-        bbox: (json['bbox'] as List<dynamic>).map((e) => (e as num).toDouble()).toList(),
+        bbox: (json['bbox'] as List<dynamic>)
+            .map((e) => (e as num).toDouble())
+            .toList(),
       );
 }
 
@@ -31,7 +33,8 @@ class VideoStreamInfo {
   final double fps;
   final String resolution;
 
-  factory VideoStreamInfo.fromJson(Map<String, dynamic> json) => VideoStreamInfo(
+  factory VideoStreamInfo.fromJson(Map<String, dynamic> json) =>
+      VideoStreamInfo(
         deviceId: json['device_id'] as String,
         codec: json['codec'] as String,
         streamProtocol: json['stream_protocol'] as String,

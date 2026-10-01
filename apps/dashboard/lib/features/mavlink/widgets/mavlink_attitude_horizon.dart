@@ -28,7 +28,8 @@ class MavlinkAttitudeHorizon extends StatelessWidget {
             children: [
               Text(
                 '${attitude.pitch.toStringAsFixed(0)}°',
-                style: const TextStyle(fontSize: 9, color: TacticalColors.textSecondary),
+                style: const TextStyle(
+                    fontSize: 9, color: TacticalColors.textSecondary),
               ),
               Text(
                 'R ${attitude.roll.toStringAsFixed(0)}°',
@@ -57,7 +58,8 @@ class _HorizonPainter extends CustomPainter {
     final radius = size.width / 2 - 4;
 
     canvas.save();
-    canvas.clipPath(Path()..addOval(Rect.fromCircle(center: center, radius: radius)));
+    canvas.clipPath(
+        Path()..addOval(Rect.fromCircle(center: center, radius: radius)));
 
     canvas.translate(center.dx, center.dy);
     canvas.rotate(-attitude.roll * math.pi / 180);
@@ -65,8 +67,11 @@ class _HorizonPainter extends CustomPainter {
 
     final skyPaint = Paint()..color = const Color(0xFF123047);
     final groundPaint = Paint()..color = const Color(0xFF2A2418);
-    canvas.drawRect(Rect.fromLTWH(-radius * 2, -radius * 2, radius * 4, radius * 2), skyPaint);
-    canvas.drawRect(Rect.fromLTWH(-radius * 2, 0, radius * 4, radius * 2), groundPaint);
+    canvas.drawRect(
+        Rect.fromLTWH(-radius * 2, -radius * 2, radius * 4, radius * 2),
+        skyPaint);
+    canvas.drawRect(
+        Rect.fromLTWH(-radius * 2, 0, radius * 4, radius * 2), groundPaint);
 
     final horizonPaint = Paint()
       ..color = TacticalColors.warning
@@ -97,7 +102,9 @@ class _HorizonPainter extends CustomPainter {
     );
 
     final yawRad = attitude.yaw * math.pi / 180;
-    final yawTip = center + Offset(math.sin(yawRad) * (radius - 8), -math.cos(yawRad) * (radius - 8));
+    final yawTip = center +
+        Offset(
+            math.sin(yawRad) * (radius - 8), -math.cos(yawRad) * (radius - 8));
     final yawPaint = Paint()
       ..color = TacticalColors.success
       ..strokeWidth = 2;

@@ -9,7 +9,6 @@ from sqlalchemy.orm import selectinload
 
 from app.deps import get_db
 from app.devices.security import verify_device_secret
-from app.models.device import Device
 from app.models.device_credential import DeviceCredential
 
 device_basic = HTTPBasic(auto_error=False)

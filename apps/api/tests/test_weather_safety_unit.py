@@ -1,5 +1,4 @@
 import pytest
-
 from app.telemetry.weather_safety import FlightSafetyStatus, evaluate_flight_safety
 
 

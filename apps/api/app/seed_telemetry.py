@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.database import async_session
 from app.models.device import Device, DeviceStatus
+from app.models.device_category import infer_device_category
 from app.models.telemetry_reading import TelemetryReading
 from app.models.tenant import Tenant
 from app.telemetry.cache import cache_latest_telemetry
@@ -31,10 +32,12 @@ async def ensure_demo_telemetry(db: AsyncSession, redis: aioredis.Redis) -> bool
         select(Device).where(Device.tenant_id == tenant.id, Device.name == DEMO_DEVICE_NAME)
     )
     if device is None:
+        device_type = "sensor"
         device = Device(
             tenant_id=tenant.id,
             name=DEMO_DEVICE_NAME,
-            device_type="sensor",
+            device_type=device_type,
+            device_category=infer_device_category(device_type).value,
             status=DeviceStatus.ONLINE,
             last_seen_at=datetime.now(UTC),
         )

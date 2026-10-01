@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Sequence
+
+from pydantic import JsonValue
 
 
 @dataclass(frozen=True)
@@ -23,7 +25,7 @@ class GeofenceBreach:
     breach_type: str
     action_on_breach: str
     message: str
-    metadata: dict[str, Any]
+    metadata: dict[str, JsonValue]
 
 
 class GeofenceChecker:

@@ -62,7 +62,10 @@ class DeviceAlert {
   bool get isActive => status == 'active';
 
   String get summary {
-    if (metric != null && actualValue != null && threshold != null && operator != null) {
+    if (metric != null &&
+        actualValue != null &&
+        threshold != null &&
+        operator != null) {
       return '$metric $operator $threshold (actual: $actualValue)';
     }
     return event;
@@ -78,11 +81,17 @@ class DeviceAlert {
         ruleId: json['rule_id'] as String?,
         metric: json['metric'] as String?,
         operator: json['operator'] as String?,
-        threshold: json['threshold'] != null ? (json['threshold'] as num).toDouble() : null,
-        actualValue: json['actual_value'] != null ? (json['actual_value'] as num).toDouble() : null,
+        threshold: json['threshold'] != null
+            ? (json['threshold'] as num).toDouble()
+            : null,
+        actualValue: json['actual_value'] != null
+            ? (json['actual_value'] as num).toDouble()
+            : null,
         actionType: json['action_type'] as String?,
         notificationChannel: json['notification_channel'] as String?,
-        timestamp: json['timestamp'] != null ? DateTime.parse(json['timestamp'] as String) : null,
+        timestamp: json['timestamp'] != null
+            ? DateTime.parse(json['timestamp'] as String)
+            : null,
       );
 }
 

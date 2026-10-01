@@ -46,15 +46,18 @@ class TelemetryAnomalyState {
 }
 
 class TelemetryAnomalyNotifier extends StateNotifier<TelemetryAnomalyState> {
-  TelemetryAnomalyNotifier(this._repository) : super(const TelemetryAnomalyState());
+  TelemetryAnomalyNotifier(this._repository)
+      : super(const TelemetryAnomalyState());
 
   final TelemetryAnomalyRepository _repository;
   Timer? _refreshTimer;
 
   Future<void> loadForDevice(String deviceId) async {
-    state = state.copyWith(deviceId: deviceId, isLoading: true, clearError: true);
+    state =
+        state.copyWith(deviceId: deviceId, isLoading: true, clearError: true);
     try {
-      final data = await _repository.fetchAnomalies(deviceId: deviceId, hours: state.hours);
+      final data = await _repository.fetchAnomalies(
+          deviceId: deviceId, hours: state.hours);
       state = state.copyWith(
         deviceId: deviceId,
         items: data.items,
@@ -91,6 +94,8 @@ class TelemetryAnomalyNotifier extends StateNotifier<TelemetryAnomalyState> {
 }
 
 final telemetryAnomalyProvider =
-    StateNotifierProvider<TelemetryAnomalyNotifier, TelemetryAnomalyState>((ref) {
-  return TelemetryAnomalyNotifier(ref.watch(telemetryAnomalyRepositoryProvider));
+    StateNotifierProvider<TelemetryAnomalyNotifier, TelemetryAnomalyState>(
+        (ref) {
+  return TelemetryAnomalyNotifier(
+      ref.watch(telemetryAnomalyRepositoryProvider));
 });

@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/alert_repository.dart';
 import '../models/alert_models.dart';
 
-final alertRepositoryProvider = Provider<AlertRepository>((ref) => AlertRepository());
+final alertRepositoryProvider =
+    Provider<AlertRepository>((ref) => AlertRepository());
 
 class AlertListState {
   const AlertListState({
@@ -23,7 +24,8 @@ class AlertListState {
   final String? error;
   final bool showActiveOnly;
 
-  List<DeviceAlert> get displayedAlerts => showActiveOnly ? activeAlerts : historyAlerts;
+  List<DeviceAlert> get displayedAlerts =>
+      showActiveOnly ? activeAlerts : historyAlerts;
 
   AlertListState copyWith({
     List<DeviceAlert>? activeAlerts,
@@ -54,7 +56,8 @@ class AlertNotifier extends StateNotifier<AlertListState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final summary = await _repository.fetchSummary();
-      final history = await _repository.fetchAlerts(status: 'history', limit: 50);
+      final history =
+          await _repository.fetchAlerts(status: 'history', limit: 50);
       state = AlertListState(
         activeAlerts: summary.items,
         activeCount: summary.activeCount,
@@ -89,6 +92,7 @@ class AlertNotifier extends StateNotifier<AlertListState> {
   }
 }
 
-final alertProvider = StateNotifierProvider<AlertNotifier, AlertListState>((ref) {
+final alertProvider =
+    StateNotifierProvider<AlertNotifier, AlertListState>((ref) {
   return AlertNotifier(ref.watch(alertRepositoryProvider));
 });

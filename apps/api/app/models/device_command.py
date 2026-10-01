@@ -17,6 +17,9 @@ class CommandType(StrEnum):
     LAND = "LAND"
     RETURN_TO_HOME = "RETURN_TO_HOME"
     EMERGENCY_LAND = "EMERGENCY_LAND"
+    RELAY_ON = "RELAY_ON"
+    RELAY_OFF = "RELAY_OFF"
+    SET_ACTUATOR = "SET_ACTUATOR"
 
 
 class CommandStatus(StrEnum):

@@ -2,7 +2,6 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from app.mission.sar_emergency_service import SarEmergencyResponseService
 from app.mission.schemas import SarIncidentCreateRequest, SarIncidentTypeEnum
 

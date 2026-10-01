@@ -2,9 +2,9 @@ import hashlib
 import hmac
 import json
 import logging
-from typing import Any
 
 import httpx
+from pydantic import JsonValue
 
 from app.config import settings
 from app.notifications.formatter import build_webhook_payload
@@ -42,7 +42,7 @@ class WebhookNotifier:
     def enabled(self) -> bool:
         return settings.webhook_enabled and bool(self._url)
 
-    async def send(self, alert: dict[str, Any]) -> NotificationResult:
+    async def send(self, alert: dict[str, JsonValue]) -> NotificationResult:
         if not self.enabled:
             return NotificationResult(
                 provider=self.name,

@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/alerts/providers/alert_provider.dart';
 import '../theme/tactical_theme.dart';
 import 'glowing_led_badge.dart';
+import '../../features/system/widgets/system_health_indicator.dart';
 import 'hardware_gateway_indicator.dart';
+import 'tenant_switcher.dart';
 
 class TacticalStatusBar extends ConsumerStatefulWidget {
   const TacticalStatusBar({super.key});
@@ -49,7 +51,8 @@ class _TacticalStatusBarState extends ConsumerState<TacticalStatusBar> {
 
     return Container(
       constraints: BoxConstraints(minHeight: compact ? 56 : 48),
-      padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 20, vertical: compact ? 6 : 0),
+      padding: EdgeInsets.symmetric(
+          horizontal: compact ? 12 : 20, vertical: compact ? 6 : 0),
       decoration: const BoxDecoration(
         color: TacticalColors.surface,
         border: Border(bottom: BorderSide(color: TacticalColors.border)),
@@ -60,7 +63,9 @@ class _TacticalStatusBarState extends ConsumerState<TacticalStatusBar> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.shield_outlined, size: 16, color: TacticalColors.borderNeon.withOpacity(0.9)),
+                    Icon(Icons.shield_outlined,
+                        size: 16,
+                        color: TacticalColors.borderNeon.withOpacity(0.9)),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -71,13 +76,17 @@ class _TacticalStatusBarState extends ConsumerState<TacticalStatusBar> {
                             ),
                       ),
                     ),
-                    _StatusItem(icon: Icons.schedule, label: _formatUtc(_utcNow)),
+                    _StatusItem(
+                        icon: Icons.schedule, label: _formatUtc(_utcNow)),
                   ],
                 ),
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Expanded(child: HardwareGatewayIndicator(compact: true)),
+                    const Expanded(
+                        child: HardwareGatewayIndicator(compact: true)),
+                    const SizedBox(width: 8),
+                    const SystemHealthIndicator(compact: true),
                     const SizedBox(width: 8),
                     _AlertCountBadge(count: activeCount),
                   ],
@@ -86,7 +95,9 @@ class _TacticalStatusBarState extends ConsumerState<TacticalStatusBar> {
             )
           : Row(
               children: [
-                Icon(Icons.shield_outlined, size: 18, color: TacticalColors.borderNeon.withOpacity(0.9)),
+                Icon(Icons.shield_outlined,
+                    size: 18,
+                    color: TacticalColors.borderNeon.withOpacity(0.9)),
                 const SizedBox(width: 8),
                 Text(
                   'TACTICAL CONTROL CENTER',
@@ -96,17 +107,15 @@ class _TacticalStatusBarState extends ConsumerState<TacticalStatusBar> {
                       ),
                 ),
                 const Spacer(),
+                TenantSwitcher(compact: compact),
+                SizedBox(width: compact ? 8 : 16),
                 const HardwareGatewayIndicator(),
                 const SizedBox(width: 16),
                 _StatusItem(icon: Icons.schedule, label: _formatUtc(_utcNow)),
                 const SizedBox(width: 20),
                 _AlertCountBadge(count: activeCount),
                 const SizedBox(width: 20),
-                const GlowingLedBadge(
-                  label: 'SYSTEM OK',
-                  color: TacticalColors.success,
-                  pulse: true,
-                ),
+                const SystemHealthIndicator(),
               ],
             ),
     );
@@ -139,12 +148,15 @@ class _AlertCountBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = count > 0 ? TacticalColors.critical : TacticalColors.textSecondary;
+    final color =
+        count > 0 ? TacticalColors.critical : TacticalColors.textSecondary;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: count > 0 ? TacticalColors.critical.withOpacity(0.15) : TacticalColors.background,
+        color: count > 0
+            ? TacticalColors.critical.withOpacity(0.15)
+            : TacticalColors.background,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color.withOpacity(0.5)),
       ),

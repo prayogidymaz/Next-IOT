@@ -11,7 +11,8 @@ class ProviderDispatchResult {
   final int attempts;
   final String? error;
 
-  factory ProviderDispatchResult.fromJson(Map<String, dynamic> json) => ProviderDispatchResult(
+  factory ProviderDispatchResult.fromJson(Map<String, dynamic> json) =>
+      ProviderDispatchResult(
         provider: json['provider'] as String,
         success: json['success'] as bool,
         attempts: json['attempts'] as int,
@@ -24,17 +25,25 @@ class NotificationTestResponse {
 
   final List<ProviderDispatchResult> results;
 
-  bool get telegramSuccess =>
-      results.any((r) => r.provider == 'telegram' && r.success);
+  bool isSuccessFor(String provider) =>
+      results.any((r) => r.provider == provider && r.success);
 
-  String? get telegramError =>
-      results.where((r) => r.provider == 'telegram').map((r) => r.error).whereType<String>().firstOrNull;
+  String? errorFor(String provider) => results
+      .where((r) => r.provider == provider)
+      .map((r) => r.error)
+      .whereType<String>()
+      .firstOrNull;
+
+  bool get telegramSuccess => isSuccessFor('telegram');
+
+  String? get telegramError => errorFor('telegram');
 
   factory NotificationTestResponse.fromJson(Map<String, dynamic> json) {
     final raw = json['results'] as List<dynamic>? ?? [];
     return NotificationTestResponse(
       results: raw
-          .map((e) => ProviderDispatchResult.fromJson(e as Map<String, dynamic>))
+          .map(
+              (e) => ProviderDispatchResult.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
   }

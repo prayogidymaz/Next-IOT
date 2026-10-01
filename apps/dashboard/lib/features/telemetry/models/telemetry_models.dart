@@ -1,13 +1,24 @@
 enum TelemetryTimeRange {
-  oneHour('1H', Duration(hours: 1), 60),
-  twentyFourHours('24H', Duration(hours: 24), 200),
-  sevenDays('7D', Duration(days: 7), 1000);
+  oneHour('1H', Duration(hours: 1), 60, '1m'),
+  twentyFourHours('24H', Duration(hours: 24), 200, '5m'),
+  sevenDays('7D', Duration(days: 7), 1000, '1h'),
+  thirtyDays('30D', Duration(days: 30), 5000, '1d'),
+  custom('Custom', Duration(days: 7), 5000, '5m');
 
-  const TelemetryTimeRange(this.label, this.duration, this.limit);
+  const TelemetryTimeRange(this.label, this.duration, this.limit, this.defaultInterval);
 
   final String label;
   final Duration duration;
   final int limit;
+  final String defaultInterval;
+
+  (DateTime start, DateTime end) window({DateTime? customStart, DateTime? customEnd}) {
+    final end = customEnd ?? DateTime.now().toUtc();
+    if (this == TelemetryTimeRange.custom && customStart != null) {
+      return (customStart.toUtc(), end);
+    }
+    return (end.subtract(duration), end);
+  }
 }
 
 class TelemetryLatest {
@@ -186,7 +197,9 @@ class MetricDefinition {
   static String _titleCase(String key) {
     return key
         .split('_')
-        .map((part) => part.isEmpty ? part : '${part[0].toUpperCase()}${part.substring(1)}')
+        .map((part) => part.isEmpty
+            ? part
+            : '${part[0].toUpperCase()}${part.substring(1)}')
         .join(' ');
   }
 }
@@ -207,13 +220,15 @@ List<MetricDefinition> resolveGaugeMetrics(Map<String, double> metrics) {
   return defs;
 }
 
-List<TelemetryHistoryItem> sortHistoryChronologically(List<TelemetryHistoryItem> items) {
+List<TelemetryHistoryItem> sortHistoryChronologically(
+    List<TelemetryHistoryItem> items) {
   final sorted = List<TelemetryHistoryItem>.from(items);
   sorted.sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
   return sorted;
 }
 
-List<double> seriesForMetric(List<TelemetryHistoryItem> items, String metricKey) {
+List<double> seriesForMetric(
+    List<TelemetryHistoryItem> items, String metricKey) {
   return items
       .where((item) => item.metrics.containsKey(metricKey))
       .map((item) => item.metrics[metricKey]!)

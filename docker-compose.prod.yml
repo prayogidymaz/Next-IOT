@@ -1,0 +1,132 @@
+networks:
+  next-iot-prod:
+    driver: bridge
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: next-iot-prod-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-next_iot}
+      POSTGRES_USER: ${POSTGRES_USER:-next_iot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./infra/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-next_iot} -d ${POSTGRES_DB:-next_iot}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - next-iot-prod
+
+  cache:
+    image: redis:7-alpine
+    container_name: next-iot-prod-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD required}
+    volumes:
+      - redis_prod_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - next-iot-prod
+
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: next-iot-prod-mqtt
+    restart: unless-stopped
+    volumes:
+      - ./infra/mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./infra/mqtt/passwords:/mosquitto/config/passwords:ro
+      - mqtt_prod_data:/mosquitto/data
+    networks:
+      - next-iot-prod
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.prod
+    container_name: next-iot-prod-api
+    restart: unless-stopped
+    env_file:
+      - path: .env.production
+        required: false
+    environment:
+      APP_ENV: production
+      API_DEBUG: "false"
+      POSTGRES_HOST: db
+      REDIS_HOST: cache
+      MQTT_BROKER_HOST: mqtt
+      MQTT_BROKER_PORT: 1883
+      SEED_DEMO_TELEMETRY: ${SEED_DEMO_TELEMETRY:-false}
+      SEED_DEFAULT_ADMIN: ${SEED_DEFAULT_ADMIN:-false}
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+    command: >
+      sh -c "alembic upgrade head &&
+      gunicorn app.main:app -k uvicorn.workers.UvicornWorker -w $${API_WORKERS:-4} -b 0.0.0.0:8000 --timeout 120 --access-logfile -"
+    networks:
+      - next-iot-prod
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile.prod
+    container_name: next-iot-prod-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+    depends_on:
+      api:
+        condition: service_started
+    networks:
+      - next-iot-prod
+
+  dashboard:
+    build:
+      context: ./apps/dashboard
+      dockerfile: Dockerfile.prod
+      args:
+        API_BASE_URL: ${PUBLIC_API_URL:-https://localhost/api}
+    container_name: next-iot-prod-dashboard
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started
+    networks:
+      - next-iot-prod
+
+  proxy:
+    image: nginx:1.27-alpine
+    container_name: next-iot-prod-proxy
+    restart: unless-stopped
+    ports:
+      - "${PROXY_HTTP_PORT:-80}:80"
+      - "${PROXY_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/snippets:/etc/nginx/snippets:ro
+      - ./infra/certs:/etc/nginx/certs:ro
+    depends_on:
+      - api
+      - web
+      - dashboard
+      - mqtt
+    networks:
+      - next-iot-prod
+
+volumes:
+  postgres_prod_data:
+  redis_prod_data:
+  mqtt_prod_data:

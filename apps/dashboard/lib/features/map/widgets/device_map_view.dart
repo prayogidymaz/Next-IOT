@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../core/theme/tactical_theme.dart';
+import '../../dashboard/widgets/indoor_location_bento_card.dart';
 import '../../devices/models/device_models.dart';
 import '../../telemetry/models/telemetry_models.dart';
 import '../models/device_map_models.dart';
@@ -52,14 +53,9 @@ class _DeviceMapViewState extends State<DeviceMapView> {
     final marker = _marker;
 
     if (marker == null) {
-      return SizedBox(
+      return IndoorLocationBentoCard(
+        device: widget.device,
         height: widget.height,
-        child: Center(
-          child: Text(
-            'No GPS fix available for this device.',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ),
       );
     }
 
@@ -68,7 +64,7 @@ class _DeviceMapViewState extends State<DeviceMapView> {
     return SizedBox(
       height: widget.height,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(BentoTokens.radius),
         child: Stack(
           children: [
             if (isFlutterTestEnvironment)

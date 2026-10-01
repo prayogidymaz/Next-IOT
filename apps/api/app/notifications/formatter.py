@@ -1,8 +1,9 @@
 from html import escape
-from typing import Any
+
+from pydantic import JsonValue
 
 
-def format_telegram_html(alert: dict[str, Any]) -> str:
+def format_telegram_html(alert: dict[str, JsonValue]) -> str:
     """Format alert payload as Telegram HTML message."""
     event = escape(str(alert.get("event", "alert")))
     metric = escape(str(alert.get("metric", "—")))
@@ -11,7 +12,7 @@ def format_telegram_html(alert: dict[str, Any]) -> str:
     timestamp = escape(str(alert.get("timestamp", "—")))
 
     lines = [
-        f"<b>Next-IOT Alert</b>",
+        "<b>Next-IOT Alert</b>",
         f"<b>Event:</b> {event}",
         f"<b>Device:</b> <code>{device_id}</code>",
         f"<b>Tenant:</b> <code>{tenant_id}</code>",
@@ -33,7 +34,7 @@ def format_telegram_html(alert: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def build_webhook_payload(alert: dict[str, Any]) -> dict[str, Any]:
+def build_webhook_payload(alert: dict[str, JsonValue]) -> dict[str, JsonValue]:
     """Standard JSON payload for webhook receivers."""
     return {
         "source": "next-iot",

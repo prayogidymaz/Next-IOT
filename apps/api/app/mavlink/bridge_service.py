@@ -2,17 +2,16 @@
 
 from __future__ import annotations
 
-import base64
 import math
 from dataclasses import dataclass, field
-from typing import Any
 
+from pydantic import JsonValue
 from pymavlink.dialects.v20 import common as mavlink
 
 from app.mavlink.constants import (
     MAVLINK_PROTOCOL_VERSION,
-    MavlinkCommandType,
     SUPPORTED_INBOUND_TYPES,
+    MavlinkCommandType,
 )
 from app.mavlink.schemas import MavlinkTelemetrySnapshot
 
@@ -89,7 +88,7 @@ class MavlinkBridgeService:
         *,
         target_system: int = 1,
         target_component: int = 1,
-        params: dict[str, Any] | None = None,
+        params: dict[str, JsonValue] | None = None,
     ) -> bytes:
         params = params or {}
         command_value = MavlinkCommandType(str(command).upper())

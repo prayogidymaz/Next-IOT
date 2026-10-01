@@ -11,7 +11,8 @@ class FlightReplayAnomalyBrief {
   final String anomalyType;
   final String message;
 
-  factory FlightReplayAnomalyBrief.fromJson(Map<String, dynamic> json) => FlightReplayAnomalyBrief(
+  factory FlightReplayAnomalyBrief.fromJson(Map<String, dynamic> json) =>
+      FlightReplayAnomalyBrief(
         id: json['id'] as String,
         severity: json['severity'] as String,
         anomalyType: json['anomaly_type'] as String,
@@ -51,7 +52,8 @@ class FlightReplaySample {
       heading: (json['heading'] as num?)?.toDouble(),
       rssi: (json['rssi'] as num?)?.toDouble(),
       anomalies: rawAnomalies
-          .map((e) => FlightReplayAnomalyBrief.fromJson(e as Map<String, dynamic>))
+          .map((e) =>
+              FlightReplayAnomalyBrief.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
   }

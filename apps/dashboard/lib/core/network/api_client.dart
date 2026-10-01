@@ -14,6 +14,10 @@ class ApiClient {
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
+          final tenantId = await _tokenStorage.getActiveTenantId();
+          if (tenantId != null && tenantId.isNotEmpty) {
+            options.headers['X-Tenant-Id'] = tenantId;
+          }
           handler.next(options);
         },
         onError: (error, handler) async {
@@ -48,7 +52,10 @@ class ApiClient {
         baseUrl: ApiConfig.baseUrl,
         connectTimeout: ApiConfig.connectTimeout,
         receiveTimeout: ApiConfig.receiveTimeout,
-        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
       );
 
   Future<bool> _tryRefresh() async {
@@ -56,7 +63,7 @@ class ApiClient {
     if (refresh == null || refresh.isEmpty) return false;
     try {
       final response = await Dio(_baseOptions()).post(
-        '/auth/refresh',
+        '/api/v1/auth/refresh',
         data: {'refresh_token': refresh},
       );
       final data = response.data as Map<String, dynamic>;
@@ -64,6 +71,7 @@ class ApiClient {
         accessToken: data['access_token'] as String,
         refreshToken: data['refresh_token'] as String,
       );
+      // tenant id refreshed on next authenticated profile fetch
       return true;
     } catch (_) {
       await _tokenStorage.clear();

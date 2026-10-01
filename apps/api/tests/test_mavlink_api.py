@@ -1,11 +1,11 @@
 import base64
 
 import pytest
+from app.mavlink.bridge_service import MavlinkBridgeService
 from httpx import AsyncClient
 from pymavlink.dialects.v20 import common as mavlink
 
-from app.mavlink.bridge_service import MavlinkBridgeService
-from tests.test_commands import PASSWORD, _register_and_create_device
+from tests.test_commands import _register_and_create_device
 
 
 def _heartbeat_b64() -> str:

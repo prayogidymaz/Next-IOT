@@ -1,8 +1,8 @@
 import json
 from datetime import UTC, datetime
-from typing import Any
 
 import redis.asyncio as aioredis
+from pydantic import JsonValue
 
 MAVLINK_STATUS_KEY_PREFIX = "hardware:mavlink:status:"
 
@@ -15,7 +15,7 @@ async def save_mavlink_status(
     redis: aioredis.Redis,
     *,
     device_id: str,
-    snapshot: dict[str, Any],
+    snapshot: dict[str, JsonValue],
 ) -> None:
     payload = {
         **snapshot,
@@ -25,7 +25,7 @@ async def save_mavlink_status(
     await redis.set(mavlink_status_key(device_id), json.dumps(payload), ex=120)
 
 
-async def read_mavlink_status(redis: aioredis.Redis, device_id: str) -> dict[str, Any]:
+async def read_mavlink_status(redis: aioredis.Redis, device_id: str) -> dict[str, JsonValue]:
     raw = await redis.get(mavlink_status_key(device_id))
     if raw is None:
         return {

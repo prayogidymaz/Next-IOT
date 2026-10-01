@@ -1,5 +1,4 @@
 import pytest
-
 from app.mission.sar_grid_service import SarGridPattern, SarGridService
 
 

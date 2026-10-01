@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/tactical_theme.dart';
+import '../../dashboard/widgets/smart_home_bento_telemetry.dart';
 import '../models/telemetry_models.dart';
 
 class TacticalIndicator extends StatelessWidget {
@@ -22,49 +24,63 @@ class TacticalIndicator extends StatelessWidget {
     final alt = metrics['altitude_m'];
     final hasFix = lat != null && lon != null;
     final recordedAt = latest?.recordedAt;
+    final indoor = metricsLookLikeSmartHome(metrics) ||
+        (!hasFix && metrics.isNotEmpty);
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B2A1F),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF3D5C45)),
+        color: TacticalColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(BentoTokens.radius),
+        border: Border.all(color: TacticalColors.border.withOpacity( 0.7)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.radar, color: Colors.greenAccent.shade400, size: 20),
-              const SizedBox(width: 8),
+              Icon(Icons.sensors, color: BentoTokens.accentLavender, size: 22),
+              const SizedBox(width: 10),
               Text(
-                'TACTICAL TELEMETRY',
-                style: TextStyle(
-                  color: Colors.greenAccent.shade200,
-                  letterSpacing: 1.2,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
+                'Live telemetry',
+                style: Theme.of(context).textTheme.titleSmall,
               ),
               const Spacer(),
               _StatusPill(label: deviceStatusLabel),
             ],
           ),
           const SizedBox(height: 12),
-          Text(deviceName, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+          Text(
+            deviceName,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 12),
-          _Row(label: 'GPS FIX', value: hasFix ? 'LOCKED' : 'NO FIX', highlight: hasFix),
+          if (indoor && !hasFix)
+            _Row(label: 'Placement', value: 'Indoor / room anchor', highlight: true)
+          else
+            _Row(
+              label: 'GPS fix',
+              value: hasFix ? 'Locked' : 'No fix',
+              highlight: hasFix,
+            ),
+          if (hasFix)
+            _Row(
+              label: 'Coordinates',
+              value:
+                  '${lat!.toStringAsFixed(6)}, ${lon!.toStringAsFixed(6)}',
+            ),
           _Row(
-            label: 'COORDINATES',
-            value: hasFix ? '${lat!.toStringAsFixed(6)}, ${lon!.toStringAsFixed(6)}' : '—',
+            label: 'Altitude',
+            value: alt != null ? '${alt.toStringAsFixed(1)} m' : '—',
           ),
-          _Row(label: 'ALTITUDE', value: alt != null ? '${alt.toStringAsFixed(1)} m' : '—'),
           _Row(
-            label: 'LAST TELEMETRY',
-            value: recordedAt != null ? recordedAt.toLocal().toString().split('.').first : '—',
+            label: 'Last telemetry',
+            value: recordedAt != null
+                ? recordedAt.toLocal().toString().split('.').first
+                : '—',
           ),
-          _Row(label: 'SOURCE', value: latest?.source.toUpperCase() ?? '—'),
+          _Row(label: 'Source', value: latest?.source ?? '—'),
         ],
       ),
     );
@@ -78,23 +94,35 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final normalized = label.toLowerCase();
+    final isOnline = normalized.contains('online') || normalized.contains('active');
+    final color = isOnline ? TacticalColors.success : TacticalColors.textSecondary;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: Colors.greenAccent.shade400),
+        color: color.withOpacity( 0.14),
+        borderRadius: BorderRadius.circular(BentoTokens.radiusPill),
+        border: Border.all(color: color.withOpacity( 0.4)),
       ),
       child: Text(
-        label.toUpperCase(),
-        style: TextStyle(color: Colors.greenAccent.shade200, fontSize: 10, fontWeight: FontWeight.bold),
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
 }
 
 class _Row extends StatelessWidget {
-  const _Row({required this.label, required this.value, this.highlight = false});
+  const _Row({
+    required this.label,
+    required this.value,
+    this.highlight = false,
+  });
 
   final String label;
   final String value;
@@ -109,19 +137,17 @@ class _Row extends StatelessWidget {
         children: [
           SizedBox(
             width: 120,
-            child: Text(
-              label,
-              style: TextStyle(color: Colors.green.shade200, fontSize: 11, letterSpacing: 0.8),
-            ),
+            child: Text(label, style: Theme.of(context).textTheme.bodySmall),
           ),
           Expanded(
             child: Text(
               value,
-              style: TextStyle(
-                color: highlight ? Colors.greenAccent.shade100 : Colors.white70,
-                fontSize: 12,
-                fontFamily: 'monospace',
-              ),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: highlight
+                        ? TacticalColors.textPrimary
+                        : TacticalColors.textSecondary,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
             ),
           ),
         ],

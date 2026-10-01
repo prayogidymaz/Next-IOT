@@ -25,7 +25,8 @@ class FlightReplayControlBar extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: TacticalColors.surface.withOpacity(0.95),
-        border: Border(top: BorderSide(color: TacticalColors.cyan.withOpacity(0.4))),
+        border: Border(
+            top: BorderSide(color: TacticalColors.cyan.withOpacity(0.4))),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -53,7 +54,8 @@ class FlightReplayControlBar extends ConsumerWidget {
               else
                 Text(
                   '${(replay.progress * 100).round()}%',
-                  style: const TextStyle(fontSize: 11, color: TacticalColors.textSecondary),
+                  style: const TextStyle(
+                      fontSize: 11, color: TacticalColors.textSecondary),
                 ),
               const SizedBox(width: 8),
               IconButton(
@@ -67,7 +69,9 @@ class FlightReplayControlBar extends ConsumerWidget {
           if (replay.error != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: Text(replay.error!, style: const TextStyle(color: TacticalColors.warning, fontSize: 11)),
+              child: Text(replay.error!,
+                  style: const TextStyle(
+                      color: TacticalColors.warning, fontSize: 11)),
             ),
           if (replay.hasData) ...[
             SliderTheme(
@@ -77,7 +81,9 @@ class FlightReplayControlBar extends ConsumerWidget {
               ),
               child: Slider(
                 value: replay.progress.clamp(0.0, 1.0),
-                onChanged: replay.isLoading ? null : ref.read(flightReplayProvider.notifier).setProgress,
+                onChanged: replay.isLoading
+                    ? null
+                    : ref.read(flightReplayProvider.notifier).setProgress,
                 activeColor: TacticalColors.cyan,
                 inactiveColor: TacticalColors.border,
               ),
@@ -86,21 +92,30 @@ class FlightReplayControlBar extends ConsumerWidget {
               children: [
                 IconButton(
                   tooltip: replay.isPlaying ? 'Pause' : 'Play',
-                  onPressed: replay.isLoading ? null : ref.read(flightReplayProvider.notifier).togglePlayPause,
-                  icon: Icon(replay.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled),
+                  onPressed: replay.isLoading
+                      ? null
+                      : ref.read(flightReplayProvider.notifier).togglePlayPause,
+                  icon: Icon(replay.isPlaying
+                      ? Icons.pause_circle_filled
+                      : Icons.play_circle_filled),
                   color: TacticalColors.cyan,
                 ),
                 Text(
                   _formatProgress(replay.progress, replay),
-                  style: const TextStyle(fontSize: 11, fontFeatures: [FontFeature.tabularFigures()]),
+                  style: const TextStyle(
+                      fontSize: 11,
+                      fontFeatures: [FontFeature.tabularFigures()]),
                 ),
                 const Spacer(),
                 OutlinedButton(
-                  onPressed: replay.isLoading ? null : ref.read(flightReplayProvider.notifier).cycleSpeed,
+                  onPressed: replay.isLoading
+                      ? null
+                      : ref.read(flightReplayProvider.notifier).cycleSpeed,
                   style: OutlinedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
                     foregroundColor: TacticalColors.borderNeon,
-                    side: BorderSide(color: TacticalColors.borderNeon.withOpacity(0.5)),
+                    side: BorderSide(
+                        color: TacticalColors.borderNeon.withOpacity(0.5)),
                   ),
                   child: Text('${replay.speedMultiplier}x'),
                 ),

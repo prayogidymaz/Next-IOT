@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../features/onboarding/models/domain_navigation_profile.dart';
 import '../theme/tactical_theme.dart';
+import 'app_sidebar.dart';
 import 'tactical_status_bar.dart';
 
 enum TacticalNavSection { devices, mapView, alerts }
@@ -10,26 +12,51 @@ class TacticalShell extends StatelessWidget {
     super.key,
     required this.section,
     required this.onSectionChanged,
+    required this.onOpenStudio,
     required this.body,
     this.actions,
     this.subtitle,
+    this.showContentHeader = true,
+    this.navTabs,
+    this.navigationProfile,
   });
 
   final TacticalNavSection section;
   final ValueChanged<TacticalNavSection> onSectionChanged;
+  final VoidCallback onOpenStudio;
   final Widget body;
   final List<Widget>? actions;
   final String? subtitle;
+  final bool showContentHeader;
+  final List<DomainNavTab>? navTabs;
+  final DomainNavigationProfile? navigationProfile;
+
+  List<DomainNavTab> get _tabs =>
+      navTabs ??
+      const [
+        DomainNavTab(
+          section: TacticalNavSection.devices,
+          label: 'Devices',
+          icon: Icons.radar_outlined,
+          selectedIcon: Icons.radar,
+        ),
+        DomainNavTab(
+          section: TacticalNavSection.mapView,
+          label: 'Map',
+          icon: Icons.map_outlined,
+          selectedIcon: Icons.map,
+        ),
+        DomainNavTab(
+          section: TacticalNavSection.alerts,
+          label: 'Alerts',
+          icon: Icons.crisis_alert_outlined,
+          selectedIcon: Icons.crisis_alert,
+        ),
+      ];
 
   int get _selectedIndex {
-    switch (section) {
-      case TacticalNavSection.devices:
-        return 0;
-      case TacticalNavSection.mapView:
-        return 1;
-      case TacticalNavSection.alerts:
-        return 2;
-    }
+    final index = _tabs.indexWhere((t) => t.section == section);
+    return index >= 0 ? index : 0;
   }
 
   @override
@@ -46,22 +73,34 @@ class TacticalShell extends StatelessWidget {
                 ? Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _ContentHeader(subtitle: subtitle, actions: actions, compact: true),
+                      if (showContentHeader)
+                        _ContentHeader(
+                          subtitle: subtitle,
+                          actions: actions,
+                          compact: true,
+                        ),
                       Expanded(child: body),
                     ],
                   )
                 : Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _TacticalNavRail(
-                        selectedIndex: _selectedIndex,
+                      AppSidebar(
+                        section: section,
                         onSectionChanged: onSectionChanged,
+                        onOpenStudio: onOpenStudio,
+                        navigationProfile: navigationProfile,
+                        navTabs: _tabs,
                       ),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            _ContentHeader(subtitle: subtitle, actions: actions),
+                            if (showContentHeader)
+                              _ContentHeader(
+                                subtitle: subtitle,
+                                actions: actions,
+                              ),
                             Expanded(child: body),
                           ],
                         ),
@@ -75,72 +114,20 @@ class TacticalShell extends StatelessWidget {
           ? NavigationBar(
               selectedIndex: _selectedIndex,
               onDestinationSelected: (i) {
-                final next = switch (i) {
-                  0 => TacticalNavSection.devices,
-                  1 => TacticalNavSection.mapView,
-                  _ => TacticalNavSection.alerts,
-                };
-                onSectionChanged(next);
+                if (i >= 0 && i < _tabs.length) {
+                  onSectionChanged(_tabs[i].section);
+                }
               },
-              destinations: const [
-                NavigationDestination(icon: Icon(Icons.radar_outlined), selectedIcon: Icon(Icons.radar), label: 'Devices'),
-                NavigationDestination(icon: Icon(Icons.map_outlined), selectedIcon: Icon(Icons.map), label: 'Map'),
-                NavigationDestination(icon: Icon(Icons.crisis_alert_outlined), selectedIcon: Icon(Icons.crisis_alert), label: 'Alerts'),
+              destinations: [
+                for (final tab in _tabs)
+                  NavigationDestination(
+                    icon: Icon(tab.icon),
+                    selectedIcon: Icon(tab.selectedIcon),
+                    label: tab.label,
+                  ),
               ],
             )
           : null,
-    );
-  }
-}
-
-class _TacticalNavRail extends StatelessWidget {
-  const _TacticalNavRail({
-    required this.selectedIndex,
-    required this.onSectionChanged,
-  });
-
-  final int selectedIndex;
-  final ValueChanged<TacticalNavSection> onSectionChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 88,
-      decoration: const BoxDecoration(
-        color: TacticalColors.surface,
-        border: Border(right: BorderSide(color: TacticalColors.border)),
-      ),
-      child: NavigationRail(
-        selectedIndex: selectedIndex,
-        extended: false,
-        labelType: NavigationRailLabelType.all,
-        backgroundColor: Colors.transparent,
-        destinations: const [
-          NavigationRailDestination(
-            icon: Icon(Icons.radar_outlined),
-            selectedIcon: Icon(Icons.radar),
-            label: Text('Devices'),
-          ),
-          NavigationRailDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: Text('Map View'),
-          ),
-          NavigationRailDestination(
-            icon: Icon(Icons.crisis_alert_outlined),
-            selectedIcon: Icon(Icons.crisis_alert),
-            label: Text('Alerts'),
-          ),
-        ],
-        onDestinationSelected: (i) {
-          final section = switch (i) {
-            0 => TacticalNavSection.devices,
-            1 => TacticalNavSection.mapView,
-            _ => TacticalNavSection.alerts,
-          };
-          onSectionChanged(section);
-        },
-      ),
     );
   }
 }
@@ -155,7 +142,8 @@ class _ContentHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.fromLTRB(compact ? 12 : 24, compact ? 10 : 16, compact ? 12 : 24, compact ? 6 : 8),
+      padding: EdgeInsets.fromLTRB(compact ? 12 : 24, compact ? 10 : 16,
+          compact ? 12 : 24, compact ? 6 : 8),
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: TacticalColors.border)),
       ),

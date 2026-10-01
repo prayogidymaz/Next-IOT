@@ -2,9 +2,12 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/device_repository.dart';
+import '../data/smart_home_device_seed.dart';
 import '../models/device_models.dart';
+import '../models/ota_models.dart';
 
-final deviceRepositoryProvider = Provider<DeviceRepository>((ref) => DeviceRepository());
+final deviceRepositoryProvider =
+    Provider<DeviceRepository>((ref) => DeviceRepository());
 
 class DeviceListState {
   const DeviceListState({
@@ -13,6 +16,7 @@ class DeviceListState {
     this.isRegistering = false,
     this.error,
     this.statusFilter = DeviceStatusFilter.all,
+    this.categoryFilter = DeviceCategoryFilter.all,
   });
 
   final List<Device> devices;
@@ -20,8 +24,19 @@ class DeviceListState {
   final bool isRegistering;
   final String? error;
   final DeviceStatusFilter statusFilter;
+  final DeviceCategoryFilter categoryFilter;
 
-  List<Device> get filteredDevices => filterDevices(devices, statusFilter);
+  List<Device> get filteredDevices {
+    var list = devices;
+    if (categoryFilter == DeviceCategoryFilter.smartHomeBuilding) {
+      list = mergeSmartHomeSeed(list);
+    }
+    return filterDevices(
+      list,
+      statusFilter,
+      category: categoryFilter,
+    );
+  }
 
   DeviceListState copyWith({
     List<Device>? devices,
@@ -29,6 +44,7 @@ class DeviceListState {
     bool? isRegistering,
     String? error,
     DeviceStatusFilter? statusFilter,
+    DeviceCategoryFilter? categoryFilter,
     bool clearError = false,
   }) {
     return DeviceListState(
@@ -37,6 +53,7 @@ class DeviceListState {
       isRegistering: isRegistering ?? this.isRegistering,
       error: clearError ? null : (error ?? this.error),
       statusFilter: statusFilter ?? this.statusFilter,
+      categoryFilter: categoryFilter ?? this.categoryFilter,
     );
   }
 }
@@ -60,6 +77,62 @@ class DeviceNotifier extends StateNotifier<DeviceListState> {
     state = state.copyWith(statusFilter: filter);
   }
 
+  void setCategoryFilter(DeviceCategoryFilter filter) {
+    state = state.copyWith(categoryFilter: filter);
+  }
+
+  void applyStreamStatus(String deviceId, String status) {
+    final index = state.devices.indexWhere((d) => d.id == deviceId);
+    if (index < 0) return;
+    final current = state.devices[index];
+    if (current.status == status) return;
+    final updated = Device(
+      id: current.id,
+      tenantId: current.tenantId,
+      name: current.name,
+      deviceType: current.deviceType,
+      deviceCategory: current.deviceCategory,
+      status: status,
+      lastSeenAt: DateTime.now().toUtc(),
+      createdAt: current.createdAt,
+    );
+    final devices = [...state.devices];
+    devices[index] = updated;
+    state = state.copyWith(devices: devices);
+  }
+
+  Future<BulkImportResult?> bulkImport({
+    required List<int> fileBytes,
+    required String filename,
+  }) async {
+    state = state.copyWith(isRegistering: true, clearError: true);
+    try {
+      final result = await _repository.bulkImportFile(
+        filename: filename,
+        bytes: fileBytes,
+      );
+      await loadDevices();
+      state = state.copyWith(isRegistering: false);
+      return result;
+    } catch (e) {
+      state = state.copyWith(isRegistering: false, error: _mapError(e));
+      return null;
+    }
+  }
+
+  Future<BulkImportResult?> bulkImportFromJson(Map<String, dynamic> payload) async {
+    state = state.copyWith(isRegistering: true, clearError: true);
+    try {
+      final result = await _repository.bulkImportJson(payload);
+      await loadDevices();
+      state = state.copyWith(isRegistering: false);
+      return result;
+    } catch (e) {
+      state = state.copyWith(isRegistering: false, error: _mapError(e));
+      return null;
+    }
+  }
+
   Future<RegisterDeviceResult?> registerDevice({
     required String name,
     required DeviceType deviceType,
@@ -67,7 +140,13 @@ class DeviceNotifier extends StateNotifier<DeviceListState> {
     state = state.copyWith(isRegistering: true, clearError: true);
     try {
       final result = await _repository.registerDevice(
-        RegisterDeviceRequest(name: name.trim(), deviceType: deviceType.apiValue),
+        RegisterDeviceRequest(
+          name: name.trim(),
+          deviceType: deviceType.apiValue,
+          deviceCategory: deviceType == DeviceType.smartHome
+              ? DeviceCategoryApi.smartHome
+              : null,
+        ),
       );
       state = state.copyWith(
         devices: [result.device, ...state.devices],
@@ -94,6 +173,7 @@ class DeviceNotifier extends StateNotifier<DeviceListState> {
   }
 }
 
-final deviceProvider = StateNotifierProvider<DeviceNotifier, DeviceListState>((ref) {
+final deviceProvider =
+    StateNotifierProvider<DeviceNotifier, DeviceListState>((ref) {
   return DeviceNotifier(ref.watch(deviceRepositoryProvider));
 });

@@ -1,5 +1,4 @@
 import pytest
-
 from app.mission.geofence_checker import GeofenceChecker, GeofenceZoneSnapshot
 
 

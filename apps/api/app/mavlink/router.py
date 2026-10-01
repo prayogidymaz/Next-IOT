@@ -15,7 +15,6 @@ from app.mavlink.schemas import (
     MavlinkEncodeRequest,
     MavlinkEncodeResponse,
     MavlinkStatusResponse,
-    MavlinkTelemetrySnapshot,
 )
 from app.mavlink.status_store import read_mavlink_status, save_mavlink_status
 

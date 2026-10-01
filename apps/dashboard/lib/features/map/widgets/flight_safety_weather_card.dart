@@ -69,14 +69,17 @@ class FlightSafetyWeatherCard extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(_statusIcon(data!.flightSafetyStatus), size: compact ? 14 : 16, color: color),
+          Icon(_statusIcon(data!.flightSafetyStatus),
+              size: compact ? 14 : 16, color: color),
           const SizedBox(width: 6),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                compact ? _statusLabel(data!.flightSafetyStatus) : 'FLIGHT SAFETY & WEATHER',
+                compact
+                    ? _statusLabel(data!.flightSafetyStatus)
+                    : 'FLIGHT SAFETY & WEATHER',
                 style: TextStyle(
                   color: color,
                   fontSize: compact ? 9 : 10,
@@ -87,13 +90,15 @@ class FlightSafetyWeatherCard extends StatelessWidget {
               if (!compact) ...[
                 Text(
                   _statusLabel(data!.flightSafetyStatus),
-                  style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                      color: color, fontSize: 11, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 2),
               ],
               Text(
                 'Wind ${data!.windSpeedMs.toStringAsFixed(1)} m/s · Rain ${data!.rainRateMmH.toStringAsFixed(1)} mm/h',
-                style: const TextStyle(fontSize: 9, color: TacticalColors.textSecondary),
+                style: const TextStyle(
+                    fontSize: 9, color: TacticalColors.textSecondary),
               ),
             ],
           ),
@@ -105,7 +110,8 @@ class FlightSafetyWeatherCard extends StatelessWidget {
   Widget _shell({required Widget child, Color? color}) {
     final borderColor = (color ?? TacticalColors.border).withOpacity(0.65);
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 10, vertical: compact ? 6 : 8),
+      padding: EdgeInsets.symmetric(
+          horizontal: compact ? 8 : 10, vertical: compact ? 6 : 8),
       decoration: BoxDecoration(
         color: TacticalColors.surface.withOpacity(0.95),
         borderRadius: BorderRadius.circular(8),

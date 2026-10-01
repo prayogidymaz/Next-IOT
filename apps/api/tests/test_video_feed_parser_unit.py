@@ -1,15 +1,14 @@
 import json
 
 import pytest
-
+from app.telemetry.video_feed.generator import MockVideoFrameGenerator
 from app.telemetry.video_feed.parser import (
     VideoFeedParseError,
     parse_detection_box,
     parse_video_feed_message,
     serialize_video_frame,
 )
-from app.telemetry.video_feed.generator import MockVideoFrameGenerator
-from app.telemetry.video_feed.schemas import DetectionBox, TargetType
+from app.telemetry.video_feed.schemas import TargetType
 
 
 def test_parse_video_frame_message():

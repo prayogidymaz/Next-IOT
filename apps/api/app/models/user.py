@@ -25,3 +25,6 @@ class User(Base):
     )
 
     tenant: Mapped["Tenant"] = relationship("Tenant", back_populates="users")  # noqa: F821
+    memberships: Mapped[list["TenantMembership"]] = relationship(  # noqa: F821
+        "TenantMembership", back_populates="user"
+    )

@@ -3,25 +3,23 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime, timedelta
-from typing import Any
+from datetime import datetime
 
 from fastapi import HTTPException, status
+from pydantic import JsonValue
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import CurrentUser
-from app.devices.service import _get_device_for_user
 from app.models.telemetry_anomaly import TelemetryAnomaly
 from app.models.telemetry_reading import TelemetryReading
 from app.telemetry.schemas import TelemetryAnalyticsResponse
 from app.telemetry.swarm_distance import SwarmDistanceCalculator
 
-ALLOWED_HOURS = frozenset({1, 24})
 MAX_READINGS = 5000
 
 
-def _metric_float(metrics: dict[str, Any], *keys: str) -> float | None:
+def _metric_float(metrics: dict[str, JsonValue], *keys: str) -> float | None:
     for key in keys:
         if key in metrics and metrics[key] is not None:
             try:
@@ -84,49 +82,73 @@ async def get_telemetry_analytics(
     user: CurrentUser,
     *,
     device_id: uuid.UUID,
-    hours: int = 24,
+    hours: int | None = 24,
+    metrics: list[str] | None = None,
+    start_time: datetime | None = None,
+    end_time: datetime | None = None,
+    interval: str = "5m",
 ) -> TelemetryAnalyticsResponse:
-    if hours not in ALLOWED_HOURS:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="hours must be 1 or 24",
-        )
-
-    await _get_device_for_user(db, device_id, user)
-    since = datetime.now(UTC) - timedelta(hours=hours)
-
-    reading_query = (
-        select(TelemetryReading)
-        .where(
-            TelemetryReading.device_id == device_id,
-            TelemetryReading.recorded_at >= since,
-        )
-        .order_by(TelemetryReading.recorded_at.asc())
-        .limit(MAX_READINGS)
+    from app.telemetry.timeseries import (
+        aggregate_timeseries,
+        fetch_readings_window,
+        parse_interval,
+        resolve_time_window,
     )
-    if not user.is_super_admin:
-        reading_query = reading_query.where(TelemetryReading.tenant_id == user.tenant_id)
 
-    readings = (await db.scalars(reading_query)).all()
+    try:
+        bucket = parse_interval(interval)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    start, end = resolve_time_window(start_time=start_time, end_time=end_time, hours=hours)
+    if start >= end:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="start_time must be before end_time")
+
+    readings = await fetch_readings_window(db, user, device_id=device_id, start=start, end=end)
+    if len(readings) > MAX_READINGS:
+        readings = readings[:MAX_READINGS]
     stats = _aggregate_readings(readings)
     total_distance_m = _compute_total_distance_m(readings)
 
     anomaly_query = select(func.count()).select_from(TelemetryAnomaly).where(
         TelemetryAnomaly.device_id == device_id,
-        TelemetryAnomaly.recorded_at >= since,
+        TelemetryAnomaly.recorded_at >= start,
+        TelemetryAnomaly.recorded_at <= end,
     )
     if not user.is_super_admin:
         anomaly_query = anomaly_query.where(TelemetryAnomaly.tenant_id == user.tenant_id)
 
     anomaly_count = int(await db.scalar(anomaly_query) or 0)
 
+    metric_list = metrics or []
+    raw_series = aggregate_timeseries(readings, metrics=metric_list, interval=bucket)
+
+    from app.telemetry.schemas import MetricStatsSummary, MetricTimeSeries, TimeSeriesBucketPoint
+
+    series = [
+        MetricTimeSeries(
+            metric=item["metric"],
+            stats=MetricStatsSummary(**item["stats"]),
+            points=[TimeSeriesBucketPoint(**p) for p in item["points"]],
+        )
+        for item in raw_series
+    ]
+
+    lookback_hours = hours
+    if lookback_hours is None:
+        lookback_hours = max(1, int((end - start).total_seconds() // 3600))
+
     return TelemetryAnalyticsResponse(
         device_id=device_id,
-        hours=hours,
+        start_time=start,
+        end_time=end,
+        interval=interval,
+        hours=lookback_hours,
         reading_count=len(readings),
         max_speed_m_s=stats["max_speed_m_s"],
         avg_altitude_m=stats["avg_altitude_m"],
         min_voltage_v=stats["min_voltage_v"],
         total_distance_m=total_distance_m,
         anomaly_count=anomaly_count,
+        series=series,
     )

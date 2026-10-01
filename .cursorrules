@@ -1,0 +1,10 @@
+# Next-IoT — Permanent Engineering Rules (all tasks)
+
+1. **Python:** No `Any`, `typing.Any`, bare `# type: ignore`, or `cast()` without a comment explaining why. No untyped `dict` — use `dict[str, JsonValue]` / Pydantic models / TypedDict / Protocol. Every function must have complete type hints including return types.
+2. **TypeScript:** No `any`, `as any`, `as unknown as`, `@ts-ignore`, or `@ts-expect-error`. No non-null assertion `!` without justification. API data must be validated (zod) or use generated OpenAPI types.
+3. **Dart:** No explicit `dynamic`, unsafe `as` casts without prior `is` checks, or careless `!`. Parse JSON into typed model classes.
+4. **Secrets / URLs:** Never hardcode; use env vars and config layers.
+5. **Alembic:** Every migration must include a correct `downgrade()`.
+6. **New API endpoints:** Must ship pytest coverage (happy path + tenant isolation + unauthorized).
+7. **Lint / types:** Never disable or weaken rules to make CI pass — fix the code.
+8. **Task completion:** Run `scripts/check-all.ps1`, update Notion (or `NOTION_UPDATE.md`), update `docs/PROJECT_RESUME.md`.

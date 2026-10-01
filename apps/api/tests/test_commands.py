@@ -3,13 +3,11 @@ import uuid
 
 import pytest
 import redis.asyncio as aioredis
-from httpx import AsyncClient
-
 from app.auth.security import hash_password
-from app.commands.events import DEVICE_COMMANDS_CHANNEL
-from app.config import settings
+from app.commands.events import DEVICE_COMMANDS_CHANNEL, HARDWARE_MQTT_BRIDGE_CHANNEL
 from app.database import async_session
 from app.models.user import User
+from httpx import AsyncClient
 
 PASSWORD = "SecurePass123!"
 
@@ -38,11 +36,12 @@ async def _register_and_create_device(client: AsyncClient, slug: str, email: str
 
 
 @pytest.mark.asyncio
-async def test_dispatch_go_to_mission_command(client: AsyncClient, unique_slug: str, unique_email: str):
+async def test_dispatch_go_to_mission_command(
+    client: AsyncClient, test_redis: aioredis.Redis, unique_slug: str, unique_email: str
+):
     ctx = await _register_and_create_device(client, unique_slug, unique_email)
 
-    redis = aioredis.from_url(settings.redis_url, decode_responses=True)
-    pubsub = redis.pubsub()
+    pubsub = test_redis.pubsub()
     await pubsub.subscribe(DEVICE_COMMANDS_CHANNEL)
     for _ in range(50):
         sub_msg = await pubsub.get_message(ignore_subscribe_messages=False, timeout=0.1)
@@ -82,7 +81,7 @@ async def test_dispatch_go_to_mission_command(client: AsyncClient, unique_slug: 
 
     events = []
     while True:
-        raw = await redis.rpop("device:events")
+        raw = await test_redis.rpop("device:events")
         if raw is None:
             break
         events.append(json.loads(raw))
@@ -90,7 +89,55 @@ async def test_dispatch_go_to_mission_command(client: AsyncClient, unique_slug: 
 
     await pubsub.unsubscribe(DEVICE_COMMANDS_CHANNEL)
     await pubsub.aclose()
-    await redis.aclose()
+
+
+@pytest.mark.asyncio
+async def test_dispatch_relay_command_publishes_mqtt_bridge(
+    client: AsyncClient, test_redis: aioredis.Redis, unique_slug: str, unique_email: str
+):
+    ctx = await _register_and_create_device(client, unique_slug, unique_email)
+
+    pubsub = test_redis.pubsub()
+    await pubsub.subscribe(DEVICE_COMMANDS_CHANNEL, HARDWARE_MQTT_BRIDGE_CHANNEL)
+    for _ in range(50):
+        sub_msg = await pubsub.get_message(ignore_subscribe_messages=False, timeout=0.1)
+        if sub_msg and sub_msg.get("type") == "subscribe":
+            break
+
+    resp = await client.post(
+        f"/api/v1/devices/{ctx['device_id']}/commands",
+        headers={"Authorization": f"Bearer {ctx['token']}"},
+        json={"command_type": "RELAY_ON", "params": {"channel": "ch1"}},
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["command_type"] == "RELAY_ON"
+    assert body["status"] == "dispatched"
+
+    device_msg = None
+    mqtt_msg = None
+    for _ in range(30):
+        message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=0.25)
+        if message is None:
+            continue
+        channel = message.get("channel")
+        data = json.loads(message["data"])
+        if channel == DEVICE_COMMANDS_CHANNEL and device_msg is None:
+            device_msg = data
+        if channel == HARDWARE_MQTT_BRIDGE_CHANNEL and mqtt_msg is None:
+            mqtt_msg = data
+        if device_msg and mqtt_msg:
+            break
+
+    assert device_msg is not None
+    assert device_msg["command_type"] == "RELAY_ON"
+    assert mqtt_msg is not None
+    assert mqtt_msg["topic"].endswith(f"/devices/{ctx['device_id']}/command")
+    assert mqtt_msg["payload"]["command_type"] == "RELAY_ON"
+    assert mqtt_msg["payload"]["params"]["channel"] == "ch1"
+
+    await pubsub.unsubscribe(DEVICE_COMMANDS_CHANNEL, HARDWARE_MQTT_BRIDGE_CHANNEL)
+    await pubsub.aclose()
 
 
 @pytest.mark.asyncio

@@ -1,18 +1,16 @@
-import uuid
-from datetime import UTC, datetime
 
 import pytest
 import redis.asyncio as aioredis
+from app.rules.alerts import ALERTS_HISTORY, emit_alert
 from httpx import AsyncClient
-
-from app.config import settings
-from app.rules.alerts import ALERTS_HISTORY, emit_alert, list_alerts
 
 PASSWORD = "SecurePass123!"
 
 
 @pytest.mark.asyncio
-async def test_list_alerts_filters_by_tenant_and_status(client: AsyncClient, unique_slug: str, unique_email: str):
+async def test_list_alerts_filters_by_tenant_and_status(
+    client: AsyncClient, test_redis: aioredis.Redis, unique_slug: str, unique_email: str
+):
     reg = await client.post(
         "/auth/register",
         json={"tenant_name": "A Co", "tenant_slug": unique_slug, "email": unique_email, "password": PASSWORD},
@@ -20,11 +18,10 @@ async def test_list_alerts_filters_by_tenant_and_status(client: AsyncClient, uni
     token = reg.json()["tokens"]["access_token"]
     tenant_id = reg.json()["tenant_id"]
 
-    redis = aioredis.from_url(settings.redis_url, decode_responses=True)
-    await redis.delete(ALERTS_HISTORY)
+    await test_redis.delete(ALERTS_HISTORY)
 
     await emit_alert(
-        redis,
+        test_redis,
         rule_id="r1",
         device_id="d1",
         tenant_id=tenant_id,
@@ -36,8 +33,6 @@ async def test_list_alerts_filters_by_tenant_and_status(client: AsyncClient, uni
         reading_id="rd1",
         notification_channel="telegram",
     )
-    await redis.aclose()
-
     resp = await client.get(
         "/api/v1/alerts",
         headers={"Authorization": f"Bearer {token}"},
@@ -51,7 +46,9 @@ async def test_list_alerts_filters_by_tenant_and_status(client: AsyncClient, uni
 
 
 @pytest.mark.asyncio
-async def test_alerts_summary_endpoint(client: AsyncClient, unique_slug: str, unique_email: str):
+async def test_alerts_summary_endpoint(
+    client: AsyncClient, test_redis: aioredis.Redis, unique_slug: str, unique_email: str
+):
     reg = await client.post(
         "/auth/register",
         json={"tenant_name": "B Co", "tenant_slug": unique_slug, "email": unique_email, "password": PASSWORD},
@@ -59,10 +56,9 @@ async def test_alerts_summary_endpoint(client: AsyncClient, unique_slug: str, un
     token = reg.json()["tokens"]["access_token"]
     tenant_id = reg.json()["tenant_id"]
 
-    redis = aioredis.from_url(settings.redis_url, decode_responses=True)
-    await redis.delete(ALERTS_HISTORY)
+    await test_redis.delete(ALERTS_HISTORY)
     await emit_alert(
-        redis,
+        test_redis,
         rule_id="r1",
         device_id="d1",
         tenant_id=tenant_id,
@@ -74,8 +70,6 @@ async def test_alerts_summary_endpoint(client: AsyncClient, unique_slug: str, un
         reading_id="rd1",
         notification_channel="webhook",
     )
-    await redis.aclose()
-
     resp = await client.get(
         "/api/v1/alerts/summary",
         headers={"Authorization": f"Bearer {token}"},

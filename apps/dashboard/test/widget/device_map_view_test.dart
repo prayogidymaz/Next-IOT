@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:next_iot_dashboard/features/dashboard/widgets/indoor_location_bento_card.dart';
 import 'package:next_iot_dashboard/features/devices/models/device_models.dart';
 import 'package:next_iot_dashboard/features/map/widgets/device_map_view.dart';
 import 'package:next_iot_dashboard/features/map/widgets/telemetry_map_overlay.dart';
@@ -48,7 +49,7 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets('DeviceMapView shows no-fix message without GPS', (tester) async {
+  testWidgets('DeviceMapView shows indoor bento card without GPS', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -64,6 +65,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('No GPS fix available for this device.'), findsOneWidget);
+    expect(find.text('Indoor Location'), findsOneWidget);
+    expect(find.byKey(IndoorLocationBentoCard.indoorLocationKey), findsOneWidget);
   });
 }

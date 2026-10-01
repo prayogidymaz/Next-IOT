@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/geofence_repository.dart';
 import '../models/geofence_models.dart';
 
-final geofenceRepositoryProvider = Provider<GeofenceRepository>((ref) => GeofenceRepository());
+final geofenceRepositoryProvider =
+    Provider<GeofenceRepository>((ref) => GeofenceRepository());
 
 class GeofenceState {
   const GeofenceState({
@@ -72,6 +73,7 @@ class GeofenceNotifier extends StateNotifier<GeofenceState> {
   }
 }
 
-final geofenceProvider = StateNotifierProvider<GeofenceNotifier, GeofenceState>((ref) {
+final geofenceProvider =
+    StateNotifierProvider<GeofenceNotifier, GeofenceState>((ref) {
   return GeofenceNotifier(ref.watch(geofenceRepositoryProvider));
 });

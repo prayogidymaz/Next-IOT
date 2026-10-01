@@ -5,7 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/hardware_repository.dart';
 import '../models/gateway_models.dart';
 
-final hardwareRepositoryProvider = Provider<HardwareRepository>((ref) => HardwareRepository());
+final hardwareRepositoryProvider =
+    Provider<HardwareRepository>((ref) => HardwareRepository());
 
 class GatewayNotifier extends StateNotifier<GatewayStatus> {
   GatewayNotifier(this._repository) : super(GatewayStatus.disconnected) {
@@ -31,6 +32,7 @@ class GatewayNotifier extends StateNotifier<GatewayStatus> {
   }
 }
 
-final gatewayStatusProvider = StateNotifierProvider<GatewayNotifier, GatewayStatus>((ref) {
+final gatewayStatusProvider =
+    StateNotifierProvider<GatewayNotifier, GatewayStatus>((ref) {
   return GatewayNotifier(ref.watch(hardwareRepositoryProvider));
 });

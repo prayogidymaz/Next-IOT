@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
 import 'features/auth/providers/auth_provider.dart';
+import 'features/onboarding/providers/domain_context_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +27,10 @@ class _BootstrapState extends ConsumerState<_Bootstrap> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(authProvider.notifier).bootstrap());
+    Future.microtask(() async {
+      await ref.read(authProvider.notifier).bootstrap();
+      await ref.read(domainContextProvider.notifier).bootstrap();
+    });
   }
 
   @override

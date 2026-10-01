@@ -75,9 +75,11 @@ class SignalHeatmapNotifier extends StateNotifier<SignalHeatmapState> {
       return;
     }
 
-    state = state.copyWith(deviceId: deviceId, isLoading: true, clearError: true);
+    state =
+        state.copyWith(deviceId: deviceId, isLoading: true, clearError: true);
     try {
-      final data = await _repository.fetchHeatmap(deviceId: deviceId, hours: state.hours);
+      final data = await _repository.fetchHeatmap(
+          deviceId: deviceId, hours: state.hours);
       state = state.copyWith(
         deviceId: deviceId,
         points: data.points,
@@ -109,6 +111,7 @@ class SignalHeatmapNotifier extends StateNotifier<SignalHeatmapState> {
   }
 }
 
-final signalHeatmapProvider = StateNotifierProvider<SignalHeatmapNotifier, SignalHeatmapState>((ref) {
+final signalHeatmapProvider =
+    StateNotifierProvider<SignalHeatmapNotifier, SignalHeatmapState>((ref) {
   return SignalHeatmapNotifier(ref.watch(signalHeatmapRepositoryProvider));
 });

@@ -29,7 +29,12 @@ class _TestTelemetryAnalyticsNotifier extends TelemetryAnalyticsNotifier {
   _TestTelemetryAnalyticsNotifier(String deviceId) : super(TelemetryRepository(), deviceId);
 
   @override
-  Future<void> load({int? hours}) async {}
+  Future<void> load({
+    TelemetryTimeRange? range,
+    List<String>? metrics,
+    DateTime? customStart,
+    DateTime? customEnd,
+  }) async {}
 }
 
 void main() {
@@ -96,12 +101,12 @@ void main() {
     await tester.pump();
 
     expect(find.byType(TacticalIndicator), findsOneWidget);
-    expect(find.text('TACTICAL TELEMETRY'), findsOneWidget);
+    expect(find.text('Live telemetry'), findsOneWidget);
     expect(find.textContaining('-6.208800'), findsOneWidget);
-    expect(find.text('MAP TRACKING'), findsOneWidget);
+    expect(find.text('Map tracking'), findsOneWidget);
 
     await tester.scrollUntilVisible(
-      find.text('LIVE GAUGES'),
+      find.text('Live gauges'),
       500,
       scrollable: _deviceDetailListScrollable,
     );
@@ -109,7 +114,7 @@ void main() {
 
     expect(find.byType(MetricGaugeCard), findsWidgets);
     expect(find.text('Temperature'), findsWidgets);
-    expect(find.text('LIVE GAUGES'), findsOneWidget);
+    expect(find.text('Live gauges'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();

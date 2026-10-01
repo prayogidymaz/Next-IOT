@@ -3,13 +3,11 @@ from datetime import UTC, datetime
 
 import pytest
 import redis.asyncio as aioredis
-from httpx import AsyncClient
-
-from app.config import settings
 from app.database import async_session
 from app.models.rule import Rule, RuleActionType, RuleOperator
 from app.rules.alerts import pop_alerts
 from app.rules.evaluator import evaluate_metric
+from httpx import AsyncClient
 
 PASSWORD = "SecurePass123!"
 
@@ -72,7 +70,9 @@ async def _setup_with_rule(client: AsyncClient, slug: str, email: str, threshold
 
 
 @pytest.mark.asyncio
-async def test_rule_triggers_alert_on_telemetry(client: AsyncClient, unique_slug: str, unique_email: str):
+async def test_rule_triggers_alert_on_telemetry(
+    client: AsyncClient, test_redis: aioredis.Redis, unique_slug: str, unique_email: str
+):
     ctx = await _setup_with_rule(client, unique_slug, unique_email, threshold=25.0)
 
     resp = await client.post(
@@ -83,9 +83,7 @@ async def test_rule_triggers_alert_on_telemetry(client: AsyncClient, unique_slug
     assert resp.status_code == 201
     assert resp.json()["rules_triggered"] == 1
 
-    redis = aioredis.from_url(settings.redis_url, decode_responses=True)
-    alerts = await pop_alerts(redis)
-    await redis.aclose()
+    alerts = await pop_alerts(test_redis)
     assert len(alerts) == 1
     assert alerts[0]["event"] == "rule.triggered"
     assert alerts[0]["metric"] == "temperature"
@@ -94,7 +92,9 @@ async def test_rule_triggers_alert_on_telemetry(client: AsyncClient, unique_slug
 
 
 @pytest.mark.asyncio
-async def test_rule_not_triggered_below_threshold(client: AsyncClient, unique_slug: str, unique_email: str):
+async def test_rule_not_triggered_below_threshold(
+    client: AsyncClient, test_redis: aioredis.Redis, unique_slug: str, unique_email: str
+):
     ctx = await _setup_with_rule(client, unique_slug, unique_email, threshold=50.0)
 
     resp = await client.post(
@@ -105,9 +105,7 @@ async def test_rule_not_triggered_below_threshold(client: AsyncClient, unique_sl
     assert resp.status_code == 201
     assert resp.json()["rules_triggered"] == 0
 
-    redis = aioredis.from_url(settings.redis_url, decode_responses=True)
-    alerts = await pop_alerts(redis)
-    await redis.aclose()
+    alerts = await pop_alerts(test_redis)
     assert len(alerts) == 0
 
 

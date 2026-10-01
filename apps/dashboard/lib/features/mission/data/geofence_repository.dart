@@ -4,7 +4,8 @@ import '../../../core/network/api_client.dart';
 import '../models/geofence_models.dart';
 
 class GeofenceRepository {
-  GeofenceRepository({ApiClient? apiClient}) : _api = (apiClient ?? ApiClient()).dio;
+  GeofenceRepository({ApiClient? apiClient})
+      : _api = (apiClient ?? ApiClient()).dio;
 
   final Dio _api;
 

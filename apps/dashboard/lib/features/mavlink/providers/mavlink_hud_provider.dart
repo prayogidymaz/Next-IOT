@@ -5,7 +5,8 @@ class MavlinkHudState {
 
   final bool enabled;
 
-  MavlinkHudState copyWith({bool? enabled}) => MavlinkHudState(enabled: enabled ?? this.enabled);
+  MavlinkHudState copyWith({bool? enabled}) =>
+      MavlinkHudState(enabled: enabled ?? this.enabled);
 }
 
 class MavlinkHudNotifier extends StateNotifier<MavlinkHudState> {
@@ -14,6 +15,7 @@ class MavlinkHudNotifier extends StateNotifier<MavlinkHudState> {
   void toggle() => state = state.copyWith(enabled: !state.enabled);
 }
 
-final mavlinkHudProvider = StateNotifierProvider<MavlinkHudNotifier, MavlinkHudState>((ref) {
+final mavlinkHudProvider =
+    StateNotifierProvider<MavlinkHudNotifier, MavlinkHudState>((ref) {
   return MavlinkHudNotifier();
 });

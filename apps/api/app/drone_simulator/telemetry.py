@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import uuid
 from datetime import UTC, datetime
-from typing import Any
 
 import redis.asyncio as aioredis
+from pydantic import JsonValue
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.devices.events import emit_device_event
@@ -39,7 +38,7 @@ async def publish_simulated_telemetry(
     redis: aioredis.Redis,
     *,
     device: Device,
-    metrics: dict[str, Any],
+    metrics: dict[str, JsonValue],
     flight_event: str | None = None,
 ) -> None:
     recorded_at = datetime.now(UTC)

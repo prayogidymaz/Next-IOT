@@ -6,10 +6,12 @@ import logging
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.rbac import UserRole
 from app.auth.security import hash_password
 from app.config import settings
 from app.database import async_session
 from app.models.tenant import Tenant
+from app.models.tenant_membership import TenantMembership
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
@@ -32,13 +34,22 @@ async def ensure_default_admin(db: AsyncSession) -> bool:
         tenant=tenant,
         email=settings.seed_admin_email,
         password_hash=hash_password(settings.seed_admin_password),
-        role="super_admin",
+        role=UserRole.SUPER_ADMIN,
     )
     db.add(user)
+    await db.flush()
+    db.add(
+        TenantMembership(
+            user_id=user.id,
+            tenant_id=tenant.id,
+            role=UserRole.SUPER_ADMIN,
+        )
+    )
     await db.commit()
     logger.info(
-        "Seeded default admin %s (tenant=%s, role=super_admin)",
+        "Seeded default admin %s (%s, tenant=%s, role=super_admin)",
         settings.seed_admin_email,
+        settings.seed_admin_display_name,
         settings.seed_tenant_slug,
     )
     return True

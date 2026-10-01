@@ -1,5 +1,7 @@
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Protocol
+
+from pydantic import JsonValue
 
 
 @dataclass
@@ -13,4 +15,4 @@ class NotificationResult:
 class Notifier(Protocol):
     name: str
 
-    async def send(self, alert: dict[str, Any]) -> NotificationResult: ...
+    async def send(self, alert: dict[str, JsonValue]) -> NotificationResult: ...

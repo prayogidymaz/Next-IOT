@@ -5,7 +5,8 @@ import '../models/sar_grid_models.dart';
 import '../models/sar_incident_models.dart';
 import 'sar_grid_provider.dart';
 
-final sarIncidentRepositoryProvider = Provider<SarIncidentRepository>((ref) => SarIncidentRepository());
+final sarIncidentRepositoryProvider =
+    Provider<SarIncidentRepository>((ref) => SarIncidentRepository());
 
 class SarIncidentState {
   const SarIncidentState({
@@ -52,7 +53,8 @@ class SarIncidentState {
 }
 
 class SarIncidentNotifier extends StateNotifier<SarIncidentState> {
-  SarIncidentNotifier(this._repository, this._ref) : super(const SarIncidentState());
+  SarIncidentNotifier(this._repository, this._ref)
+      : super(const SarIncidentState());
 
   final SarIncidentRepository _repository;
   final Ref _ref;
@@ -69,7 +71,8 @@ class SarIncidentNotifier extends StateNotifier<SarIncidentState> {
       final data = await _repository.fetchIncidents();
       state = state.copyWith(isLoading: false, incidents: data.incidents);
     } catch (_) {
-      state = state.copyWith(isLoading: false, error: 'Failed to load SAR incidents.');
+      state = state.copyWith(
+          isLoading: false, error: 'Failed to load SAR incidents.');
     }
   }
 
@@ -79,7 +82,8 @@ class SarIncidentNotifier extends StateNotifier<SarIncidentState> {
 
   Future<void> assignDrone(String incidentId, String deviceId) async {
     try {
-      final updated = await _repository.assignDevice(incidentId: incidentId, deviceId: deviceId);
+      final updated = await _repository.assignDevice(
+          incidentId: incidentId, deviceId: deviceId);
       _replaceIncident(updated);
     } catch (_) {
       state = state.copyWith(error: 'Failed to assign drone.');
@@ -92,7 +96,9 @@ class SarIncidentNotifier extends StateNotifier<SarIncidentState> {
       _replaceIncident(updated);
       final grid = updated.sarGrid;
       if (grid.isNotEmpty) {
-        _ref.read(sarGridProvider.notifier).applyResult(SarGridResult.fromJson(grid));
+        _ref
+            .read(sarGridProvider.notifier)
+            .applyResult(SarGridResult.fromJson(grid));
       }
     } catch (_) {
       state = state.copyWith(error: 'Failed to dispatch SAR grid.');
@@ -109,11 +115,13 @@ class SarIncidentNotifier extends StateNotifier<SarIncidentState> {
   }
 
   void _replaceIncident(SarIncident updated) {
-    final next = state.incidents.map((i) => i.id == updated.id ? updated : i).toList();
+    final next =
+        state.incidents.map((i) => i.id == updated.id ? updated : i).toList();
     state = state.copyWith(incidents: next, clearError: true);
   }
 }
 
-final sarIncidentProvider = StateNotifierProvider<SarIncidentNotifier, SarIncidentState>((ref) {
+final sarIncidentProvider =
+    StateNotifierProvider<SarIncidentNotifier, SarIncidentState>((ref) {
   return SarIncidentNotifier(ref.watch(sarIncidentRepositoryProvider), ref);
 });

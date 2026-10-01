@@ -77,12 +77,14 @@ class WeatherVectorNotifier extends StateNotifier<WeatherVectorState> {
     }
   }
 
-  Future<void> refreshIfEnabled({required double lat, required double lon}) async {
+  Future<void> refreshIfEnabled(
+      {required double lat, required double lon}) async {
     if (!state.enabled) return;
     await loadForLocation(lat: lat, lon: lon);
   }
 }
 
-final weatherVectorProvider = StateNotifierProvider<WeatherVectorNotifier, WeatherVectorState>((ref) {
+final weatherVectorProvider =
+    StateNotifierProvider<WeatherVectorNotifier, WeatherVectorState>((ref) {
   return WeatherVectorNotifier(ref.watch(weatherVectorRepositoryProvider));
 });

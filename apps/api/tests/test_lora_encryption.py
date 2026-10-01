@@ -1,7 +1,6 @@
 import json
 
 import pytest
-
 from app.hardware.lora_crypto import (
     LoRaCipherMode,
     decrypt_aes128_cbc,

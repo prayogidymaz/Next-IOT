@@ -1,4 +1,11 @@
+from urllib.parse import quote_plus, urlparse, urlunparse
+
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _url_has_unexpanded_placeholders(url: str) -> bool:
+    return "${" in url or "$POSTGRES" in url
 
 
 class Settings(BaseSettings):
@@ -10,11 +17,19 @@ class Settings(BaseSettings):
     api_port: int = 8000
     api_debug: bool = True
 
+    postgres_host: str = "localhost"
+    postgres_port: int = 5432
+    postgres_db: str = "next_iot"
+    postgres_user: str = "next_iot"
+    postgres_password: str = "changeme"
+
     database_url: str = "postgresql+asyncpg://next_iot:changeme@localhost:5432/next_iot"
     database_url_sync: str = "postgresql://next_iot:changeme@localhost:5432/next_iot"
     test_database_name: str = "next_iot_test"
 
     redis_url: str = "redis://localhost:6379/0"
+    redis_url_test: str = ""
+    redis_test_db_index: int = 15
 
     jwt_secret_key: str = "change-this-to-a-random-secret-in-production"
     jwt_algorithm: str = "HS256"
@@ -25,15 +40,23 @@ class Settings(BaseSettings):
     device_heartbeat_offline_threshold_seconds: int = 300
     device_offline_check_interval_seconds: int = 60
 
+    firmware_upload_dir: str = "data/firmware_uploads"
+    firmware_max_upload_bytes: int = 16_777_216
+
     telemetry_timestamp_max_future_minutes: int = 5
     telemetry_timestamp_max_past_hours: int = 24
 
     cors_allow_origins: str = "*"
-    cors_allow_credentials: bool = False
+    cors_allow_credentials: bool = True
+
+    mqtt_broker_host: str = ""
+    mqtt_broker_port: int = 1883
+    mqtt_broker_timeout_seconds: float = 2.0
 
     seed_default_admin: bool = True
     seed_admin_email: str = "admin@nextiot.com"
     seed_admin_password: str = "admin123"
+    seed_admin_display_name: str = "System Admin"
     seed_tenant_name: str = "Next-IOT Platform"
     seed_tenant_slug: str = "nextiot"
     seed_demo_telemetry: bool = True
@@ -79,10 +102,63 @@ class Settings(BaseSettings):
     tile_server_port: int = 8080
     tile_proxy_timeout_seconds: float = 5.0
 
+    def redis_url_for_tests(self) -> str:
+        """Isolated Redis for pytest (separate DB index or explicit REDIS_URL_TEST)."""
+        explicit = self.redis_url_test.strip()
+        if explicit:
+            return explicit
+        parsed = urlparse(self.redis_url)
+        return urlunparse(parsed._replace(path=f"/{self.redis_test_db_index}"))
+
+    @staticmethod
+    def redis_location_from_url(url: str) -> tuple[str, int, int]:
+        """Return (host, port, db_index) for comparing Redis endpoints."""
+        parsed = urlparse(url)
+        host = (parsed.hostname or "localhost").lower()
+        port = parsed.port if parsed.port is not None else 6379
+        path_segment = parsed.path.lstrip("/").split("/", 1)[0]
+        db_index = int(path_segment) if path_segment.isdigit() else 0
+        return (host, port, db_index)
+
+    def assert_test_redis_isolated(self) -> None:
+        """Refuse pytest FLUSHDB when test Redis targets the same DB as the application."""
+        app_location = self.redis_location_from_url(self.redis_url)
+        test_location = self.redis_location_from_url(self.redis_url_for_tests())
+        if app_location == test_location:
+            raise RuntimeError("Refusing to FLUSHDB: test Redis points to application Redis")
+
+    def build_database_url(self, *, async_driver: bool) -> str:
+        user = quote_plus(self.postgres_user)
+        password = quote_plus(self.postgres_password)
+        host = self.postgres_host
+        port = self.postgres_port
+        db = self.postgres_db
+        if async_driver:
+            return f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{db}"
+        return f"postgresql://{user}:{password}@{host}:{port}/{db}"
+
+    @model_validator(mode="after")
+    def assemble_database_urls(self) -> "Settings":
+        if _url_has_unexpanded_placeholders(self.database_url):
+            self.database_url = self.build_database_url(async_driver=True)
+        if _url_has_unexpanded_placeholders(self.database_url_sync):
+            self.database_url_sync = self.build_database_url(async_driver=False)
+        return self
+
+    @property
+    def cors_allow_origin_regex(self) -> str | None:
+        """Match any localhost port (Flutter Web uses ephemeral ports e.g. 55921)."""
+        raw = self.cors_allow_origins.strip()
+        if raw == "*" and self.app_env == "development":
+            return r"https?://(localhost|127\.0\.0\.1)(:\d+)?"
+        return None
+
     @property
     def cors_origins_list(self) -> list[str]:
         raw = self.cors_allow_origins.strip()
         if raw == "*":
+            if self.cors_allow_origin_regex:
+                return []
             return ["*"]
         return [origin.strip() for origin in raw.split(",") if origin.strip()]
 

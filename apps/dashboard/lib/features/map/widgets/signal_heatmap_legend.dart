@@ -19,21 +19,30 @@ class SignalHeatmapLegend extends StatelessWidget {
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: TacticalColors.borderNeon.withOpacity(0.35)),
+          border:
+              Border.all(color: TacticalColors.borderNeon.withOpacity(0.35)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('RSSI / SNR LEGEND', style: Theme.of(context).textTheme.labelSmall),
+            Text('RSSI / SNR LEGEND',
+                style: Theme.of(context).textTheme.labelSmall),
             const SizedBox(height: 6),
-            _LegendRow(color: colorForRssi(-75), label: labelForBand(SignalStrengthBand.strong)),
-            _LegendRow(color: colorForRssi(-95), label: labelForBand(SignalStrengthBand.marginal)),
-            _LegendRow(color: colorForRssi(-115), label: labelForBand(SignalStrengthBand.weak)),
+            _LegendRow(
+                color: colorForRssi(-75),
+                label: labelForBand(SignalStrengthBand.strong)),
+            _LegendRow(
+                color: colorForRssi(-95),
+                label: labelForBand(SignalStrengthBand.marginal)),
+            _LegendRow(
+                color: colorForRssi(-115),
+                label: labelForBand(SignalStrengthBand.weak)),
             const SizedBox(height: 6),
             Text(
               '$pointCount samples · ${hours}h window',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10),
+              style:
+                  Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10),
             ),
           ],
         ),
@@ -65,7 +74,11 @@ class _LegendRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10)),
+          Text(label,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(fontSize: 10)),
         ],
       ),
     );

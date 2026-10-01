@@ -4,7 +4,8 @@ import '../../../core/network/api_client.dart';
 import '../models/rule_models.dart';
 
 class RuleRepository {
-  RuleRepository({ApiClient? apiClient}) : _api = (apiClient ?? ApiClient()).dio;
+  RuleRepository({ApiClient? apiClient})
+      : _api = (apiClient ?? ApiClient()).dio;
 
   final Dio _api;
 
@@ -14,11 +15,26 @@ class RuleRepository {
       queryParameters: deviceId != null ? {'device_id': deviceId} : null,
     );
     final data = response.data as List<dynamic>;
-    return data.map((e) => AlertRule.fromJson(e as Map<String, dynamic>)).toList();
+    return data
+        .map((e) => AlertRule.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<AlertRule> createRule(CreateRuleRequest request) async {
     final response = await _api.post('/api/v1/rules', data: request.toJson());
+    return AlertRule.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  Future<AlertRule> updateRule(
+    String ruleId, {
+    bool? isActive,
+  }) async {
+    final response = await _api.patch(
+      '/api/v1/rules/$ruleId',
+      data: {
+        if (isActive != null) 'is_active': isActive,
+      },
+    );
     return AlertRule.fromJson(response.data as Map<String, dynamic>);
   }
 

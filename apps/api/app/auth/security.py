@@ -1,9 +1,9 @@
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Any
 
 import bcrypt
 import jwt
+from pydantic import JsonValue
 
 from app.config import settings
 
@@ -49,5 +49,5 @@ def create_refresh_token(*, user_id: uuid.UUID, tenant_id: uuid.UUID) -> tuple[s
     return token, jti
 
 
-def decode_token(token: str) -> dict[str, Any]:
+def decode_token(token: str) -> dict[str, JsonValue]:
     return jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])

@@ -2,7 +2,6 @@ import uuid
 
 import jwt
 import pytest
-
 from app.auth.security import (
     TOKEN_TYPE_ACCESS,
     TOKEN_TYPE_REFRESH,
@@ -12,7 +11,6 @@ from app.auth.security import (
     hash_password,
     verify_password,
 )
-from app.config import settings
 
 
 def test_password_hash_and_verify():

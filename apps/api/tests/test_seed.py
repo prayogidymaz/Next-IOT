@@ -1,12 +1,11 @@
 import pytest
-from httpx import AsyncClient
-from sqlalchemy import select
-
 from app.auth.security import verify_password
 from app.config import settings
 from app.database import async_session
 from app.models.user import User
 from app.seed import ensure_default_admin
+from httpx import AsyncClient
+from sqlalchemy import select
 
 
 @pytest.mark.asyncio

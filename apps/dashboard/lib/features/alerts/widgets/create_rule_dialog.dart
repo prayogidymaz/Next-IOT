@@ -30,6 +30,7 @@ class _CreateRuleDialogState extends ConsumerState<CreateRuleDialog> {
   String? _deviceId;
   RuleOperator _operator = RuleOperator.gt;
   NotificationChannel _channel = NotificationChannel.telegram;
+  AlertRuleSeverity _severity = AlertRuleSeverity.warning;
 
   @override
   void dispose() {
@@ -51,6 +52,7 @@ class _CreateRuleDialogState extends ConsumerState<CreateRuleDialog> {
             operator: _operator.apiValue,
             threshold: threshold,
             actionType: _channel.actionType,
+            severity: _severity,
           ),
         );
 
@@ -72,7 +74,7 @@ class _CreateRuleDialogState extends ConsumerState<CreateRuleDialog> {
     }
 
     return AlertDialog(
-      title: const Text('Create New Rule'),
+      title: const Text('Create New Alert Rule'),
       content: SizedBox(
         width: 420,
         child: Form(
@@ -89,55 +91,95 @@ class _CreateRuleDialogState extends ConsumerState<CreateRuleDialog> {
                   ),
                   items: devices
                       .map(
-                        (Device d) => DropdownMenuItem(value: d.id, child: Text(d.name)),
+                        (Device d) =>
+                            DropdownMenuItem(value: d.id, child: Text(d.name)),
                       )
                       .toList(),
-                  onChanged: isSaving ? null : (v) => setState(() => _deviceId = v),
+                  onChanged:
+                      isSaving ? null : (v) => setState(() => _deviceId = v),
                   validator: (v) => v == null ? 'Select a device' : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _nameController,
-                  decoration: const InputDecoration(labelText: 'Rule name', border: OutlineInputBorder()),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'Name required' : null,
+                  decoration: const InputDecoration(
+                      labelText: 'Rule name', border: OutlineInputBorder()),
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Name required' : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _metricController,
-                  decoration: const InputDecoration(labelText: 'Metric', border: OutlineInputBorder()),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'Metric required' : null,
+                  decoration: const InputDecoration(
+                      labelText: 'Metric', border: OutlineInputBorder()),
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Metric required' : null,
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<RuleOperator>(
                   value: _operator,
-                  decoration: const InputDecoration(labelText: 'Operator', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(
+                      labelText: 'Operator', border: OutlineInputBorder()),
                   items: RuleOperator.values
-                      .map((op) => DropdownMenuItem(value: op, child: Text('${op.label} (${op.apiValue})')))
+                      .map((op) => DropdownMenuItem(
+                          value: op,
+                          child: Text('${op.label} (${op.apiValue})')))
                       .toList(),
-                  onChanged: isSaving ? null : (v) => setState(() => _operator = v ?? RuleOperator.gt),
+                  onChanged: isSaving
+                      ? null
+                      : (v) => setState(() => _operator = v ?? RuleOperator.gt),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _thresholdController,
-                  decoration: const InputDecoration(labelText: 'Threshold', border: OutlineInputBorder()),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                      labelText: 'Threshold', border: OutlineInputBorder()),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                   validator: (v) {
-                    if (v == null || double.tryParse(v.trim()) == null) return 'Valid number required';
+                    if (v == null || double.tryParse(v.trim()) == null)
+                      return 'Valid number required';
                     return null;
                   },
                 ),
                 const SizedBox(height: 12),
+                DropdownButtonFormField<AlertRuleSeverity>(
+                  value: _severity,
+                  decoration: const InputDecoration(
+                      labelText: 'Severity', border: OutlineInputBorder()),
+                  items: AlertRuleSeverity.values
+                      .map(
+                        (s) => DropdownMenuItem(
+                          value: s,
+                          child: Text(s.label),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: isSaving
+                      ? null
+                      : (v) => setState(
+                          () => _severity = v ?? AlertRuleSeverity.warning),
+                ),
+                const SizedBox(height: 12),
                 DropdownButtonFormField<NotificationChannel>(
                   value: _channel,
-                  decoration: const InputDecoration(labelText: 'Channel', border: OutlineInputBorder()),
-                  items: NotificationChannel.values
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c.label)))
+                  decoration: const InputDecoration(
+                      labelText: 'Notification channel',
+                      border: OutlineInputBorder()),
+                  items: NotificationChannel.apiChannels
+                      .map((c) =>
+                          DropdownMenuItem(value: c, child: Text(c.label)))
                       .toList(),
-                  onChanged: isSaving ? null : (v) => setState(() => _channel = v ?? NotificationChannel.telegram),
+                  onChanged: isSaving
+                      ? null
+                      : (v) => setState(
+                          () => _channel = v ?? NotificationChannel.telegram),
                 ),
                 if (error != null) ...[
                   const SizedBox(height: 12),
-                  Text(error, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                  Text(error,
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.error)),
                 ],
               ],
             ),
@@ -145,11 +187,16 @@ class _CreateRuleDialogState extends ConsumerState<CreateRuleDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: isSaving ? null : () => Navigator.pop(context), child: const Text('Cancel')),
+        TextButton(
+            onPressed: isSaving ? null : () => Navigator.pop(context),
+            child: const Text('Cancel')),
         FilledButton(
           onPressed: isSaving ? null : _submit,
           child: isSaving
-              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2))
               : const Text('Create Rule'),
         ),
       ],
