@@ -25,6 +25,12 @@ class Device(Base):
     tenant_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
     )
+    profile_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("device_profiles.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     device_type: Mapped[str] = mapped_column(String(100), nullable=False)
     device_category: Mapped[str] = mapped_column(
@@ -40,6 +46,9 @@ class Device(Base):
     )
 
     tenant: Mapped["Tenant"] = relationship("Tenant", back_populates="devices")  # noqa: F821
+    device_profile: Mapped["DeviceProfile | None"] = relationship(  # noqa: F821
+        "DeviceProfile", back_populates="devices"
+    )
     credentials: Mapped[list["DeviceCredential"]] = relationship(  # noqa: F821
         "DeviceCredential", back_populates="device", cascade="all, delete-orphan"
     )

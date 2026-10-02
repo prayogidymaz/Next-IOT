@@ -28,6 +28,7 @@ class DeviceResponse(BaseModel):
     device_category: str
     status: str
     last_seen_at: datetime | None
+    profile_id: uuid.UUID | None = None
     metadata: list[DeviceMetadataItem]
     created_at: datetime
 

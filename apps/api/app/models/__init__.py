@@ -4,6 +4,7 @@ from app.models.device import Device, DeviceStatus
 from app.models.device_command import CommandStatus, CommandType, DeviceCommand
 from app.models.device_credential import DeviceCredential
 from app.models.device_metadata import DeviceMetadata
+from app.models.device_profile import DeviceProfile, ProfileDomain, ProfileStatus
 from app.models.firmware_release import FirmwareRelease, OtaDeviceRollout
 from app.models.geofence_zone import GeofenceAction, GeofenceZone
 from app.models.rule import Rule, RuleActionType, RuleOperator
@@ -20,6 +21,9 @@ __all__ = [
     "TenantMembership",
     "User",
     "Device",
+    "DeviceProfile",
+    "ProfileDomain",
+    "ProfileStatus",
     "DeviceStatus",
     "DeviceCommand",
     "CommandType",

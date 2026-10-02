@@ -18,6 +18,7 @@ from app.automation.pipeline_listener import pipeline_listener_loop
 from app.automation.router import router as automation_router
 from app.config import settings
 from app.database import async_session, engine
+from app.device_profiles.router import router as device_profiles_router
 from app.devices.router import router as devices_router
 from app.devices.worker import offline_checker_loop
 from app.hardware.router import router as hardware_router
@@ -31,6 +32,7 @@ from app.ota.router import router as ota_router
 from app.rules.alert_router import router as alerts_router
 from app.rules.router import router as rules_router
 from app.seed import ensure_default_admin, run_seed
+from app.seed_device_profiles import run_device_profile_seed
 from app.seed_hardware import run_hardware_seed
 from app.seed_telemetry import run_telemetry_seed
 from app.system.router import router as system_router
@@ -82,6 +84,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         except Exception:
             logger.exception("Demo hardware seed failed")
 
+    if settings.seed_demo_telemetry:
+        try:
+            await run_device_profile_seed()
+        except Exception:
+            logger.exception("Demo device profile seed failed")
+
     stop_event = asyncio.Event()
     worker_tasks: list[asyncio.Task[None]] = []
     if settings.run_background_workers:
@@ -128,6 +136,7 @@ app.include_router(auth_router)
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(v1_router)
 app.include_router(devices_router)
+app.include_router(device_profiles_router)
 app.include_router(telemetry_router)
 app.include_router(rules_router)
 app.include_router(alerts_router)

@@ -11,6 +11,8 @@ from app.auth.rbac import UserRole
 from app.commands import service as command_service
 from app.commands.schemas import DeviceCommandRequest, DeviceCommandResponse
 from app.deps import DbSession, RedisDep
+from app.device_profiles import service as device_profile_service
+from app.device_profiles.schemas import AssignDeviceProfileRequest
 from app.devices import service
 from app.devices.bulk_import import BulkImportRequest, parse_bulk_import_payload
 from app.devices.dependencies import RequireDevice
@@ -185,3 +187,13 @@ async def patch_device_status(
     redis: RedisDep,
 ) -> DeviceResponse:
     return await service.update_device_status(db, redis, user, device_id, payload)
+
+
+@router.patch("/{device_id}/profile", status_code=status.HTTP_204_NO_CONTENT)
+async def assign_device_profile(
+    device_id: uuid.UUID,
+    payload: AssignDeviceProfileRequest,
+    user: RequireTenantAdmin,
+    db: DbSession,
+) -> None:
+    await device_profile_service.assign_device_profile(db, user, device_id, payload.profile_id)

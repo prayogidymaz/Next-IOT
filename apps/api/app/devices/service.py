@@ -52,6 +52,7 @@ def _to_device_response(device: Device) -> DeviceResponse:
         device_category=device.device_category,
         status=device.status,
         last_seen_at=device.last_seen_at,
+        profile_id=device.profile_id,
         metadata=metadata,
         created_at=device.created_at,
     )

@@ -77,8 +77,8 @@ def truncate_auth_tables() -> None:
     truncate_sql = (
         "TRUNCATE audit_logs, ota_device_rollouts, firmware_releases, automation_pipelines, "
         "sar_incidents, telemetry_anomalies, geofence_zones, device_commands, rules, "
-        "telemetry_readings, device_metadata, device_credentials, devices, tenant_memberships, "
-        "users, tenants RESTART IDENTITY CASCADE"
+        "telemetry_readings, device_metadata, device_credentials, devices, device_profiles, "
+        "tenant_memberships, users, tenants RESTART IDENTITY CASCADE"
     )
     with conn.cursor() as cur:
         cur.execute(truncate_sql)

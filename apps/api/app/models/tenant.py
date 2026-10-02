@@ -26,3 +26,6 @@ class Tenant(Base):
         "TenantMembership", back_populates="tenant"
     )
     devices: Mapped[list["Device"]] = relationship("Device", back_populates="tenant")  # noqa: F821
+    device_profiles: Mapped[list["DeviceProfile"]] = relationship(  # noqa: F821
+        "DeviceProfile", back_populates="tenant"
+    )

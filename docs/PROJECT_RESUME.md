@@ -36,6 +36,13 @@ Default dev API: `http://localhost:8000` · Swagger `/docs`.
 | Quality gate | `scripts/check-all.ps1` + RATCHET baseline (`scripts/ratchet-baseline.txt`) |
 | Docker Compose project name | `next-iot` (`docker-compose.yml` top-level `name`) |
 
+## Thing Model (Device Profile)
+
+- **Purpose:** Tenant-scoped device type definitions (telemetry keys, attributes, commands) with versioning (`draft` → `published` → `archived`).
+- **API:** `/api/v1/device-profiles` (CRUD + publish / new-version / archive); assign via `PATCH /api/v1/devices/{id}/profile`.
+- **Validator:** `app/device_profiles/validator.py` (pure functions; not wired to telemetry ingest until Step 2).
+- **Seed:** `smart_switch`, `env_sensor`, `smart_lock` published profiles on demo tenant (`app/seed_device_profiles.py`).
+
 ## Engineering Standards
 
 Permanent rules live in **`.cursorrules`** (root):
@@ -58,6 +65,11 @@ Permanent rules live in **`.cursorrules`** (root):
 | Mobile | `analysis_options.yaml` strict-casts/inference |
 
 ## Changelog
+
+### Step 1A — Thing Model / Device Profile (2026-10-02)
+
+- **Backend:** `device_profiles` table + `devices.profile_id`; Pydantic `ThingModelSpec`; versioning rules; tenant-scoped API; pure validator; demo seed profiles; 16 pytest cases (spec, validator, API).
+- **Menu & Feature Map:** Thing Model / Device Profile API + Validator.
 
 ### Step 0 — Engineering Guardrails (2026-09-30 → 2026-10-01)
 
