@@ -43,6 +43,12 @@ Default dev API: `http://localhost:8000` · Swagger `/docs`.
 - **Validator:** `app/device_profiles/validator.py` (pure functions; not wired to telemetry ingest until Step 2).
 - **Seed:** `smart_switch`, `env_sensor`, `smart_lock` published profiles on demo tenant (`app/seed_device_profiles.py`).
 
+## Device Profiles UI (Web HQ)
+
+- **Routes:** list/create/detail editor; device assign on `/devices/[id]`.
+- **Client:** `lib/api/deviceProfiles.ts` + zod schemas (`device-profiles-schemas.ts`); RBAC via `/api/v1/me` role.
+- **UX:** Tactical Warm Cream; toast errors (ID); viewer/operator read-only.
+
 ## Engineering Standards
 
 Permanent rules live in **`.cursorrules`** (root):
@@ -65,6 +71,11 @@ Permanent rules live in **`.cursorrules`** (root):
 | Mobile | `analysis_options.yaml` strict-casts/inference |
 
 ## Changelog
+
+### Step 1B — Device Profiles UI (2026-10-02)
+
+- **Web HQ:** routes `/device-profiles`, `/device-profiles/new`, `/device-profiles/[id]`; sidebar **Device Profiles**; zod client + spec editor; assign panel on `/devices/[id]`.
+- **Menu & Feature Map:** Device Profiles / Thing Model Editor → **In progress**.
 
 ### Step 1A — Thing Model / Device Profile (2026-10-02)
 

@@ -22,5 +22,7 @@ export const config = {
     "/settings/:path*",
     "/developer/:path*",
     "/studio/:path*",
+    "/device-profiles/:path*",
+    "/devices/:path*",
   ],
 };
