@@ -75,9 +75,10 @@ async def test_telemetry_bulk_ingest_operator(client: AsyncClient, unique_slug: 
             ]
         },
     )
-    assert resp.status_code == 201
+    assert resp.status_code == 200
     body = resp.json()
     assert body["accepted"] == 2
+    assert body["accepted_count"] == 2
     assert body["failed"] == 0
     assert len(body["reading_ids"]) == 2
 

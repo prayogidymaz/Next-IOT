@@ -8,9 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import CurrentUser
 from app.commands.events import publish_device_command
+from app.commands.profile_validation import command_rejection_reason, validate_command_for_profile
 from app.commands.schemas import DeviceCommandRequest, DeviceCommandResponse
 from app.models.device import Device
 from app.models.device_command import CommandStatus, CommandType, DeviceCommand
+from app.telemetry import metrics as telemetry_metrics
+from app.telemetry.profile_loader import load_thing_model_for_device
 from app.types.redis_client import RedisClient
 
 
@@ -91,7 +94,20 @@ async def dispatch_device_command(
 ) -> DeviceCommandResponse:
     device = await _get_device_for_user(db, device_id, user)
     command_type = payload.command_type.value
-    _validate_params(command_type, payload.params)
+
+    if device.profile_id is not None:
+        spec = await load_thing_model_for_device(db, device)
+        if spec is not None:
+            validation = validate_command_for_profile(spec, command_type, payload.params)
+            if not validation.valid:
+                reason = command_rejection_reason(validation)
+                telemetry_metrics.record_command_rejected(device.tenant_id, reason)
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail={"errors": validation.errors},
+                )
+    else:
+        _validate_params(command_type, payload.params)
 
     now = datetime.now(UTC)
     command = DeviceCommand(

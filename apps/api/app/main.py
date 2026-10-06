@@ -7,7 +7,8 @@ from typing import TypedDict, cast
 import redis.asyncio as aioredis
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from sqlalchemy import select, text
 
 from app.api.v1.router import router as v1_router
@@ -156,6 +157,11 @@ app.include_router(tenants_router)
 app.include_router(users_router)
 app.include_router(audit_router)
 app.include_router(system_router)
+
+
+@app.get("/metrics")
+async def prometheus_metrics() -> Response:
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.get("/health")

@@ -16,3 +16,4 @@ pyserial==3.5
 pymavlink==2.4.41
 cryptography==44.0.0
 psutil==6.1.1
+prometheus-client==0.21.1

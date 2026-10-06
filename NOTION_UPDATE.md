@@ -1,6 +1,17 @@
 # Next-IOT — Notion Update Log (Master Changelog)
 
-**Last updated:** 2026-09-30 (UTC+7)  
+**Last updated:** 2026-10-06 (UTC+7)  
+
+### Step 2B — Thing model at ingest (synced)
+
+- **Menu:** Telemetry Bulk Ingest (≤200) → **In progress** + notes.
+- **Commit:** (pending) — bulk partial-success 200, command 400, `/metrics` counters.
+
+### Step 2A — TimescaleDB (synced)
+
+- **Menu:** TimescaleDB Hypertable + Retention per Tier → **In progress** + Implementation Notes appended.
+- **Commit:** `50e962c` — hypertable 015, retention sweep, compose preload fix.
+
 **Sync target:** Notion database **Next-IOT Development Tasks**  
 **Companion backlog:** `NOTION_TASKS_BACKLOG.md`
 

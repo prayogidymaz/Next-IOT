@@ -52,11 +52,26 @@ class TelemetryBulkIngestRequest(BaseModel):
     items: list[TelemetryBulkIngestItem] = Field(min_length=1, max_length=200)
 
 
+class TelemetryRejectedDetail(BaseModel):
+    device_id: uuid.UUID
+    key: str
+    reason: str
+    value: JsonValue
+
+
+class TelemetryUnknownKeyDetail(BaseModel):
+    device_id: uuid.UUID
+    key: str
+
+
 class TelemetryBulkIngestResponse(BaseModel):
+    accepted_count: int
     accepted: int
     failed: int
     reading_ids: list[uuid.UUID]
     errors: list[dict[str, str]] = Field(default_factory=list)
+    rejected: list[TelemetryRejectedDetail] = Field(default_factory=list)
+    unknown_keys: list[TelemetryUnknownKeyDetail] = Field(default_factory=list)
 
 
 class TelemetryLatestResponse(BaseModel):

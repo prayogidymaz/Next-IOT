@@ -115,6 +115,7 @@ class Settings(BaseModel):
     telemetry_retention_free_days: int = 7
     telemetry_retention_pro_days: int = 90
     telemetry_retention_enterprise_days: int = 730
+    telemetry_validation_strict_mode: bool = False
 
     tile_server_url: str = "http://tile-server:8080"
     tile_server_service: str = "offline-map"

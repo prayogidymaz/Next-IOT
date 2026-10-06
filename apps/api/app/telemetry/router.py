@@ -42,7 +42,7 @@ AnalyticsStartTime = Annotated[datetime | None, Query(description="Window start 
 AnalyticsEndTime = Annotated[datetime | None, Query(description="Window end (ISO-8601)")]
 
 
-@router.post("/bulk", response_model=TelemetryBulkIngestResponse, status_code=201)
+@router.post("/bulk", response_model=TelemetryBulkIngestResponse, status_code=200)
 async def ingest_telemetry_bulk(
     payload: TelemetryBulkIngestRequest,
     user: RequireOperator,

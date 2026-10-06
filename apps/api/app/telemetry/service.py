@@ -16,8 +16,11 @@ from app.mission.sar_emergency_service import sar_emergency_service
 from app.models.device import DeviceStatus
 from app.models.telemetry_reading import TelemetryReading
 from app.rules.evaluator import evaluate_rules_for_telemetry
+from app.telemetry import metrics as telemetry_metrics
 from app.telemetry.anomaly_detector import detect_and_persist_anomalies
 from app.telemetry.cache import cache_latest_telemetry, get_latest_telemetry
+from app.telemetry.ingest_pipeline import split_telemetry_for_profile
+from app.telemetry.profile_loader import load_thing_model_for_device
 from app.telemetry.schemas import (
     TelemetryBulkIngestRequest,
     TelemetryBulkIngestResponse,
@@ -26,6 +29,8 @@ from app.telemetry.schemas import (
     TelemetryIngestRequest,
     TelemetryIngestResponse,
     TelemetryLatestResponse,
+    TelemetryRejectedDetail,
+    TelemetryUnknownKeyDetail,
 )
 from app.telemetry.ws_events import publish_control_center_event
 from app.types.json_types import as_json_object, as_json_str, numeric_metrics
@@ -203,18 +208,53 @@ async def bulk_ingest_telemetry(
 ) -> TelemetryBulkIngestResponse:
     reading_ids: list[uuid.UUID] = []
     errors: list[dict[str, str]] = []
+    rejected: list[TelemetryRejectedDetail] = []
+    unknown_keys: list[TelemetryUnknownKeyDetail] = []
     accepted = 0
 
     for index, item in enumerate(payload.items):
         try:
             device = await _get_device_for_user(db, item.device_id, user)
+            spec = await load_thing_model_for_device(db, device)
+            split = split_telemetry_for_profile(spec, dict(item.metrics))
+
+            for rejected_metric in split.rejected:
+                rejected.append(
+                    TelemetryRejectedDetail(
+                        device_id=device.id,
+                        key=rejected_metric.key,
+                        reason=rejected_metric.reason,
+                        value=rejected_metric.value,
+                    )
+                )
+                telemetry_metrics.record_telemetry_rejected(device.tenant_id, rejected_metric.reason)
+
+            for key in split.unknown_keys:
+                unknown_keys.append(TelemetryUnknownKeyDetail(device_id=device.id, key=key))
+                telemetry_metrics.record_telemetry_unknown_key(device.tenant_id)
+
+            telemetry_metrics.record_telemetry_accepted_keys(device.tenant_id, split.accepted_key_count)
+
+            if not split.metrics_to_persist:
+                errors.append(
+                    {
+                        "index": str(index),
+                        "device_id": str(item.device_id),
+                        "detail": "All metric keys rejected by thing-model validation",
+                    }
+                )
+                continue
+
             current = CurrentDevice(
                 device_id=device.id,
                 tenant_id=device.tenant_id,
                 client_id="operator-bulk",
                 status=device.status,
             )
-            ingest_req = TelemetryIngestRequest(timestamp=item.timestamp, metrics=item.metrics)
+            ingest_req = TelemetryIngestRequest(
+                timestamp=item.timestamp,
+                metrics=split.metrics_to_persist,
+            )
             result = await ingest_telemetry(db, redis, current, ingest_req)
             reading_ids.append(result.reading_id)
             accepted += 1
@@ -236,11 +276,21 @@ async def bulk_ingest_telemetry(
                 }
             )
 
+    if settings.telemetry_validation_strict_mode and rejected:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Thing-model validation rejected one or more metric keys",
+        )
+
+    failed = len(payload.items) - accepted
     return TelemetryBulkIngestResponse(
+        accepted_count=accepted,
         accepted=accepted,
-        failed=len(payload.items) - accepted,
+        failed=failed,
         reading_ids=reading_ids,
         errors=errors,
+        rejected=rejected,
+        unknown_keys=unknown_keys,
     )
 
 

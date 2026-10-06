@@ -57,6 +57,12 @@ Default dev API: `http://localhost:8000` · Swagger `/docs`.
 - **Retention trade-off:** Global Timescale retention policy at **enterprise max (730d)** as safety net; daily sweep **DELETE** per tenant by `security_tier` (free 7d / pro 90d / enterprise 730d). Per-tenant Timescale retention policies deferred (would need continuous aggregates or manual chunk drops).
 - **Step 2B (next):** device-profile validator on ingest — **not wired yet**.
 
+## Thing Model enforcement (ingest)
+
+- **Telemetry bulk (`POST /api/v1/telemetry/bulk`):** If `device.profile_id` is set, metrics are validated against the published spec. Valid keys plus **unknown** keys (not in spec) are persisted; invalid keys are listed in `rejected` with `out_of_range` / `wrong_type` / `enum_not_allowed`. Response stays **HTTP 200** so firmware gets per-key feedback on partial bulk success (422 would drop the whole batch for one bad key). Optional `telemetry_validation_strict_mode` (default off) can return 422 when any key is rejected.
+- **Commands (`POST /api/v1/devices/{id}/commands`):** With a profile, commands must exist in the thing model; unknown or invalid params → **400** (single user action, fail fast). Devices **without** a profile keep legacy command validation unchanged.
+- **Step 2C (planned):** per-tenant `strict_validation` column.
+
 ## Engineering Standards
 
 Permanent rules live in **`.cursorrules`** (root):
@@ -79,6 +85,11 @@ Permanent rules live in **`.cursorrules`** (root):
 | Mobile | `analysis_options.yaml` strict-casts/inference |
 
 ## Changelog
+
+### Step 2B — Thing model at ingest (2026-10-06)
+
+- Validator wired to telemetry bulk (partial-success 200 + `rejected` / `unknown_keys`) and device commands (400 when profiled). Prometheus counters on `/metrics`.
+- **Menu & Feature Map:** Telemetry validator at ingest → **In progress**.
 
 ### Step 2A — TimescaleDB telemetry (2026-10-06)
 
