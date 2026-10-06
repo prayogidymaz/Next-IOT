@@ -95,10 +95,15 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Step 3B — EMQX dashboard password sync (2026-10-06)
+
+- **Bug:** Rule setup **401** — EMQX 5.8 force-changes default `admin:public`; API used stale password → empty rules, no telemetry forward.
+- **Fix:** Fixed dev credentials `admin` / `nextiot-dev-admin` on **emqx** + **api** env; required `EMQX_DASHBOARD_PASSWORD`; setup retries + explicit 401 log.
+
 ### Step 3B — Web MQTT credentials, claim tokens UI, EMQX rule forwarding (2026-10-06)
 
 - **Web HQ:** MQTT Credentials panel on `/devices/[id]`; `/claim-tokens` with QR (qrcode.react). Env `NEXT_PUBLIC_MQTT_BROKER_URL`.
-- **API startup:** `emqx_rule_setup` idempotently registers EMQX connector/action/rule → `POST /api/v1/mqtt/ingest/telemetry`.
+- **API startup:** `emqx_rule_setup` idempotently registers EMQX connector/action/rule → `POST /api/v1/mqtt/ingest/telemetry`. Dashboard auth via `EMQX_DASHBOARD_*` (must match `EMQX_DASHBOARD__DEFAULT_*` on **emqx** service; EMQX 5.8 no longer accepts default `public` without force-change).
 - **Ingest:** Webhook validates access_token matches topic tenant/device before `ingest_pipeline`.
 - **Flow:** Device MQTT publish → EMQX rule → API ingest → TimescaleDB.
 

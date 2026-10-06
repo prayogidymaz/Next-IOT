@@ -110,4 +110,29 @@ async def test_setup_logs_warning_on_emqx_unreachable(monkeypatch: pytest.Monkey
     monkeypatch.setattr(emqx_rule_setup.httpx, "AsyncClient", lambda **kwargs: _FailClient())
     with patch.object(emqx_rule_setup.logger, "warning") as warn:
         await emqx_rule_setup.setup_telemetry_forwarding_rule()
-    warn.assert_called_once()
+    assert warn.call_count >= 1
+
+
+def test_emqx_rule_setup_fails_without_password(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(emqx_rule_setup.settings, "emqx_dashboard_password", "")
+    with pytest.raises(ValueError, match="EMQX_DASHBOARD_PASSWORD is required"):
+        emqx_rule_setup.validate_emqx_dashboard_credentials()
+
+
+@pytest.mark.asyncio
+async def test_emqx_rule_setup_uses_env_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: list[tuple[str, str] | None] = []
+
+    class _AuthCapturingClient(_FakeAsyncClient):
+        async def get(self, url: str, auth: tuple[str, str] | None = None) -> _FakeResponse:
+            captured.append(auth)
+            return await super().get(url, auth)
+
+    fake = _AuthCapturingClient(timeout=1.0)
+    monkeypatch.setattr(emqx_rule_setup.httpx, "AsyncClient", lambda **kwargs: fake)
+    await emqx_rule_setup.setup_telemetry_forwarding_rule()
+    assert captured
+    assert captured[0] == (
+        emqx_rule_setup.settings.emqx_dashboard_user,
+        emqx_rule_setup.settings.emqx_dashboard_password,
+    )

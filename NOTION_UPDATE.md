@@ -2,6 +2,8 @@
 
 **Last updated:** 2026-10-06 (UTC+7)  
 
+- **Dashboard auth:** `EMQX_DASHBOARD__DEFAULT_*` on **emqx** must match `EMQX_DASHBOARD_*` on **api** (EMQX 5.8 force-change breaks default `public`).
+
 ### Step 3B — Device Credentials UI + EMQX telemetry rule (synced)
 
 - **Menu:** Device Credentials & QR Claim → **Done** (Web HQ panel + claim tokens page).

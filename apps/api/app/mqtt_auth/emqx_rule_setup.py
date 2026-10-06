@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import TypedDict
 
@@ -14,6 +15,11 @@ CONNECTOR_NAME = "api_mqtt_ingest"
 ACTION_NAME = "forward_telemetry"
 RULE_ID = "rule_forward_telemetry"
 RULE_SQL = 'SELECT topic, payload, clientid, username FROM "tenants/+/devices/+/telemetry"'
+
+_AUTH_FAILURE_MESSAGE = (
+    "EMQX dashboard auth failed. Check EMQX_DASHBOARD_PASSWORD env must match "
+    "EMQX_DASHBOARD__DEFAULT_PASSWORD di service emqx"
+)
 
 
 class _HttpConnectorBody(TypedDict):
@@ -39,6 +45,11 @@ class _RuleBody(TypedDict):
     sql: str
     actions: list[str]
     enable: bool
+
+
+def validate_emqx_dashboard_credentials() -> None:
+    if not settings.emqx_dashboard_password.strip():
+        raise ValueError("EMQX_DASHBOARD_PASSWORD is required")
 
 
 def _auth() -> tuple[str, str]:
@@ -137,14 +148,45 @@ async def _ensure_rule(client: httpx.AsyncClient) -> None:
     await _post_json(client, "/api/v5/rules", body)
 
 
+async def _run_setup_once(client: httpx.AsyncClient) -> None:
+    await _ensure_http_connector(client)
+    await _ensure_http_action(client)
+    await _ensure_rule(client)
+
+
+def _log_http_failure(exc: httpx.HTTPError) -> None:
+    if isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code == 401:
+        logger.error(_AUTH_FAILURE_MESSAGE)
+        return
+    logger.warning("EMQX rule setup skipped (unreachable or misconfigured): %s", exc)
+
+
 async def setup_telemetry_forwarding_rule() -> None:
     if not settings.emqx_telemetry_rule_setup_enabled:
         return
-    try:
-        async with httpx.AsyncClient(timeout=settings.emqx_dashboard_timeout_seconds) as client:
-            await _ensure_http_connector(client)
-            await _ensure_http_action(client)
-            await _ensure_rule(client)
-            logger.info("EMQX telemetry forwarding rule ensured (%s)", RULE_ID)
-    except httpx.HTTPError as exc:
-        logger.warning("EMQX rule setup skipped (unreachable or misconfigured): %s", exc)
+    validate_emqx_dashboard_credentials()
+    logger.info(
+        "EMQX rule setup using dashboard user=%s (credentials from EMQX_DASHBOARD_* env)",
+        settings.emqx_dashboard_user,
+    )
+    backoff_seconds = (0.0, 2.0, 4.0)
+    last_error: httpx.HTTPError | None = None
+    for attempt, delay in enumerate(backoff_seconds, start=1):
+        if delay > 0:
+            await asyncio.sleep(delay)
+        try:
+            async with httpx.AsyncClient(timeout=settings.emqx_dashboard_timeout_seconds) as client:
+                await _run_setup_once(client)
+            logger.info("EMQX rule setup OK (%s)", RULE_ID)
+            return
+        except httpx.HTTPStatusError as exc:
+            last_error = exc
+            if exc.response.status_code == 401:
+                _log_http_failure(exc)
+                return
+            logger.warning("EMQX rule setup attempt %s failed: %s", attempt, exc)
+        except httpx.HTTPError as exc:
+            last_error = exc
+            logger.warning("EMQX rule setup attempt %s failed: %s", attempt, exc)
+    if last_error is not None:
+        _log_http_failure(last_error)
