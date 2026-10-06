@@ -88,6 +88,7 @@ services:
       - "${WEB_PORT:-3000}:3000"
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_MQTT_BROKER_URL: ${NEXT_PUBLIC_MQTT_BROKER_URL:-mqtt://localhost:1883}
       API_PROXY_TARGET: http://api:8000
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"

@@ -2,6 +2,21 @@
 
 **Last updated:** 2026-10-06 (UTC+7)  
 
+### Step 3B — Device Credentials UI + EMQX telemetry rule (synced)
+
+- **Menu:** Device Credentials & QR Claim → **Done** (Web HQ panel + claim tokens page).
+- **Architecture:**
+
+```
+Device --MQTT publish--> EMQX (rule_forward_telemetry)
+                              |
+                              v HTTP + x-internal-secret
+                         API /mqtt/ingest/telemetry
+                              |
+                              v ingest_pipeline (Step 2B)
+                         telemetry_readings (TimescaleDB)
+```
+
 ### Step 3A — EMQX HOCON no env expansion (synced)
 
 - **4 attempts documented:** env headers → single `emqx.conf` crash → `conf.d` ignored → cluster-override OK but `${VAR}` literal → **hardcoded dev secret** + consistency pytest. **Roadmap:** Step 6+ consider EMQX Dashboard API config from API startup; wrap broker in Helm/init container for prod.

@@ -1,0 +1,150 @@
+"""Idempotent EMQX Dashboard API setup for telemetry HTTP forwarding."""
+
+from __future__ import annotations
+
+import logging
+from typing import TypedDict
+
+import httpx
+from app.config import settings
+
+logger = logging.getLogger(__name__)
+
+CONNECTOR_NAME = "api_mqtt_ingest"
+ACTION_NAME = "forward_telemetry"
+RULE_ID = "rule_forward_telemetry"
+RULE_SQL = 'SELECT topic, payload, clientid, username FROM "tenants/+/devices/+/telemetry"'
+
+
+class _HttpConnectorBody(TypedDict):
+    type: str
+    name: str
+    enable: bool
+    url: str
+    method: str
+    headers: dict[str, str]
+
+
+class _HttpActionBody(TypedDict):
+    name: str
+    type: str
+    connector: str
+    enable: bool
+    parameters: dict[str, str | dict[str, str]]
+    resource_opts: dict[str, str | int]
+
+
+class _RuleBody(TypedDict):
+    id: str
+    sql: str
+    actions: list[str]
+    enable: bool
+
+
+def _auth() -> tuple[str, str]:
+    return (settings.emqx_dashboard_user, settings.emqx_dashboard_password)
+
+
+def _dashboard_url(path: str) -> str:
+    base = settings.emqx_dashboard_url.rstrip("/")
+    return f"{base}{path}"
+
+
+def _resource_named(items: object, name: str) -> bool:
+    if not isinstance(items, list):
+        return False
+    for entry in items:
+        if isinstance(entry, dict):
+            entry_name = entry.get("name")
+            if isinstance(entry_name, str) and entry_name == name:
+                return True
+            entry_id = entry.get("id")
+            if isinstance(entry_id, str) and entry_id == name:
+                return True
+    return False
+
+
+async def _get_json(client: httpx.AsyncClient, path: str) -> object:
+    response = await client.get(_dashboard_url(path), auth=_auth())
+    response.raise_for_status()
+    return response.json()
+
+
+async def _post_json(client: httpx.AsyncClient, path: str, body: object) -> None:
+    response = await client.post(_dashboard_url(path), auth=_auth(), json=body)
+    if response.status_code in (200, 201):
+        return
+    if response.status_code == 400 and "ALREADY_EXISTS" in response.text:
+        return
+    response.raise_for_status()
+
+
+async def _ensure_http_connector(client: httpx.AsyncClient) -> None:
+    existing = await _get_json(client, "/api/v5/connectors")
+    if _resource_named(existing, CONNECTOR_NAME):
+        return
+    secret = settings.mqtt_webhook_shared_secret
+    body: _HttpConnectorBody = {
+        "type": "http",
+        "name": CONNECTOR_NAME,
+        "enable": True,
+        "url": settings.emqx_ingest_webhook_url,
+        "method": "post",
+        "headers": {
+            "content-type": "application/json",
+            "x-internal-secret": secret,
+        },
+    }
+    await _post_json(client, "/api/v5/connectors", body)
+
+
+async def _ensure_http_action(client: httpx.AsyncClient) -> None:
+    existing = await _get_json(client, "/api/v5/actions")
+    if _resource_named(existing, ACTION_NAME):
+        return
+    body: _HttpActionBody = {
+        "name": ACTION_NAME,
+        "type": "http",
+        "connector": CONNECTOR_NAME,
+        "enable": True,
+        "parameters": {
+            "method": "post",
+            "path": "",
+            "headers": {"content-type": "application/json"},
+            "body": (
+                '{"topic":"${topic}","payload":${payload},'
+                '"clientid":"${clientid}","username":"${username}"}'
+            ),
+        },
+        "resource_opts": {
+            "worker_pool_size": 8,
+            "health_check_interval": "15s",
+        },
+    }
+    await _post_json(client, "/api/v5/actions", body)
+
+
+async def _ensure_rule(client: httpx.AsyncClient) -> None:
+    existing = await _get_json(client, "/api/v5/rules")
+    if _resource_named(existing, RULE_ID):
+        return
+    body: _RuleBody = {
+        "id": RULE_ID,
+        "sql": RULE_SQL,
+        "actions": [ACTION_NAME],
+        "enable": True,
+    }
+    await _post_json(client, "/api/v5/rules", body)
+
+
+async def setup_telemetry_forwarding_rule() -> None:
+    if not settings.emqx_telemetry_rule_setup_enabled:
+        return
+    try:
+        async with httpx.AsyncClient(timeout=settings.emqx_dashboard_timeout_seconds) as client:
+            await _ensure_http_connector(client)
+            await _ensure_http_action(client)
+            await _ensure_rule(client)
+            logger.info("EMQX telemetry forwarding rule ensured (%s)", RULE_ID)
+    except httpx.HTTPError as exc:
+        logger.warning("EMQX rule setup skipped (unreachable or misconfigured): %s", exc)

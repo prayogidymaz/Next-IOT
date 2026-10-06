@@ -95,6 +95,13 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Step 3B — Web MQTT credentials, claim tokens UI, EMQX rule forwarding (2026-10-06)
+
+- **Web HQ:** MQTT Credentials panel on `/devices/[id]`; `/claim-tokens` with QR (qrcode.react). Env `NEXT_PUBLIC_MQTT_BROKER_URL`.
+- **API startup:** `emqx_rule_setup` idempotently registers EMQX connector/action/rule → `POST /api/v1/mqtt/ingest/telemetry`.
+- **Ingest:** Webhook validates access_token matches topic tenant/device before `ingest_pipeline`.
+- **Flow:** Device MQTT publish → EMQX rule → API ingest → TimescaleDB.
+
 ### Step 3A — EMQX HOCON secret literal (2026-10-06)
 
 - **Bug (attempt 4):** `${MQTT_WEBHOOK_SHARED_SECRET}` in cluster-override stayed literal in runtime → API **403** on webhooks. EMQX HOCON does not expand OS env in `${…}`.

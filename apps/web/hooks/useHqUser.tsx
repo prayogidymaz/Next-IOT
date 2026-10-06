@@ -12,7 +12,7 @@ import { z } from "zod";
 
 import { getApiBaseUrl } from "@/lib/auth/api";
 import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/constants";
-import { canWriteDeviceProfiles } from "@/lib/hq/rbac";
+import { canAdminClaimTokens, canManageMqttCredentials, canWriteDeviceProfiles } from "@/lib/hq/rbac";
 
 const meSchema = z.object({
   user_id: z.string(),
@@ -29,6 +29,8 @@ type HqUserContextValue = {
   me: HqMe | null;
   loading: boolean;
   canWriteProfiles: boolean;
+  canManageMqttCredentials: boolean;
+  canAdminClaimTokens: boolean;
 };
 
 const HqUserContext = createContext<HqUserContextValue | null>(null);
@@ -77,6 +79,8 @@ export function HqUserProvider({ children }: { children: ReactNode }) {
       me,
       loading,
       canWriteProfiles: canWriteDeviceProfiles(me?.role),
+      canManageMqttCredentials: canManageMqttCredentials(me?.role),
+      canAdminClaimTokens: canAdminClaimTokens(me?.role),
     }),
     [me, loading],
   );

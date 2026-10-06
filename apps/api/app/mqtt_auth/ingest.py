@@ -6,6 +6,7 @@ import json
 from datetime import UTC, datetime
 from typing import TypedDict
 
+from app.device_credentials.service import lookup_active_by_access_token
 from app.devices.dependencies import CurrentDevice
 from app.models.device import Device
 from app.mqtt_auth.acl import parse_device_topic
@@ -44,6 +45,21 @@ async def ingest_mqtt_telemetry(
     parsed_topic = parse_device_topic(body.topic)
     if parsed_topic is None or parsed_topic.suffix != "telemetry":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid telemetry topic")
+
+    access_token = body.username.strip() or body.clientid.strip()
+    if not access_token:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Missing credential token")
+    credential = await lookup_active_by_access_token(db, access_token)
+    if credential is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid credential token")
+    if (
+        credential.device_id != parsed_topic.device_id
+        or credential.tenant_id != parsed_topic.tenant_id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Credential does not match topic device",
+        )
 
     try:
         payload_obj = json.loads(body.payload) if body.payload else {}

@@ -27,6 +27,7 @@ class DeviceClaimTokenResponse(BaseModel):
     claimed_at: datetime | None
     claimed_device_id: uuid.UUID | None
     created_at: datetime
+    created_by_user_id: uuid.UUID | None
     qr_code_url: str
 
     @classmethod
@@ -43,6 +44,7 @@ class DeviceClaimTokenResponse(BaseModel):
             claimed_at=row.claimed_at,
             claimed_device_id=row.claimed_device_id,
             created_at=row.created_at,
+            created_by_user_id=row.created_by_user_id,
             qr_code_url=qr_code_url,
         )
 

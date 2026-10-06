@@ -28,6 +28,7 @@ from app.mavlink.router import router as mavlink_router
 from app.mission.router import router as mission_router
 from app.mission.sar_emergency_router import router as sar_emergency_ws_router
 from app.models.user import User
+from app.mqtt_auth.emqx_rule_setup import setup_telemetry_forwarding_rule
 from app.mqtt_auth.router import router as mqtt_auth_router
 from app.notifications.router import router as notifications_router
 from app.notifications.worker import notification_dispatcher_loop
@@ -93,6 +94,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             await run_device_profile_seed()
         except Exception:
             logger.exception("Demo device profile seed failed")
+
+    if settings.emqx_telemetry_rule_setup_enabled:
+        try:
+            await setup_telemetry_forwarding_rule()
+        except Exception:
+            logger.exception("EMQX telemetry rule setup failed")
 
     stop_event = asyncio.Event()
     worker_tasks: list[asyncio.Task[None]] = []
