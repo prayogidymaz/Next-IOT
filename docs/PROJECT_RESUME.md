@@ -95,15 +95,22 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Step 3B — EMQX REST API key bootstrap (2026-10-06)
+
+- **Bug:** Dashboard **admin password** does not authenticate `/api/v5/*` (401); login returns Bearer JWT only. Rule setup must use **API key** Basic Auth (`api_key:secret` from bootstrap file).
+- **Fix:** `infra/emqx/api-keys.conf` + `EMQX_API_KEY__BOOTSTRAP_FILE`; API uses `EMQX_API_KEY` / `EMQX_API_SECRET`. Dashboard env kept for **UI login only**.
+
+**EMQX integration best practice (6 attempts):** cluster-override merge → HOCON literal webhook secret → dashboard password sync → **API key bootstrap** for automation; avoid assuming dashboard credentials work for REST.
+
 ### Step 3B — EMQX dashboard password sync (2026-10-06)
 
 - **Bug:** Rule setup **401** — EMQX 5.8 force-changes default `admin:public`; API used stale password → empty rules, no telemetry forward.
-- **Fix:** Fixed dev credentials `admin` / `nextiot-dev-admin` on **emqx** + **api** env; required `EMQX_DASHBOARD_PASSWORD`; setup retries + explicit 401 log.
+- **Fix:** Fixed dev credentials `admin` / `nextiot-dev-admin` on **emqx** for **Dashboard UI** only; REST rule setup uses **API key bootstrap** (`EMQX_API_KEY` / `EMQX_API_SECRET`).
 
 ### Step 3B — Web MQTT credentials, claim tokens UI, EMQX rule forwarding (2026-10-06)
 
 - **Web HQ:** MQTT Credentials panel on `/devices/[id]`; `/claim-tokens` with QR (qrcode.react). Env `NEXT_PUBLIC_MQTT_BROKER_URL`.
-- **API startup:** `emqx_rule_setup` idempotently registers EMQX connector/action/rule → `POST /api/v1/mqtt/ingest/telemetry`. Dashboard auth via `EMQX_DASHBOARD_*` (must match `EMQX_DASHBOARD__DEFAULT_*` on **emqx** service; EMQX 5.8 no longer accepts default `public` without force-change).
+- **API startup:** `emqx_rule_setup` uses **EMQX API key** Basic Auth (`EMQX_API_KEY` / `EMQX_API_SECRET` ↔ `infra/emqx/api-keys.conf` bootstrap). Dashboard password is for UI only.
 - **Ingest:** Webhook validates access_token matches topic tenant/device before `ingest_pipeline`.
 - **Flow:** Device MQTT publish → EMQX rule → API ingest → TimescaleDB.
 

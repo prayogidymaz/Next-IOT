@@ -58,9 +58,9 @@ services:
       POSTGRES_HOST: postgres
       REDIS_HOST: redis
       MQTT_WEBHOOK_SHARED_SECRET: ${MQTT_WEBHOOK_SHARED_SECRET:-dev-mqtt-webhook-secret}
-      EMQX_DASHBOARD_USER: admin
-      EMQX_DASHBOARD_PASSWORD: nextiot-dev-admin
       EMQX_DASHBOARD_URL: http://emqx:18083
+      EMQX_API_KEY: nextiot-api-key
+      EMQX_API_SECRET: nextiot-api-secret-change-in-prod
     depends_on:
       postgres:
         condition: service_healthy
@@ -184,9 +184,11 @@ services:
     environment:
       EMQX_DASHBOARD__DEFAULT_USERNAME: admin
       EMQX_DASHBOARD__DEFAULT_PASSWORD: nextiot-dev-admin
+      EMQX_API_KEY__BOOTSTRAP_FILE: /opt/emqx/etc/api-keys.conf
     volumes:
       - emqx_data:/opt/emqx/data
       - ./infra/emqx/cluster-override.conf:/opt/emqx/data/configs/cluster-override.conf:ro
+      - ./infra/emqx/api-keys.conf:/opt/emqx/etc/api-keys.conf:ro
     healthcheck:
       test: ["CMD", "emqx_ctl", "status"]
       interval: 10s

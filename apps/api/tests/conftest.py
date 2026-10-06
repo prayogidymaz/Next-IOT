@@ -7,7 +7,8 @@ from urllib.parse import urlparse, urlunparse
 os.environ.setdefault("RUN_BACKGROUND_WORKERS", "false")
 os.environ.setdefault("SEED_DEFAULT_ADMIN", "false")
 os.environ.setdefault("SEED_DEMO_TELEMETRY", "false")
-os.environ.setdefault("EMQX_DASHBOARD_PASSWORD", "nextiot-dev-admin")
+os.environ.setdefault("EMQX_API_KEY", "nextiot-api-key")
+os.environ.setdefault("EMQX_API_SECRET", "nextiot-api-secret-change-in-prod")
 
 
 def _bootstrap_test_database_env() -> tuple[str, str]:

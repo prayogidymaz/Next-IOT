@@ -70,8 +70,8 @@ class Settings(BaseModel):
     mqtt_auth_cache_ttl_seconds: int = 60
     mqtt_webhook_shared_secret: str = "dev-mqtt-webhook-secret"
     emqx_dashboard_url: str = "http://emqx:18083"
-    emqx_dashboard_user: str = "admin"
-    emqx_dashboard_password: str = ""
+    emqx_api_key: str = ""
+    emqx_api_secret: str = ""
     emqx_dashboard_timeout_seconds: float = 10.0
     emqx_telemetry_rule_setup_enabled: bool = True
     emqx_ingest_webhook_url: str = "http://api:8000/api/v1/mqtt/ingest/telemetry"

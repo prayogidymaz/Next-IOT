@@ -17,8 +17,8 @@ RULE_ID = "rule_forward_telemetry"
 RULE_SQL = 'SELECT topic, payload, clientid, username FROM "tenants/+/devices/+/telemetry"'
 
 _AUTH_FAILURE_MESSAGE = (
-    "EMQX dashboard auth failed. Check EMQX_DASHBOARD_PASSWORD env must match "
-    "EMQX_DASHBOARD__DEFAULT_PASSWORD di service emqx"
+    "EMQX API auth failed. Check EMQX_API_KEY env match "
+    "EMQX_API_KEY__BOOTSTRAP_FILE di emqx service"
 )
 
 
@@ -47,13 +47,20 @@ class _RuleBody(TypedDict):
     enable: bool
 
 
-def validate_emqx_dashboard_credentials() -> None:
-    if not settings.emqx_dashboard_password.strip():
-        raise ValueError("EMQX_DASHBOARD_PASSWORD is required")
+def validate_emqx_api_credentials() -> None:
+    if not settings.emqx_api_key.strip() or not settings.emqx_api_secret.strip():
+        raise ValueError("EMQX_API_KEY and EMQX_API_SECRET are required")
 
 
-def _auth() -> tuple[str, str]:
-    return (settings.emqx_dashboard_user, settings.emqx_dashboard_password)
+def _auth() -> httpx.BasicAuth:
+    return httpx.BasicAuth(settings.emqx_api_key, settings.emqx_api_secret)
+
+
+def _api_key_log_prefix() -> str:
+    key = settings.emqx_api_key.strip()
+    if len(key) <= 8:
+        return key
+    return f"{key[:8]}…"
 
 
 def _dashboard_url(path: str) -> str:
@@ -156,7 +163,7 @@ async def _run_setup_once(client: httpx.AsyncClient) -> None:
 
 def _log_http_failure(exc: httpx.HTTPError) -> None:
     if isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code == 401:
-        logger.error(_AUTH_FAILURE_MESSAGE)
+        logger.error("%s (api_key prefix=%s)", _AUTH_FAILURE_MESSAGE, _api_key_log_prefix())
         return
     logger.warning("EMQX rule setup skipped (unreachable or misconfigured): %s", exc)
 
@@ -164,10 +171,10 @@ def _log_http_failure(exc: httpx.HTTPError) -> None:
 async def setup_telemetry_forwarding_rule() -> None:
     if not settings.emqx_telemetry_rule_setup_enabled:
         return
-    validate_emqx_dashboard_credentials()
+    validate_emqx_api_credentials()
     logger.info(
-        "EMQX rule setup using dashboard user=%s (credentials from EMQX_DASHBOARD_* env)",
-        settings.emqx_dashboard_user,
+        "EMQX rule setup using API key prefix=%s (from EMQX_API_KEY env)",
+        _api_key_log_prefix(),
     )
     backoff_seconds = (0.0, 2.0, 4.0)
     last_error: httpx.HTTPError | None = None

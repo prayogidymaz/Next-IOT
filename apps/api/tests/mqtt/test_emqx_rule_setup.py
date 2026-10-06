@@ -24,7 +24,7 @@ class _FakeResponse:
 
 
 class _FakeAsyncClient:
-    def __init__(self, *, timeout: float) -> None:
+    def __init__(self, *, timeout: float = 10.0) -> None:
         self.timeout = timeout
         self.posts: list[tuple[str, object]] = []
         self.gets: list[str] = []
@@ -35,7 +35,7 @@ class _FakeAsyncClient:
     async def __aexit__(self, *_args: object) -> None:
         return None
 
-    async def get(self, url: str, auth: tuple[str, str] | None = None) -> _FakeResponse:
+    async def get(self, url: str, auth: httpx.Auth | tuple[str, str] | None = None) -> _FakeResponse:
         self.gets.append(url)
         if url.endswith("/api/v5/connectors"):
             return _FakeResponse(200, [])
@@ -45,9 +45,23 @@ class _FakeAsyncClient:
             return _FakeResponse(200, [])
         return _FakeResponse(200, [])
 
-    async def post(self, url: str, auth: tuple[str, str] | None = None, json: object = None) -> _FakeResponse:
+    async def post(
+        self,
+        url: str,
+        auth: httpx.Auth | tuple[str, str] | None = None,
+        json: object = None,
+    ) -> _FakeResponse:
         self.posts.append((url, json))
         return _FakeResponse(201, {})
+
+
+def _authorization_header(auth: httpx.Auth | tuple[str, str] | None) -> str:
+    request = httpx.Request("GET", "http://emqx.test")
+    if auth is None:
+        return request.headers.get("Authorization", "")
+    flow = auth.sync_auth_flow(request)
+    next(flow)
+    return request.headers["Authorization"]
 
 
 @pytest.mark.asyncio
@@ -62,7 +76,7 @@ async def test_setup_creates_connector_if_not_exists(monkeypatch: pytest.MonkeyP
 @pytest.mark.asyncio
 async def test_setup_skips_connector_if_exists(monkeypatch: pytest.MonkeyPatch) -> None:
     class _ExistingClient(_FakeAsyncClient):
-        async def get(self, url: str, auth: tuple[str, str] | None = None) -> _FakeResponse:
+        async def get(self, url: str, auth: httpx.Auth | tuple[str, str] | None = None) -> _FakeResponse:
             if url.endswith("/api/v5/connectors"):
                 return _FakeResponse(200, [{"name": emqx_rule_setup.CONNECTOR_NAME}])
             return await super().get(url, auth)
@@ -104,7 +118,7 @@ async def test_setup_logs_warning_on_emqx_unreachable(monkeypatch: pytest.Monkey
         async def __aexit__(self, *_args: object) -> None:
             return None
 
-        async def get(self, url: str, auth: tuple[str, str] | None = None) -> _FakeResponse:
+        async def get(self, url: str, auth: httpx.Auth | tuple[str, str] | None = None) -> _FakeResponse:
             raise httpx.ConnectError("down")
 
     monkeypatch.setattr(emqx_rule_setup.httpx, "AsyncClient", lambda **kwargs: _FailClient())
@@ -113,18 +127,18 @@ async def test_setup_logs_warning_on_emqx_unreachable(monkeypatch: pytest.Monkey
     assert warn.call_count >= 1
 
 
-def test_emqx_rule_setup_fails_without_password(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(emqx_rule_setup.settings, "emqx_dashboard_password", "")
-    with pytest.raises(ValueError, match="EMQX_DASHBOARD_PASSWORD is required"):
-        emqx_rule_setup.validate_emqx_dashboard_credentials()
+def test_setup_fails_without_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(emqx_rule_setup.settings, "emqx_api_key", "")
+    with pytest.raises(ValueError, match="EMQX_API_KEY and EMQX_API_SECRET are required"):
+        emqx_rule_setup.validate_emqx_api_credentials()
 
 
 @pytest.mark.asyncio
-async def test_emqx_rule_setup_uses_env_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
-    captured: list[tuple[str, str] | None] = []
+async def test_setup_uses_api_key_auth(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: list[httpx.Auth | tuple[str, str] | None] = []
 
     class _AuthCapturingClient(_FakeAsyncClient):
-        async def get(self, url: str, auth: tuple[str, str] | None = None) -> _FakeResponse:
+        async def get(self, url: str, auth: httpx.Auth | tuple[str, str] | None = None) -> _FakeResponse:
             captured.append(auth)
             return await super().get(url, auth)
 
@@ -132,7 +146,20 @@ async def test_emqx_rule_setup_uses_env_credentials(monkeypatch: pytest.MonkeyPa
     monkeypatch.setattr(emqx_rule_setup.httpx, "AsyncClient", lambda **kwargs: fake)
     await emqx_rule_setup.setup_telemetry_forwarding_rule()
     assert captured
-    assert captured[0] == (
-        emqx_rule_setup.settings.emqx_dashboard_user,
-        emqx_rule_setup.settings.emqx_dashboard_password,
-    )
+    assert _authorization_header(captured[0]) == _authorization_header(emqx_rule_setup._auth())
+
+
+@pytest.mark.asyncio
+async def test_setup_logs_api_key_prefix_on_401(monkeypatch: pytest.MonkeyPatch) -> None:
+    class _UnauthorizedClient(_FakeAsyncClient):
+        async def get(self, url: str, auth: httpx.Auth | tuple[str, str] | None = None) -> _FakeResponse:
+            return _FakeResponse(401, {})
+
+    monkeypatch.setattr(emqx_rule_setup.httpx, "AsyncClient", lambda **kwargs: _UnauthorizedClient())
+    with patch.object(emqx_rule_setup.logger, "error") as err:
+        await emqx_rule_setup.setup_telemetry_forwarding_rule()
+    assert err.call_count == 1
+    log_args = err.call_args[0]
+    assert log_args[0] == "%s (api_key prefix=%s)"
+    assert "EMQX API auth failed" in log_args[1]
+    assert log_args[2]

@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-10-06 (UTC+7)  
 
-- **Dashboard auth:** `EMQX_DASHBOARD__DEFAULT_*` on **emqx** must match `EMQX_DASHBOARD_*` on **api** (EMQX 5.8 force-change breaks default `public`).
+- **REST automation:** API key bootstrap file on **emqx** + `EMQX_API_KEY`/`EMQX_API_SECRET` on **api** (not dashboard admin password for `/api/v5`).
 
 ### Step 3B — Device Credentials UI + EMQX telemetry rule (synced)
 
