@@ -66,6 +66,8 @@ services:
     volumes:
       - ./apps/api:/app
       - ./packages/shared:/packages/shared:ro
+      - ./infra/emqx:/infra/emqx:ro
+      - ./docker-compose.yml:/docker-compose.yml:ro
     command: >
       sh -c "alembic upgrade head &&
              python -m app.seed &&
@@ -176,17 +178,11 @@ services:
       - "${MQTT_TLS_PORT:-8883}:8883"
       - "${EMQX_DASHBOARD_PORT:-18083}:18083"
     environment:
-      EMQX_AUTHENTICATION__1__MECHANISM: password_based
-      EMQX_AUTHENTICATION__1__BACKEND: http
-      EMQX_AUTHENTICATION__1__URL: http://api:8000/api/v1/mqtt/auth
-      EMQX_AUTHENTICATION__1__METHOD: post
-      EMQX_AUTHENTICATION__1__HEADERS__X_INTERNAL_SECRET: ${MQTT_WEBHOOK_SHARED_SECRET:-dev-mqtt-webhook-secret}
-      EMQX_AUTHORIZATION__NO_MATCH: deny
-      EMQX_AUTHORIZATION__SOURCES__1__TYPE: http
-      EMQX_AUTHORIZATION__SOURCES__1__URL: http://api:8000/api/v1/mqtt/acl
-      EMQX_AUTHORIZATION__SOURCES__1__METHOD: post
-      EMQX_AUTHORIZATION__SOURCES__1__HEADERS__X_INTERNAL_SECRET: ${MQTT_WEBHOOK_SHARED_SECRET:-dev-mqtt-webhook-secret}
+      MQTT_WEBHOOK_SHARED_SECRET: ${MQTT_WEBHOOK_SHARED_SECRET:-dev-mqtt-webhook-secret}
+      EMQX_DASHBOARD__DEFAULT_USERNAME: ${EMQX_DASHBOARD__DEFAULT_USERNAME:-admin}
+      EMQX_DASHBOARD__DEFAULT_PASSWORD: ${EMQX_DASHBOARD__DEFAULT_PASSWORD:-public}
     volumes:
+      - ./infra/emqx/emqx.conf:/opt/emqx/etc/emqx.conf:ro
       - emqx_data:/opt/emqx/data
     healthcheck:
       test: ["CMD", "emqx_ctl", "status"]

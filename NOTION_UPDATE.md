@@ -2,6 +2,10 @@
 
 **Last updated:** 2026-10-06 (UTC+7)  
 
+### Step 3A — EMQX HOCON webhook headers (synced)
+
+- **Menu:** Device Credentials + EMQX → **In progress**; auth/ACL HTTP hooks configured in **`infra/emqx/emqx.conf`** (not `EMQX__HEADERS__` env — unsupported in 5.8). Secret: `MQTT_WEBHOOK_SHARED_SECRET` in compose + `.env`.
+
 ### Step 3A — Credential conflict fix (synced)
 
 - **Menu:** Device Credentials + EMQX → **In progress**; **API behavior:** `POST …/credentials` → **201** first time, **409** if active credential exists (message directs to `/rotate`); rotate = new token + new `dev_*` client_id, old token denied for MQTT auth.

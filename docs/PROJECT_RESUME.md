@@ -59,7 +59,7 @@ Default dev API: `http://localhost:8000` · Swagger `/docs`.
 
 ## MQTT Broker & Device Credentials
 
-- **Broker:** EMQX 5.8 (`next-iot-emqx`) with HTTP auth/ACL webhooks to API (`/api/v1/mqtt/auth`, `/api/v1/mqtt/acl`). Shared secret header `X-Internal-Secret`.
+- **Broker:** EMQX 5.8 (`next-iot-emqx`) with HTTP auth/ACL webhooks to API (`/api/v1/mqtt/auth`, `/api/v1/mqtt/acl`). Shared secret header `X-Internal-Secret` via mounted HOCON (`infra/emqx/emqx.conf`); EMQX 5.8 does **not** apply `__HEADERS__*` env overrides (logs `unknown_env_vars`).
 - **Credentials:** `device_credentials` stores MQTT `access_token` (plaintext for EMQX match) + `client_id`; HTTP Basic provisioning unchanged for legacy devices.
 - **Ingest (Option A):** EMQX rule → `POST /api/v1/mqtt/ingest/telemetry` reuses `ingest_pipeline.py` (Step 2B). Option B (API MQTT subscriber) deferred for latency work later.
 - **QR claim:** `device_claim_tokens` + `POST .../claim` returns one-time token + `mqtt_broker_url`.
@@ -93,6 +93,11 @@ Permanent rules live in **`.cursorrules`** (root):
 | Mobile | `analysis_options.yaml` strict-casts/inference |
 
 ## Changelog
+
+### Step 3A — EMQX webhook headers via HOCON mount (2026-10-06)
+
+- **Bug:** EMQX 5.8 ignored `EMQX_AUTHENTICATION__1__HEADERS__*` / `EMQX_AUTHORIZATION__SOURCES__1__HEADERS__*` env vars → API webhooks returned **403** (no `X-Internal-Secret`). Manual curl with header worked.
+- **Fix:** `infra/emqx/emqx.conf` mounted at `/opt/emqx/etc/emqx.conf`; container env `MQTT_WEBHOOK_SHARED_SECRET` resolves `${MQTT_WEBHOOK_SHARED_SECRET}` in HOCON. Removed EMQX auth/ACL env overrides from `docker-compose.yml`.
 
 ### Step 3A — Credential generate conflict + partial unique index (2026-10-06)
 
