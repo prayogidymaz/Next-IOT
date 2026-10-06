@@ -2,9 +2,13 @@
 
 **Last updated:** 2026-10-06 (UTC+7)  
 
+### Step 3A — EMQX overlay + ACL manual finding (synced)
+
+- **Menu:** Device Credentials + EMQX → **In progress**; **`infra/emqx/overlay/`** → `emqx.conf.d` merge (not single `emqx.conf` override). Manual test: missing overlay caused crash loop + ACL bypass (publish as another device); API `/mqtt/acl` logic covered by integration pytest.
+
 ### Step 3A — EMQX HOCON webhook headers (synced)
 
-- **Menu:** Device Credentials + EMQX → **In progress**; auth/ACL HTTP hooks configured in **`infra/emqx/emqx.conf`** (not `EMQX__HEADERS__` env — unsupported in 5.8). Secret: `MQTT_WEBHOOK_SHARED_SECRET` in compose + `.env`.
+- Superseded by overlay directory mount (see above).
 
 ### Step 3A — Credential conflict fix (synced)
 
