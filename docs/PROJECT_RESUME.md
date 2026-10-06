@@ -57,6 +57,14 @@ Default dev API: `http://localhost:8000` · Swagger `/docs`.
 - **Retention trade-off:** Global Timescale retention policy at **enterprise max (730d)** as safety net; daily sweep **DELETE** per tenant by `security_tier` (free 7d / pro 90d / enterprise 730d). Per-tenant Timescale retention policies deferred (would need continuous aggregates or manual chunk drops).
 - **Step 2B (next):** device-profile validator on ingest — **not wired yet**.
 
+## MQTT Broker & Device Credentials
+
+- **Broker:** EMQX 5.8 (`next-iot-emqx`) with HTTP auth/ACL webhooks to API (`/api/v1/mqtt/auth`, `/api/v1/mqtt/acl`). Shared secret header `X-Internal-Secret`.
+- **Credentials:** `device_credentials` stores MQTT `access_token` (plaintext for EMQX match) + `client_id`; HTTP Basic provisioning unchanged for legacy devices.
+- **Ingest (Option A):** EMQX rule → `POST /api/v1/mqtt/ingest/telemetry` reuses `ingest_pipeline.py` (Step 2B). Option B (API MQTT subscriber) deferred for latency work later.
+- **QR claim:** `device_claim_tokens` + `POST .../claim` returns one-time token + `mqtt_broker_url`.
+- **Dashboard (dev):** http://localhost:18083 (default admin/public — change in prod).
+
 ## Thing Model enforcement (ingest)
 
 - **Telemetry bulk (`POST /api/v1/telemetry/bulk`):** If `device.profile_id` is set, metrics are validated against the published spec. Valid keys plus **unknown** keys (not in spec) are persisted; invalid keys are listed in `rejected` with `out_of_range` / `wrong_type` / `enum_not_allowed`. Response stays **HTTP 200** so firmware gets per-key feedback on partial bulk success (422 would drop the whole batch for one bad key). Optional `telemetry_validation_strict_mode` (default off) can return 422 when any key is rejected.
@@ -85,6 +93,11 @@ Permanent rules live in **`.cursorrules`** (root):
 | Mobile | `analysis_options.yaml` strict-casts/inference |
 
 ## Changelog
+
+### Step 3 — MQTT / EMQX / credentials / QR claim (2026-10-06)
+
+- EMQX compose service, migration 016, MQTT webhooks + ingest Option A, credential & claim APIs, 20 pytest.
+- **Notion:** Step 3, MQTT Broker + EMQX, Device Credentials & QR Claim → **In progress**.
 
 ### Step 2B — Thing model at ingest (2026-10-06)
 

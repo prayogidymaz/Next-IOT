@@ -11,6 +11,8 @@ from app.auth.rbac import UserRole
 from app.commands import service as command_service
 from app.commands.schemas import DeviceCommandRequest, DeviceCommandResponse
 from app.deps import DbSession, RedisDep
+from app.device_credentials import service as credential_service
+from app.device_credentials.schemas import DeviceCredentialCreateResponse, DeviceCredentialPublicResponse
 from app.device_profiles import service as device_profile_service
 from app.device_profiles.schemas import AssignDeviceProfileRequest
 from app.devices import service
@@ -197,3 +199,46 @@ async def assign_device_profile(
     db: DbSession,
 ) -> None:
     await device_profile_service.assign_device_profile(db, user, device_id, payload.profile_id)
+
+
+@router.get("/{device_id}/credentials", response_model=DeviceCredentialPublicResponse)
+async def get_device_credentials(
+    device_id: uuid.UUID,
+    user: RequireOperator,
+    db: DbSession,
+) -> DeviceCredentialPublicResponse:
+    return await credential_service.get_active_credential(db, device_id, user)
+
+
+@router.post(
+    "/{device_id}/credentials",
+    response_model=DeviceCredentialCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_device_credentials(
+    device_id: uuid.UUID,
+    user: RequireOperator,
+    db: DbSession,
+    redis: RedisDep,
+) -> DeviceCredentialCreateResponse:
+    return await credential_service.generate_credential(db, redis, user, device_id)
+
+
+@router.post("/{device_id}/credentials/rotate", response_model=DeviceCredentialCreateResponse)
+async def rotate_device_credentials(
+    device_id: uuid.UUID,
+    user: RequireOperator,
+    db: DbSession,
+    redis: RedisDep,
+) -> DeviceCredentialCreateResponse:
+    return await credential_service.rotate_credential(db, redis, user, device_id)
+
+
+@router.delete("/{device_id}/credentials", status_code=status.HTTP_204_NO_CONTENT)
+async def revoke_device_credentials(
+    device_id: uuid.UUID,
+    user: RequireOperator,
+    db: DbSession,
+    redis: RedisDep,
+) -> None:
+    await credential_service.revoke_credential(db, redis, user, device_id)

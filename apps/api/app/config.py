@@ -63,9 +63,15 @@ class Settings(BaseModel):
     cors_allow_origins: str = "*"
     cors_allow_credentials: bool = True
 
-    mqtt_broker_host: str = ""
+    mqtt_broker_host: str = "emqx"
     mqtt_broker_port: int = 1883
     mqtt_broker_timeout_seconds: float = 2.0
+    mqtt_broker_url_external: str = "mqtt://localhost:1883"
+    mqtt_auth_cache_ttl_seconds: int = 60
+    mqtt_webhook_shared_secret: str = "dev-mqtt-webhook-secret"
+    device_credential_token_length: int = 36
+    device_claim_token_default_ttl_hours: int = 24
+    device_claim_token_max_ttl_hours: int = 168
 
     seed_default_admin: bool = True
     seed_admin_email: str = "admin@nextiot.com"

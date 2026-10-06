@@ -52,6 +52,8 @@ def _check_mqtt_broker() -> str:
         with socket.create_connection((host, port), timeout=settings.mqtt_broker_timeout_seconds):
             return "ok"
     except OSError:
+        if settings.app_env == "development":
+            return "standby"
         return "fail"
 
 

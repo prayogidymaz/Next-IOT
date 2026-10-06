@@ -1,6 +1,7 @@
 from app.models.audit_log import AuditLog
 from app.models.automation_pipeline import AutomationPipeline
 from app.models.device import Device, DeviceStatus
+from app.models.device_claim_token import DeviceClaimToken
 from app.models.device_command import CommandStatus, CommandType, DeviceCommand
 from app.models.device_credential import DeviceCredential
 from app.models.device_metadata import DeviceMetadata
@@ -29,6 +30,7 @@ __all__ = [
     "CommandType",
     "CommandStatus",
     "DeviceCredential",
+    "DeviceClaimToken",
     "DeviceMetadata",
     "TelemetryReading",
     "TelemetryAnomaly",

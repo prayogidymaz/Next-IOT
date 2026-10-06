@@ -27,7 +27,6 @@ from app.devices.schemas import (
     HeartbeatResponse,
 )
 from app.devices.security import (
-    generate_client_id,
     generate_client_secret,
     generate_provisioning_token,
     hash_device_secret,
@@ -35,8 +34,15 @@ from app.devices.security import (
 from app.devices.state_machine import ADMIN_STATUS_TARGETS, can_send_heartbeat, should_emit_online
 from app.models.device import Device, DeviceStatus
 from app.models.device_category import DeviceCategory, infer_device_category
-from app.models.device_credential import DeviceCredential
+from app.models.device_credential import (
+    CredentialType,
+    DeviceCredential,
+    device_short_id,
+    generate_access_token,
+    generate_mqtt_client_id,
+)
 from app.models.device_metadata import DeviceMetadata
+from app.models.tenant import Tenant
 from app.types.redis_client import RedisClient
 
 
@@ -201,13 +207,24 @@ async def provision_device(
     if device.credentials:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Device credentials already exist")
 
-    client_id = generate_client_id()
+    if device.credentials:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Device credentials already exist")
+
+    tenant = await db.scalar(select(Tenant).where(Tenant.id == device.tenant_id))
+    if tenant is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
+
     client_secret = generate_client_secret()
+    client_id = generate_mqtt_client_id(tenant.slug, device_short_id(device.id))
 
     credential = DeviceCredential(
         device_id=device.id,
+        tenant_id=device.tenant_id,
+        credential_type=CredentialType.BASIC_AUTH,
+        access_token=generate_access_token(),
         client_id=client_id,
         secret_hash=hash_device_secret(client_secret),
+        is_active=True,
     )
     device.status = DeviceStatus.PROVISIONED
     db.add(credential)

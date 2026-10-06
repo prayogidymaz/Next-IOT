@@ -154,7 +154,7 @@ class LoRaBridge:
             cred = await db.scalar(
                 select(DeviceCredential)
                 .where(DeviceCredential.device_id == device.id)
-                .order_by(DeviceCredential.issued_at.desc())
+                .order_by(DeviceCredential.created_at.desc())
             )
             if cred is None:
                 logger.warning("Device %s has no credentials for LoRa ingest", device.id)

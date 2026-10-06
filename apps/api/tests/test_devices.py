@@ -68,7 +68,7 @@ async def test_register_and_provision_device_happy_path(
     assert provision.status_code == 200
     creds = provision.json()
     assert creds["status"] == "provisioned"
-    assert creds["client_id"].startswith("dev_")
+    assert creds["client_id"].startswith("tenant_")
     assert len(creds["client_secret"]) > 20
 
     # Provisioning token is one-time

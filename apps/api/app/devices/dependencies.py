@@ -35,7 +35,10 @@ async def get_current_device(
         .options(selectinload(DeviceCredential.device))
         .where(DeviceCredential.client_id == credentials.username)
     )
-    if not result or result.revoked_at is not None:
+    if not result or not result.is_active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid device credentials")
+
+    if result.secret_hash is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid device credentials")
 
     if not verify_device_secret(credentials.password, result.secret_hash):

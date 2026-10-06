@@ -19,6 +19,7 @@ from app.automation.pipeline_listener import pipeline_listener_loop
 from app.automation.router import router as automation_router
 from app.config import settings
 from app.database import async_session, engine
+from app.device_claim_tokens.router import router as device_claim_tokens_router
 from app.device_profiles.router import router as device_profiles_router
 from app.devices.router import router as devices_router
 from app.devices.worker import offline_checker_loop
@@ -27,6 +28,7 @@ from app.mavlink.router import router as mavlink_router
 from app.mission.router import router as mission_router
 from app.mission.sar_emergency_router import router as sar_emergency_ws_router
 from app.models.user import User
+from app.mqtt_auth.router import router as mqtt_auth_router
 from app.notifications.router import router as notifications_router
 from app.notifications.worker import notification_dispatcher_loop
 from app.ota.router import router as ota_router
@@ -147,6 +149,8 @@ app.include_router(notifications_router)
 app.include_router(hardware_router)
 app.include_router(tiles_router)
 app.include_router(mission_router)
+app.include_router(device_claim_tokens_router)
+app.include_router(mqtt_auth_router)
 app.include_router(sar_emergency_ws_router)
 app.include_router(video_feed_router)
 app.include_router(telemetry_ws_router)

@@ -57,6 +57,7 @@ services:
     environment:
       POSTGRES_HOST: postgres
       REDIS_HOST: redis
+      MQTT_WEBHOOK_SHARED_SECRET: ${MQTT_WEBHOOK_SHARED_SECRET:-dev-mqtt-webhook-secret}
     depends_on:
       postgres:
         condition: service_healthy
@@ -163,6 +164,39 @@ services:
     networks:
       - next-iot-net
 
+  emqx:
+    image: emqx/emqx:5.8.2
+    container_name: next-iot-emqx
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started
+    ports:
+      - "${MQTT_PORT:-1883}:1883"
+      - "${MQTT_TLS_PORT:-8883}:8883"
+      - "${EMQX_DASHBOARD_PORT:-18083}:18083"
+    environment:
+      EMQX_AUTHENTICATION__1__MECHANISM: password_based
+      EMQX_AUTHENTICATION__1__BACKEND: http
+      EMQX_AUTHENTICATION__1__URL: http://api:8000/api/v1/mqtt/auth
+      EMQX_AUTHENTICATION__1__METHOD: post
+      EMQX_AUTHENTICATION__1__HEADERS__X_INTERNAL_SECRET: ${MQTT_WEBHOOK_SHARED_SECRET:-dev-mqtt-webhook-secret}
+      EMQX_AUTHORIZATION__NO_MATCH: deny
+      EMQX_AUTHORIZATION__SOURCES__1__TYPE: http
+      EMQX_AUTHORIZATION__SOURCES__1__URL: http://api:8000/api/v1/mqtt/acl
+      EMQX_AUTHORIZATION__SOURCES__1__METHOD: post
+      EMQX_AUTHORIZATION__SOURCES__1__HEADERS__X_INTERNAL_SECRET: ${MQTT_WEBHOOK_SHARED_SECRET:-dev-mqtt-webhook-secret}
+    volumes:
+      - emqx_data:/opt/emqx/data
+    healthcheck:
+      test: ["CMD", "emqx_ctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - next-iot-net
+
 volumes:
   postgres_data:
   redis_data:
+  emqx_data:

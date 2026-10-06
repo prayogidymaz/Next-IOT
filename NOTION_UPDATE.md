@@ -2,6 +2,11 @@
 
 **Last updated:** 2026-10-06 (UTC+7)  
 
+### Step 3 — MQTT / EMQX (synced)
+
+- **Menus:** Device Credentials + EMQX, QR Device Claim → **In progress**.
+- **Commit:** (pending) — EMQX compose, migration 016, webhooks, claim flow, 20 pytest.
+
 ### Step 2B — Thing model at ingest (synced)
 
 - **Menu:** Telemetry Bulk Ingest (≤200) → **In progress** + notes.

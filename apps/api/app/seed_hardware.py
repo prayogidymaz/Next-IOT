@@ -12,7 +12,11 @@ from app.database import async_session
 from app.devices.liveness import touch_liveness
 from app.devices.security import generate_client_id, generate_client_secret, hash_device_secret
 from app.models.device import Device, DeviceStatus
-from app.models.device_credential import DeviceCredential
+from app.models.device_credential import (
+    CredentialType,
+    DeviceCredential,
+    generate_access_token,
+)
 from app.models.device_metadata import DeviceMetadata
 from app.models.tenant import Tenant
 from app.seed_telemetry import DEMO_DEVICE_NAME
@@ -55,8 +59,12 @@ async def ensure_demo_lora_hardware(db, redis: aioredis.Redis) -> bool:
         db.add(
             DeviceCredential(
                 device_id=device.id,
+                tenant_id=device.tenant_id,
+                credential_type=CredentialType.BASIC_AUTH,
+                access_token=generate_access_token(),
                 client_id=client_id,
                 secret_hash=hash_device_secret(secret_plain),
+                is_active=True,
             )
         )
         changed = True
