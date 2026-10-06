@@ -2,13 +2,13 @@
 
 **Last updated:** 2026-10-06 (UTC+7)  
 
+### Step 3A — EMQX cluster-override (synced)
+
+- **Menu:** Device Credentials + EMQX → **In progress**; **3 attempts:** (1) single `emqx.conf` → crash / no defaults, (2) `conf.d` overlay → **not loaded** in 5.8, ACL bypass, (3) **`cluster-override.conf`** under `/opt/emqx/data/configs/` → merge. Lesson: runtime `emqx ctl conf show` + integration pytest, not file-only tests.
+
 ### Step 3A — EMQX overlay + ACL manual finding (synced)
 
-- **Menu:** Device Credentials + EMQX → **In progress**; **`infra/emqx/overlay/`** → `emqx.conf.d` merge (not single `emqx.conf` override). Manual test: missing overlay caused crash loop + ACL bypass (publish as another device); API `/mqtt/acl` logic covered by integration pytest.
-
-### Step 3A — EMQX HOCON webhook headers (synced)
-
-- Superseded by overlay directory mount (see above).
+- **Superseded:** `emqx.conf.d` does not load in EMQX 5.8 (see cluster-override above).
 
 ### Step 3A — Credential conflict fix (synced)
 

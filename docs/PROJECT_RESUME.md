@@ -59,7 +59,8 @@ Default dev API: `http://localhost:8000` · Swagger `/docs`.
 
 ## MQTT Broker & Device Credentials
 
-- **Broker:** EMQX 5.8 (`next-iot-emqx`) with HTTP auth/ACL webhooks to API. Webhook secret via HOCON overlay `infra/emqx/overlay/10_auth.conf` → `/opt/emqx/etc/emqx.conf.d` (**do not** replace `/opt/emqx/etc/emqx.conf` — drops required `node.*` defaults).
+- **Broker:** EMQX 5.8 (`next-iot-emqx`) with HTTP auth/ACL webhooks to API. Auth/ACL HOCON in **`infra/emqx/cluster-override.conf`** mounted at **`/opt/emqx/data/configs/cluster-override.conf`** (merges with image defaults).
+- **EMQX 5 config loading (gotcha):** (1) bundled `emqx.conf`, (2) `EMQX_*` env, (3) **`cluster-override.conf`** merge, (4) runtime Dashboard/API. **`/opt/emqx/etc/emqx.conf.d/` is not loaded.** Replacing **`/opt/emqx/etc/emqx.conf`** overrides **everything** (crash without `node.cookie` / `node.data_dir`). File-existence tests alone do not prove auth is active — use `emqx ctl conf show` or `@pytest.mark.integration` runtime tests.
 - **Credentials:** `device_credentials` stores MQTT `access_token` (plaintext for EMQX match) + `client_id`; HTTP Basic provisioning unchanged for legacy devices.
 - **Ingest (Option A):** EMQX rule → `POST /api/v1/mqtt/ingest/telemetry` reuses `ingest_pipeline.py` (Step 2B). Option B (API MQTT subscriber) deferred for latency work later.
 - **QR claim:** `device_claim_tokens` + `POST .../claim` returns one-time token + `mqtt_broker_url`.
@@ -94,14 +95,14 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Step 3A — EMQX cluster-override.conf (2026-10-06)
+
+- **Bug (attempt 3):** `emqx.conf.d` overlay directory is **never loaded** in 5.8 — runtime `authentication = []`, `authorization.no_match = allow`, HTTP ACL absent; cross-device publish allowed. Verified via `emqx ctl conf show`.
+- **Fix:** `infra/emqx/cluster-override.conf` → `/opt/emqx/data/configs/cluster-override.conf`. Runtime integration tests (`test_emqx_runtime_config.py`) call `docker compose exec emqx emqx ctl conf show` when Docker CLI available.
+
 ### Step 3A — EMQX config overlay directory (2026-10-06)
 
-- **Bug:** Mounting a minimal file at `/opt/emqx/etc/emqx.conf` **replaces** the entire default config → missing `node.cookie` / `node.data_dir` → EMQX crash loop (exit 127); HTTP auth/ACL never started, so **ACL was not enforced** (devices could publish to other devices’ topics; `/mqtt/acl` never called). Discovered via manual MQTT test, not unit tests.
-- **Fix:** Auth/ACL HOCON in `infra/emqx/overlay/10_auth.conf`, mounted to `/opt/emqx/etc/emqx.conf.d` (merge with image defaults). Single-file mount removed.
-
-### Step 3A — EMQX webhook headers via HOCON mount (2026-10-06)
-
-- **Note:** Superseded by overlay mount above; retained for history — EMQX 5.8 ignores `__HEADERS__*` env vars.
+- **Failed:** `conf.d` mount did not merge config (see cluster-override fix above). Single-file `emqx.conf` override caused crash loop (attempt 1).
 
 ### Step 3A — Credential generate conflict + partial unique index (2026-10-06)
 
