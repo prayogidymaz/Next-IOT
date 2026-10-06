@@ -49,6 +49,14 @@ Default dev API: `http://localhost:8000` · Swagger `/docs`.
 - **Client:** `lib/api/deviceProfiles.ts` + zod schemas (`device-profiles-schemas.ts`); RBAC via `/api/v1/me` role.
 - **UX:** Tactical Warm Cream; toast errors (ID); viewer/operator read-only.
 
+## TimescaleDB (telemetry)
+
+- **Why:** `telemetry_readings` time-series at scale; chunking + compression on `recorded_at`.
+- **Infra:** Dev Postgres → `timescale/timescaledb:latest-pg16` (PG16-compatible volume); compose sets `shared_preload_libraries=timescaledb` so existing data dirs work without hand-editing `postgresql.conf`.
+- **Migration 015:** hypertable on `recorded_at`, compression after 7 days (`device_id, tenant_id` segmentby). `telemetry_anomalies.reading_id` FK dropped at DB level (Timescale cannot enforce id-only FK); ORM column unchanged; FK restored on downgrade to plain Postgres.
+- **Retention trade-off:** Global Timescale retention policy at **enterprise max (730d)** as safety net; daily sweep **DELETE** per tenant by `security_tier` (free 7d / pro 90d / enterprise 730d). Per-tenant Timescale retention policies deferred (would need continuous aggregates or manual chunk drops).
+- **Step 2B (next):** device-profile validator on ingest — **not wired yet**.
+
 ## Engineering Standards
 
 Permanent rules live in **`.cursorrules`** (root):
@@ -71,6 +79,12 @@ Permanent rules live in **`.cursorrules`** (root):
 | Mobile | `analysis_options.yaml` strict-casts/inference |
 
 ## Changelog
+
+### Step 2A — TimescaleDB telemetry (2026-10-06)
+
+- **Infra + Alembic 015:** Timescale hypertable on `telemetry_readings`, compression policy; `app/telemetry/retention.py` daily tier sweep + global retention policy.
+- **Menu & Feature Map:** Telemetry Pipeline + TimescaleDB → **In progress**.
+- **Note:** Ingest profile validator remains **Step 2B**.
 
 ### Step 1B — Device Profiles UI (2026-10-02)
 

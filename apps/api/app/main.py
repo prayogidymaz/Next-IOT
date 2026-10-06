@@ -36,6 +36,7 @@ from app.seed_device_profiles import run_device_profile_seed
 from app.seed_hardware import run_hardware_seed
 from app.seed_telemetry import run_telemetry_seed
 from app.system.router import router as system_router
+from app.telemetry.retention import telemetry_retention_loop
 from app.telemetry.router import router as telemetry_router
 from app.telemetry.video_feed.router import router as video_feed_router
 from app.telemetry.ws_router import router as telemetry_ws_router
@@ -97,6 +98,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             asyncio.create_task(offline_checker_loop(redis, stop_event)),
             asyncio.create_task(notification_dispatcher_loop(redis, stop_event)),
             asyncio.create_task(pipeline_listener_loop(redis, stop_event)),
+            asyncio.create_task(telemetry_retention_loop(stop_event)),
         ]
     app.state.offline_worker_stop = stop_event
 

@@ -6,7 +6,7 @@ networks:
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: timescale/timescaledb:latest-pg16
     container_name: next-iot-postgres
     restart: unless-stopped
     environment:
@@ -18,6 +18,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./infra/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    # Required for CREATE EXTENSION timescaledb (including volumes migrated from plain PG16).
+    command: ["postgres", "-c", "shared_preload_libraries=timescaledb"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-next_iot} -d ${POSTGRES_DB:-next_iot}"]
       interval: 5s
@@ -94,7 +96,7 @@ services:
       api:
         condition: service_started
     command: >
-      sh -c "if [ ! -d node_modules/next ] || [ ! -d node_modules/recharts ]; then npm ci; fi &&
+      sh -c "if [ ! -d node_modules/next ] || [ ! -d node_modules/recharts ] || [ ! -d node_modules/zod ]; then npm ci; fi &&
              npm run dev -- -H 0.0.0.0 -p 3000"
     networks:
       - next-iot-net

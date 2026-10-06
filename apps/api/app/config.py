@@ -111,6 +111,11 @@ class Settings(BaseModel):
     lora_encryption_mode: str = "AES-128-CBC"
     drone_simulator_lora_encrypt_mock: bool = False
 
+    telemetry_compression_after_days: int = 7
+    telemetry_retention_free_days: int = 7
+    telemetry_retention_pro_days: int = 90
+    telemetry_retention_enterprise_days: int = 730
+
     tile_server_url: str = "http://tile-server:8080"
     tile_server_service: str = "offline-map"
     tile_server_port: int = 8080
