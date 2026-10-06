@@ -72,11 +72,13 @@ def test_cluster_override_authz_no_match_is_deny() -> None:
 def test_cluster_override_has_secret_header() -> None:
     text = _override_text()
     assert '"x-internal-secret"' in text
-    assert "${MQTT_WEBHOOK_SHARED_SECRET}" in text
+    assert '"x-internal-secret" = "dev-mqtt-webhook-secret"' in text
+    assert "${MQTT_WEBHOOK_SHARED_SECRET}" not in text
 
 
 def test_docker_compose_mounts_cluster_override() -> None:
     section = _emqx_compose_section(_compose_text())
     assert CLUSTER_OVERRIDE_MOUNT in section
+    assert "MQTT_WEBHOOK_SHARED_SECRET" not in section
     assert "emqx.conf.d" not in section
     assert "/opt/emqx/etc/emqx.conf:ro" not in section

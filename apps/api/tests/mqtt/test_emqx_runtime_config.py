@@ -66,6 +66,10 @@ def test_emqx_container_authentication_loaded() -> None:
     assert compact != "authentication=[]"
     assert "backend=http" in compact or "backend = http" in output
     assert "/api/v1/mqtt/auth" in output
+    assert "x-internal-secret = \"dev-mqtt-webhook-secret\"" in output or (
+        "x-internal-secret=dev-mqtt-webhook-secret" in output.replace(" ", "")
+    )
+    assert "${MQTT_WEBHOOK_SHARED_SECRET}" not in output
 
 
 @pytest.mark.integration

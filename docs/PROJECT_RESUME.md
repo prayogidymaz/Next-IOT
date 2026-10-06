@@ -60,7 +60,7 @@ Default dev API: `http://localhost:8000` · Swagger `/docs`.
 ## MQTT Broker & Device Credentials
 
 - **Broker:** EMQX 5.8 (`next-iot-emqx`) with HTTP auth/ACL webhooks to API. Auth/ACL HOCON in **`infra/emqx/cluster-override.conf`** mounted at **`/opt/emqx/data/configs/cluster-override.conf`** (merges with image defaults).
-- **EMQX 5 config loading (gotcha):** (1) bundled `emqx.conf`, (2) `EMQX_*` env, (3) **`cluster-override.conf`** merge, (4) runtime Dashboard/API. **`/opt/emqx/etc/emqx.conf.d/` is not loaded.** Replacing **`/opt/emqx/etc/emqx.conf`** overrides **everything** (crash without `node.cookie` / `node.data_dir`). File-existence tests alone do not prove auth is active — use `emqx ctl conf show` or `@pytest.mark.integration` runtime tests.
+- **EMQX 5 config loading (gotcha):** (1) bundled `emqx.conf`, (2) `EMQX_*` env, (3) **`cluster-override.conf`** merge, (4) runtime Dashboard/API. **`/opt/emqx/etc/emqx.conf.d/` is not loaded.** Replacing **`/opt/emqx/etc/emqx.conf`** overrides **everything**. HOCON **`${VAR}` does not read OS env** (only internal config refs) — dev secret is **literal** in `cluster-override.conf`; keep in sync with API `MQTT_WEBHOOK_SHARED_SECRET`. **Prod TODO:** envsubst entrypoint, init-generated config, or EMQX API. **Step 6+ idea:** push auth/ACL via EMQX HTTP API at API startup instead of static files.
 - **Credentials:** `device_credentials` stores MQTT `access_token` (plaintext for EMQX match) + `client_id`; HTTP Basic provisioning unchanged for legacy devices.
 - **Ingest (Option A):** EMQX rule → `POST /api/v1/mqtt/ingest/telemetry` reuses `ingest_pipeline.py` (Step 2B). Option B (API MQTT subscriber) deferred for latency work later.
 - **QR claim:** `device_claim_tokens` + `POST .../claim` returns one-time token + `mqtt_broker_url`.
@@ -94,6 +94,11 @@ Permanent rules live in **`.cursorrules`** (root):
 | Mobile | `analysis_options.yaml` strict-casts/inference |
 
 ## Changelog
+
+### Step 3A — EMQX HOCON secret literal (2026-10-06)
+
+- **Bug (attempt 4):** `${MQTT_WEBHOOK_SHARED_SECRET}` in cluster-override stayed literal in runtime → API **403** on webhooks. EMQX HOCON does not expand OS env in `${…}`.
+- **Fix:** Hardcode dev secret in `cluster-override.conf`; remove unused secret env from **emqx** service; `test_webhook_secret_consistency.py` guards API settings vs file.
 
 ### Step 3A — EMQX cluster-override.conf (2026-10-06)
 

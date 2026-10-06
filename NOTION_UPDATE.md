@@ -2,6 +2,10 @@
 
 **Last updated:** 2026-10-06 (UTC+7)  
 
+### Step 3A — EMQX HOCON no env expansion (synced)
+
+- **4 attempts documented:** env headers → single `emqx.conf` crash → `conf.d` ignored → cluster-override OK but `${VAR}` literal → **hardcoded dev secret** + consistency pytest. **Roadmap:** Step 6+ consider EMQX Dashboard API config from API startup; wrap broker in Helm/init container for prod.
+
 ### Step 3A — EMQX cluster-override (synced)
 
 - **Menu:** Device Credentials + EMQX → **In progress**; **3 attempts:** (1) single `emqx.conf` → crash / no defaults, (2) `conf.d` overlay → **not loaded** in 5.8, ACL bypass, (3) **`cluster-override.conf`** under `/opt/emqx/data/configs/` → merge. Lesson: runtime `emqx ctl conf show` + integration pytest, not file-only tests.
