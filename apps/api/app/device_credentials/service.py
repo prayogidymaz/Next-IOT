@@ -15,16 +15,16 @@ from app.models.device import Device
 from app.models.device_credential import (
     CredentialType,
     DeviceCredential,
-    device_short_id,
     generate_access_token,
-    generate_mqtt_client_id,
+    generate_connection_client_id,
 )
-from app.models.tenant import Tenant
 from app.mqtt_auth.cache import invalidate_cached_credential
 from app.types.redis_client import RedisClient
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+_CREDENTIAL_CONFLICT_DETAIL = "Device already has active credential. Use /rotate to replace."
 
 
 async def _get_device_for_user(
@@ -39,26 +39,28 @@ async def _get_device_for_user(
     return device
 
 
-async def _tenant_slug(db: AsyncSession, tenant_id: uuid.UUID) -> str:
-    slug = await db.scalar(select(Tenant.slug).where(Tenant.id == tenant_id))
-    if slug is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
-    return slug
-
-
 async def get_active_credential(
     db: AsyncSession, device_id: uuid.UUID, user: CurrentUser
 ) -> DeviceCredentialPublicResponse:
     await _get_device_for_user(db, device_id, user)
-    credential = await db.scalar(
+    credential = await _get_active_credential_row(db, device_id)
+    if credential is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No active credential")
+    return DeviceCredentialPublicResponse.from_model(credential)
+
+
+async def _get_active_credential_row(
+    db: AsyncSession, device_id: uuid.UUID
+) -> DeviceCredential | None:
+    row = await db.scalar(
         select(DeviceCredential).where(
             DeviceCredential.device_id == device_id,
             DeviceCredential.is_active.is_(True),
         )
     )
-    if credential is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No active credential")
-    return DeviceCredentialPublicResponse.from_model(credential)
+    if not isinstance(row, DeviceCredential):
+        return None
+    return row
 
 
 async def _deactivate_active(
@@ -83,24 +85,15 @@ async def _deactivate_active(
         await invalidate_cached_credential(redis, row.access_token)
 
 
-async def create_access_token_credential(
+async def _insert_active_credential(
     db: AsyncSession,
-    redis: RedisClient,
     device: Device,
     *,
     include_basic_secret: bool = False,
+    client_id: str | None = None,
 ) -> DeviceCredentialCreateResponse:
-    await _deactivate_active(db, redis, device.id, mark_rotated=False)
-    tenant_slug = await _tenant_slug(db, device.tenant_id)
-    short = device_short_id(device.id)
-    prior = await db.scalar(
-        select(DeviceCredential.client_id)
-        .where(DeviceCredential.device_id == device.id)
-        .order_by(DeviceCredential.created_at.desc())
-        .limit(1)
-    )
-    client_id = prior if prior is not None else generate_mqtt_client_id(tenant_slug, short)
     access_token = generate_access_token()
+    resolved_client_id = client_id or generate_connection_client_id()
     secret_plain: str | None = None
     secret_hash: str | None = None
     cred_type = CredentialType.ACCESS_TOKEN
@@ -114,7 +107,7 @@ async def create_access_token_credential(
         tenant_id=device.tenant_id,
         credential_type=cred_type,
         access_token=access_token,
-        client_id=client_id,
+        client_id=resolved_client_id,
         secret_hash=secret_hash,
         is_active=True,
     )
@@ -127,14 +120,32 @@ async def create_access_token_credential(
     )
 
 
+async def create_access_token_credential(
+    db: AsyncSession,
+    redis: RedisClient,
+    device: Device,
+    *,
+    include_basic_secret: bool = False,
+) -> DeviceCredentialCreateResponse:
+    """First credential for a new device (e.g. QR claim). Caller must ensure no active row."""
+    _ = redis
+    existing = await _get_active_credential_row(db, device.id)
+    if existing is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=_CREDENTIAL_CONFLICT_DETAIL)
+    return await _insert_active_credential(db, device, include_basic_secret=include_basic_secret)
+
+
 async def generate_credential(
     db: AsyncSession,
     redis: RedisClient,
     user: CurrentUser,
     device_id: uuid.UUID,
 ) -> DeviceCredentialCreateResponse:
+    _ = redis
     device = await _get_device_for_user(db, device_id, user)
-    return await create_access_token_credential(db, redis, device, include_basic_secret=False)
+    if await _get_active_credential_row(db, device.id) is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=_CREDENTIAL_CONFLICT_DETAIL)
+    return await _insert_active_credential(db, device, include_basic_secret=False)
 
 
 async def rotate_credential(
@@ -144,27 +155,10 @@ async def rotate_credential(
     device_id: uuid.UUID,
 ) -> DeviceCredentialCreateResponse:
     device = await _get_device_for_user(db, device_id, user)
-    credential = await db.scalar(
-        select(DeviceCredential).where(
-            DeviceCredential.device_id == device.id,
-            DeviceCredential.is_active.is_(True),
-        )
-    )
-    if credential is None:
+    if await _get_active_credential_row(db, device.id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No active credential")
-
-    old_token = credential.access_token
-    now = datetime.now(UTC)
-    credential.access_token = generate_access_token()
-    credential.rotated_at = now
-    credential.updated_at = now
-    await invalidate_cached_credential(redis, old_token)
-    await db.flush()
-    return DeviceCredentialCreateResponse.from_created(
-        credential,
-        access_token=credential.access_token,
-        client_secret=None,
-    )
+    await _deactivate_active(db, redis, device.id, mark_rotated=True)
+    return await _insert_active_credential(db, device, include_basic_secret=False)
 
 
 async def revoke_credential(
@@ -182,10 +176,12 @@ async def lookup_active_by_access_token(
 ) -> DeviceCredential | None:
     if not access_token:
         return None
-    row: DeviceCredential | None = await db.scalar(
+    row = await db.scalar(
         select(DeviceCredential).where(
             DeviceCredential.access_token == access_token,
             DeviceCredential.is_active.is_(True),
         )
     )
+    if not isinstance(row, DeviceCredential):
+        return None
     return row

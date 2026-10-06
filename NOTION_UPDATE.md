@@ -2,6 +2,12 @@
 
 **Last updated:** 2026-10-06 (UTC+7)  
 
+### Step 3A — Credential conflict fix (synced)
+
+- **Menu:** Device Credentials + EMQX → **In progress**; **API behavior:** `POST …/credentials` → **201** first time, **409** if active credential exists (message directs to `/rotate`); rotate = new token + new `dev_*` client_id, old token denied for MQTT auth.
+- **Migration:** Alembic **017** partial unique on active `client_id` / `access_token`.
+- **Commit:** amend `b7f767d` — Step 3A fixes + ~275 pytest.
+
 ### Step 3 — MQTT / EMQX (synced)
 
 - **Menus:** Device Credentials + EMQX, QR Device Claim → **In progress**.

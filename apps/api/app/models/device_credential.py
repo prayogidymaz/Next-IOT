@@ -21,10 +21,8 @@ def generate_access_token() -> str:
     return secrets.token_urlsafe(settings.device_credential_token_length)
 
 
-def generate_mqtt_client_id(tenant_slug: str, device_short_id: str) -> str:
-    safe_slug = tenant_slug.replace("-", "_")[:48]
-    safe_short = device_short_id.replace("-", "")[:16]
-    return f"tenant_{safe_slug}_device_{safe_short}"[:128]
+def generate_connection_client_id() -> str:
+    return f"dev_{secrets.token_hex(4)}"
 
 
 def device_short_id(device_id: uuid.UUID) -> str:
@@ -51,8 +49,8 @@ class DeviceCredential(Base):
         nullable=False,
         default=CredentialType.ACCESS_TOKEN,
     )
-    access_token: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
-    client_id: Mapped[str] = mapped_column(String(128), unique=True, nullable=False, index=True)
+    access_token: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    client_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
     secret_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

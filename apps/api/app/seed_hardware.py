@@ -10,13 +10,7 @@ from sqlalchemy.orm import selectinload
 from app.config import settings
 from app.database import async_session
 from app.devices.liveness import touch_liveness
-from app.devices.security import generate_client_id, generate_client_secret, hash_device_secret
 from app.models.device import Device, DeviceStatus
-from app.models.device_credential import (
-    CredentialType,
-    DeviceCredential,
-    generate_access_token,
-)
 from app.models.device_metadata import DeviceMetadata
 from app.models.tenant import Tenant
 from app.seed_telemetry import DEMO_DEVICE_NAME
@@ -53,25 +47,12 @@ async def ensure_demo_lora_hardware(db, redis: aioredis.Redis) -> bool:
     secret_plain = settings.lora_bridge_default_client_secret or None
     client_id = cred.client_id if cred is not None else None
 
-    if cred is None:
-        secret_plain = secret_plain or generate_client_secret()
-        client_id = settings.lora_bridge_default_client_id or generate_client_id()
-        db.add(
-            DeviceCredential(
-                device_id=device.id,
-                tenant_id=device.tenant_id,
-                credential_type=CredentialType.BASIC_AUTH,
-                access_token=generate_access_token(),
-                client_id=client_id,
-                secret_hash=hash_device_secret(secret_plain),
-                is_active=True,
-            )
-        )
-        changed = True
-    elif secret_plain:
+    if cred is not None:
         client_id = cred.client_id
+        if not secret_plain:
+            secret_plain = None
     else:
-        client_id = cred.client_id
+        client_id = None
         secret_plain = None
 
     if secret_plain:

@@ -94,6 +94,12 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Step 3A — Credential generate conflict + partial unique index (2026-10-06)
+
+- **Bug:** `POST /api/v1/devices/{id}/credentials` returned **500** (`UniqueViolationError` on `ix_device_credentials_client_id`) when the device already had a credential (seed / prior generate) because `client_id` was reused and the DB enforced global uniqueness on inactive rows.
+- **Fix:** Generate returns **409** with `"Device already has active credential. Use /rotate to replace."` when an active row exists; **rotate** deactivates the old row (`rotated_at`), inserts a new row with fresh `access_token` + random `dev_{8hex}` `client_id`, and invalidates Redis `mqtt:auth:*` for the old token. **Migration 017:** partial unique indexes on `client_id` and `access_token` where `is_active = true`. Demo LoRa seed no longer auto-creates MQTT credentials (generate on demand).
+- **Notion:** Device Credentials — document 409 on duplicate generate vs explicit `/rotate`.
+
 ### Step 3 — MQTT / EMQX / credentials / QR claim (2026-10-06)
 
 - EMQX compose service, migration 016, MQTT webhooks + ingest Option A, credential & claim APIs, 20 pytest.

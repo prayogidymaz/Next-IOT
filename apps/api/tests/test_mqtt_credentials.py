@@ -10,9 +10,9 @@ import redis.asyncio as aioredis
 from app.config import settings
 from app.database import async_session
 from app.device_profiles.spec import TelemetryKeyBoolean, ThingModelSpec
-from app.models.device_credential import DeviceCredential, generate_access_token
+from app.models.device_credential import DeviceCredential, generate_access_token, generate_connection_client_id
 from app.mqtt_auth.acl import MqttAclDecision, evaluate_device_acl, parse_device_topic
-from app.mqtt_auth.cache import set_cached_credential
+from app.mqtt_auth.cache import get_cached_credential, set_cached_credential
 from httpx import AsyncClient
 from sqlalchemy import select
 
@@ -54,8 +54,136 @@ def test_device_credential_generate_unique_token() -> None:
     assert len(tokens) == 20
 
 
+def test_generate_connection_client_id_format_and_low_collision() -> None:
+    ids = {generate_connection_client_id() for _ in range(500)}
+    assert len(ids) == 500
+    for client_id in ids:
+        assert client_id.startswith("dev_")
+        assert len(client_id) == len("dev_") + 8
+
+
 @pytest.mark.asyncio
-async def test_device_credential_rotate_invalidates_old(
+async def test_generate_credential_when_device_has_active_returns_409(
+    client: AsyncClient, unique_slug: str, unique_email: str
+) -> None:
+    token = await _register_token(client, unique_slug, unique_email)
+    device_id, _, _ = await _device_with_credential(client, token)
+    again = await client.post(
+        f"/api/v1/devices/{device_id}/credentials",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert again.status_code == 409
+    assert again.json()["detail"] == "Device already has active credential. Use /rotate to replace."
+
+
+@pytest.mark.asyncio
+async def test_rotate_credential_creates_new_deactivates_old(
+    client: AsyncClient, unique_slug: str, unique_email: str
+) -> None:
+    token = await _register_token(client, unique_slug, unique_email)
+    device_id, first_token, first_client_id = await _device_with_credential(client, token)
+    rotate = await client.post(
+        f"/api/v1/devices/{device_id}/credentials/rotate",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert rotate.status_code == 200
+    body = rotate.json()
+    assert body["access_token"] != first_token
+    assert body["client_id"] != first_client_id
+    assert body["client_id"].startswith("dev_")
+    async with async_session() as session:
+        rows = list(
+            await session.scalars(select(DeviceCredential).where(DeviceCredential.device_id == uuid.UUID(device_id)))
+        )
+        assert len(rows) == 2
+        inactive = [r for r in rows if not r.is_active]
+        active = [r for r in rows if r.is_active]
+        assert len(inactive) == 1
+        assert len(active) == 1
+        assert inactive[0].access_token == first_token
+        assert inactive[0].client_id == first_client_id
+        assert inactive[0].rotated_at is not None
+        assert active[0].access_token == body["access_token"]
+
+
+@pytest.mark.asyncio
+async def test_rotate_credential_invalidates_redis_cache(
+    client: AsyncClient,
+    test_redis: aioredis.Redis,
+    unique_slug: str,
+    unique_email: str,
+) -> None:
+    token = await _register_token(client, unique_slug, unique_email)
+    device_id, first_token, _ = await _device_with_credential(client, token)
+    tenant_id = uuid.UUID(
+        (await client.get(f"/api/v1/devices/{device_id}", headers={"Authorization": f"Bearer {token}"})).json()[
+            "tenant_id"
+        ]
+    )
+    await set_cached_credential(
+        test_redis,
+        first_token,
+        device_id=uuid.UUID(device_id),
+        tenant_id=tenant_id,
+    )
+    rotate = await client.post(
+        f"/api/v1/devices/{device_id}/credentials/rotate",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert rotate.status_code == 200
+    assert await get_cached_credential(test_redis, first_token) is None
+    auth_old = await client.post(
+        "/api/v1/mqtt/auth",
+        headers=_webhook_headers(),
+        json={"username": first_token, "clientid": "x"},
+    )
+    assert auth_old.json()["result"] == "deny"
+
+
+@pytest.mark.asyncio
+async def test_two_devices_can_share_client_id_history_after_rotation(
+    client: AsyncClient, unique_slug: str, unique_email: str
+) -> None:
+    token = await _register_token(client, unique_slug, unique_email)
+    device_a, _, client_id_shared = await _device_with_credential(client, token)
+    rotate_a = await client.post(
+        f"/api/v1/devices/{device_a}/credentials/rotate",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert rotate_a.status_code == 200
+    create_b = await client.post(
+        "/api/v1/devices",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": "MqttDevB", "device_type": "sensor"},
+    )
+    device_b = create_b.json()["device"]["id"]
+    gen_b = await client.post(
+        f"/api/v1/devices/{device_b}/credentials",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert gen_b.status_code == 201
+    async with async_session() as session:
+        active_b = await session.scalar(
+            select(DeviceCredential).where(
+                DeviceCredential.device_id == uuid.UUID(device_b),
+                DeviceCredential.is_active.is_(True),
+            )
+        )
+        assert active_b is not None
+        active_b.client_id = client_id_shared
+        await session.commit()
+        active_b2 = await session.scalar(
+            select(DeviceCredential).where(
+                DeviceCredential.device_id == uuid.UUID(device_b),
+                DeviceCredential.is_active.is_(True),
+            )
+        )
+        assert active_b2 is not None
+        assert active_b2.client_id == client_id_shared
+
+
+@pytest.mark.asyncio
+async def test_mqtt_auth_rejects_rotated_old_token(
     client: AsyncClient, unique_slug: str, unique_email: str
 ) -> None:
     token = await _register_token(client, unique_slug, unique_email)

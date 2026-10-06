@@ -37,12 +37,10 @@ from app.models.device_category import DeviceCategory, infer_device_category
 from app.models.device_credential import (
     CredentialType,
     DeviceCredential,
-    device_short_id,
     generate_access_token,
-    generate_mqtt_client_id,
+    generate_connection_client_id,
 )
 from app.models.device_metadata import DeviceMetadata
-from app.models.tenant import Tenant
 from app.types.redis_client import RedisClient
 
 
@@ -207,15 +205,8 @@ async def provision_device(
     if device.credentials:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Device credentials already exist")
 
-    if device.credentials:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Device credentials already exist")
-
-    tenant = await db.scalar(select(Tenant).where(Tenant.id == device.tenant_id))
-    if tenant is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
-
     client_secret = generate_client_secret()
-    client_id = generate_mqtt_client_id(tenant.slug, device_short_id(device.id))
+    client_id = generate_connection_client_id()
 
     credential = DeviceCredential(
         device_id=device.id,
