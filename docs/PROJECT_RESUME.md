@@ -111,6 +111,7 @@ Permanent rules live in **`.cursorrules`** (root):
 | 8 | Rule engine API | HTTP **connector** = base URL only; **action** = path + headers; rule `actions: ["http:name"]`; `GET /rules` → `{data:[]}` |
 | 9 | Dev environment | Windows **1883** often taken by Mosquitto service — publish to EMQX mapped port (`11883`) |
 | 10–11 | Action body | `${.}` forwards full rule event → API **400**; use explicit `topic`/`payload`/`clientid`/`username` template; **PUT** action when body drifts |
+| 12 | Auth cache | After **rotate**, `commit` then invalidate Redis `mqtt:auth:{old}` + `mqtt:auth:{new}`; never cache auth **deny** |
 
 ### Step 3B — EMQX REST API key bootstrap (2026-10-06)
 

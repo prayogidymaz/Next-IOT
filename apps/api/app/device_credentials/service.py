@@ -18,7 +18,7 @@ from app.models.device_credential import (
     generate_access_token,
     generate_connection_client_id,
 )
-from app.mqtt_auth.cache import invalidate_cached_credential
+from app.mqtt_auth.cache import invalidate_cached_credential, invalidate_mqtt_auth_cache_for_tokens
 from app.types.redis_client import RedisClient
 from fastapi import HTTPException, status
 from sqlalchemy import select
@@ -155,10 +155,19 @@ async def rotate_credential(
     device_id: uuid.UUID,
 ) -> DeviceCredentialCreateResponse:
     device = await _get_device_for_user(db, device_id, user)
-    if await _get_active_credential_row(db, device.id) is None:
+    active = await _get_active_credential_row(db, device.id)
+    if active is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No active credential")
+    old_access_token = active.access_token
     await _deactivate_active(db, redis, device.id, mark_rotated=True)
-    return await _insert_active_credential(db, device, include_basic_secret=False)
+    created = await _insert_active_credential(db, device, include_basic_secret=False)
+    await db.commit()
+    await invalidate_mqtt_auth_cache_for_tokens(
+        redis,
+        old_access_token,
+        created.access_token,
+    )
+    return created
 
 
 async def revoke_credential(

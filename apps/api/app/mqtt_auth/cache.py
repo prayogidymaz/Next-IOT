@@ -46,4 +46,14 @@ async def set_cached_credential(
 
 
 async def invalidate_cached_credential(redis: RedisClient, access_token: str) -> None:
+    if not access_token.strip():
+        return
     await redis.delete(_cache_key(access_token))
+
+
+async def invalidate_mqtt_auth_cache_for_tokens(
+    redis: RedisClient,
+    *access_tokens: str,
+) -> None:
+    for token in access_tokens:
+        await invalidate_cached_credential(redis, token)

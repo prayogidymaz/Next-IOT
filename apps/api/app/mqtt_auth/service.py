@@ -36,6 +36,7 @@ async def _resolve_credential(
 
     credential = await lookup_active_by_access_token(db, access_token)
     if credential is None:
+        # Never cache denials — avoids stale reject after rotate/generate.
         return None
     await set_cached_credential(
         redis,
