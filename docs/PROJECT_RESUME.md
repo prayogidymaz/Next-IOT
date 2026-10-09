@@ -95,6 +95,22 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Step 3B — Windows MQTT port conflict (2026-10-09)
+
+- **Bug:** Eclipse Mosquitto Windows service (winget) binds `127.0.0.1:1883`; `mosquitto_pub -h localhost -p 1883` hits **Windows Mosquitto**, not EMQX Docker → fake PUBACK, rule `matched: 0`, no DB rows.
+- **Fix:** Default **host** MQTT port `11883` → container `1883` (`MQTT_PORT` in `.env`); `NEXT_PUBLIC_MQTT_BROKER_URL` / credentials UI use same port. Linux dev can set `MQTT_PORT=1883`.
+- **API:** `/health` returns **503** with `status: starting` until lifespan finishes (migrations run in entrypoint; EMQX rule setup + workers before `API fully ready` log).
+
+### Step 3B — EMQX integration lessons (attempts 1–9)
+
+| # | Topic | Lesson |
+| --- | --- | --- |
+| 1–4 | Config files | Prefer `cluster-override.conf` merge; avoid broken `emqx.conf.d`; HOCON `${VAR}` is literal — hardcode dev webhook secret |
+| 5 | Dashboard REST | Admin password ≠ `/api/v5` auth; use Bearer login or **API key** Basic (`key:secret`) |
+| 6–7 | API key bootstrap | `api-keys.conf` = `key:secret` lines only (**no `#` comments**); compose must pass `EMQX_API_KEY`/`SECRET` to **api** |
+| 8 | Rule engine API | HTTP **connector** = base URL only; **action** = path + headers; rule `actions: ["http:name"]`; `GET /rules` → `{data:[]}` |
+| 9 | Dev environment | Windows **1883** often taken by Mosquitto service — publish to EMQX mapped port (`11883`) |
+
 ### Step 3B — EMQX REST API key bootstrap (2026-10-06)
 
 - **Bug:** Dashboard **admin password** does not authenticate `/api/v5/*` (401); login returns Bearer JWT only. Rule setup must use **API key** Basic Auth (`api_key:secret` from bootstrap file).

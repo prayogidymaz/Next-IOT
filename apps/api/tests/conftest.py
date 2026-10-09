@@ -130,6 +130,7 @@ async def client(test_redis: RedisClient) -> AsyncIterator[AsyncClient]:
     truncate_auth_tables()
 
     app.state.redis = test_redis
+    app.state.startup_ready = True
     app.dependency_overrides[get_redis] = _override_get_redis(test_redis)
 
     transport = ASGITransport(app=app)

@@ -61,6 +61,7 @@ services:
       EMQX_DASHBOARD_URL: http://emqx:18083
       EMQX_API_KEY: ${EMQX_API_KEY:-nextiot-api-key}
       EMQX_API_SECRET: ${EMQX_API_SECRET:-nextiot-api-secret-change-in-prod}
+      MQTT_BROKER_URL_EXTERNAL: mqtt://localhost:${MQTT_PORT:-11883}
     depends_on:
       postgres:
         condition: service_healthy
@@ -91,7 +92,7 @@ services:
       - "${WEB_PORT:-3000}:3000"
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
-      NEXT_PUBLIC_MQTT_BROKER_URL: ${NEXT_PUBLIC_MQTT_BROKER_URL:-mqtt://localhost:1883}
+      NEXT_PUBLIC_MQTT_BROKER_URL: mqtt://localhost:${MQTT_PORT:-11883}
       API_PROXY_TARGET: http://api:8000
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
@@ -178,7 +179,7 @@ services:
       api:
         condition: service_started
     ports:
-      - "${MQTT_PORT:-1883}:1883"
+      - "${MQTT_PORT:-11883}:1883"
       - "${MQTT_TLS_PORT:-8883}:8883"
       - "${EMQX_DASHBOARD_PORT:-18083}:18083"
     environment:

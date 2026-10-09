@@ -68,6 +68,7 @@ class CorsMiddlewareKwargs(TypedDict, total=False):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    app.state.startup_ready = False
     redis: RedisClient = redis_from_url(settings.redis_url)
     app.state.redis = redis
 
@@ -111,6 +112,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             asyncio.create_task(telemetry_retention_loop(stop_event)),
         ]
     app.state.offline_worker_stop = stop_event
+    app.state.startup_ready = True
+    logger.info("API fully ready (database, redis, EMQX rule setup, background workers)")
 
     yield
 
@@ -177,6 +180,22 @@ async def prometheus_metrics() -> Response:
 
 @app.get("/health")
 async def health_check() -> JSONResponse:
+    startup_ready = bool(getattr(app.state, "startup_ready", False))
+    if not startup_ready:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "starting",
+                "service": settings.app_name,
+                "environment": settings.app_env,
+                "checks": {
+                    "startup": "pending",
+                    "database": "pending",
+                    "redis": "pending",
+                },
+            },
+        )
+
     db_ok = False
     redis_ok = False
 
@@ -215,6 +234,7 @@ async def health_check() -> JSONResponse:
             "service": settings.app_name,
             "environment": settings.app_env,
             "checks": {
+                "startup": "ok",
                 "database": "ok" if db_ok else "fail",
                 "redis": "ok" if redis_ok else "fail",
             },

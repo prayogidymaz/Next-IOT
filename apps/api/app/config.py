@@ -66,7 +66,7 @@ class Settings(BaseModel):
     mqtt_broker_host: str = "emqx"
     mqtt_broker_port: int = 1883
     mqtt_broker_timeout_seconds: float = 2.0
-    mqtt_broker_url_external: str = "mqtt://localhost:1883"
+    mqtt_broker_url_external: str = "mqtt://localhost:11883"
     mqtt_auth_cache_ttl_seconds: int = 60
     mqtt_webhook_shared_secret: str = "dev-mqtt-webhook-secret"
     emqx_dashboard_url: str = "http://emqx:18083"

@@ -74,5 +74,5 @@ export async function revokeDeviceCredential(deviceId: string): Promise<void> {
 }
 
 export function mqttBrokerUrl(): string {
-  return process.env.NEXT_PUBLIC_MQTT_BROKER_URL ?? "mqtt://localhost:1883";
+  return process.env.NEXT_PUBLIC_MQTT_BROKER_URL ?? "mqtt://localhost:11883";
 }

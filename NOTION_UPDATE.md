@@ -2,6 +2,7 @@
 
 **Last updated:** 2026-10-06 (UTC+7)  
 
+- **Windows dev MQTT:** default host port **11883** (EMQX container still 1883) — avoid Mosquitto service on 1883; UI broker URL from `NEXT_PUBLIC_MQTT_BROKER_URL`.
 - **Rule engine payloads:** EMQX 5.8 HTTP connector (base URL only) + action path/headers + rule `http:<action>`; parse `{data}` on `GET /rules`.
 - **REST automation:** API key bootstrap file on **emqx** (`key:secret` lines only — no `#` comments) + `${EMQX_API_KEY}`/`${EMQX_API_SECRET}` on **api** (not dashboard password for `/api/v5`).
 
