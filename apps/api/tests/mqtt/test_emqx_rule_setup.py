@@ -27,6 +27,7 @@ class _FakeAsyncClient:
     def __init__(self, *, timeout: float = 10.0) -> None:
         self.timeout = timeout
         self.posts: list[tuple[str, object]] = []
+        self.puts: list[tuple[str, object]] = []
         self.gets: list[str] = []
 
     async def __aenter__(self) -> _FakeAsyncClient:
@@ -53,6 +54,15 @@ class _FakeAsyncClient:
     ) -> _FakeResponse:
         self.posts.append((url, json))
         return _FakeResponse(201, {})
+
+    async def put(
+        self,
+        url: str,
+        auth: httpx.Auth | tuple[str, str] | None = None,
+        json: object = None,
+    ) -> _FakeResponse:
+        self.puts.append((url, json))
+        return _FakeResponse(204, {})
 
 
 def _authorization_header(auth: httpx.Auth | tuple[str, str] | None) -> str:
@@ -152,8 +162,54 @@ async def test_setup_action_splits_url_and_path(monkeypatch: pytest.MonkeyPatch)
     params = body["parameters"]
     assert isinstance(params, dict)
     assert params["path"] == "/api/v1/mqtt/ingest/telemetry"
-    assert params["body"] == "${.}"
+    body_template = params["body"]
+    assert isinstance(body_template, str)
+    assert "${topic}" in body_template
+    assert "${clientid}" in body_template
+    assert "${username}" in body_template
+    assert '"payload":${payload}' in body_template
+    assert "${.}" not in body_template
+    assert body_template == emqx_rule_setup.ACTION_INGEST_BODY_TEMPLATE
+    assert params["max_retries"] == 2
     assert params["headers"]["x-internal-secret"] == emqx_rule_setup.settings.mqtt_webhook_shared_secret
+
+
+@pytest.mark.asyncio
+async def test_setup_puts_action_when_existing_body_uses_whole_event_template(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _StaleActionClient(_FakeAsyncClient):
+        async def get(self, url: str, auth: httpx.Auth | tuple[str, str] | None = None) -> _FakeResponse:
+            if url.endswith("/api/v5/actions"):
+                return _FakeResponse(
+                    200,
+                    [
+                        {
+                            "name": emqx_rule_setup.ACTION_NAME,
+                            "parameters": {
+                                "method": "post",
+                                "path": "/api/v1/mqtt/ingest/telemetry",
+                                "body": "${.}",
+                                "headers": {"content-type": "application/json"},
+                            },
+                        }
+                    ],
+                )
+            return await super().get(url, auth)
+
+    fake = _StaleActionClient(timeout=1.0)
+    monkeypatch.setattr(emqx_rule_setup.httpx, "AsyncClient", lambda **kwargs: fake)
+    await emqx_rule_setup.setup_telemetry_forwarding_rule()
+    assert len([p for p in fake.posts if p[0].endswith("/api/v5/actions")]) == 0
+    action_puts = [
+        p for p in fake.puts if p[0].endswith(f"/api/v5/actions/{emqx_rule_setup.HTTP_ACTION_REF}")
+    ]
+    assert len(action_puts) == 1
+    put_body = action_puts[0][1]
+    assert isinstance(put_body, dict)
+    params = put_body["parameters"]
+    assert isinstance(params, dict)
+    assert params["body"] == emqx_rule_setup.ACTION_INGEST_BODY_TEMPLATE
 
 
 @pytest.mark.asyncio

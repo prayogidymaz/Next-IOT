@@ -17,6 +17,11 @@ ACTION_NAME = "forward_telemetry"
 RULE_NAME = "rule_forward_telemetry"
 RULE_SQL = 'SELECT * FROM "tenants/+/devices/+/telemetry"'
 HTTP_ACTION_REF = f"http:{ACTION_NAME}"
+# EMQX rule action template — only fields accepted by MqttTelemetryIngestRequest (no ${.} whole event).
+ACTION_INGEST_BODY_TEMPLATE = (
+    '{"topic":"${topic}","payload":${payload},'
+    '"clientid":"${clientid}","username":"${username}"}'
+)
 
 _AUTH_FAILURE_MESSAGE = (
     "EMQX API auth failed. Check EMQX_API_KEY env match "
@@ -45,11 +50,17 @@ class _HttpActionParameters(TypedDict):
     path: str
     body: str
     headers: dict[str, str]
+    max_retries: int
 
 
 class _HttpActionBody(TypedDict):
     type: str
     name: str
+    connector: str
+    parameters: _HttpActionParameters
+
+
+class _HttpActionPutBody(TypedDict):
     connector: str
     parameters: _HttpActionParameters
 
@@ -102,6 +113,18 @@ def _items_from_list_response(payload: object) -> list[object]:
     return []
 
 
+def _find_resource_named(items: list[object], name: str) -> dict[str, object] | None:
+    for entry in items:
+        if isinstance(entry, dict):
+            entry_name = entry.get("name")
+            if isinstance(entry_name, str) and entry_name == name:
+                return entry
+            entry_id = entry.get("id")
+            if isinstance(entry_id, str) and entry_id == name:
+                return entry
+    return None
+
+
 def _resource_named(items: object, name: str) -> bool:
     if not isinstance(items, list):
         return False
@@ -120,6 +143,20 @@ async def _get_json(client: httpx.AsyncClient, path: str) -> object:
     response = await client.get(_dashboard_url(path), auth=_auth())
     response.raise_for_status()
     return response.json()
+
+
+async def _put_json(client: httpx.AsyncClient, path: str, body: object) -> None:
+    logger.info("EMQX rule setup PUT %s request_body=%s", path, body)
+    response = await client.put(_dashboard_url(path), auth=_auth(), json=body)
+    if response.status_code in (200, 204):
+        return
+    logger.error(
+        "EMQX rule setup PUT %s HTTP %s response_body=%s",
+        path,
+        response.status_code,
+        response.text,
+    )
+    response.raise_for_status()
 
 
 async def _post_json(client: httpx.AsyncClient, path: str, body: object) -> None:
@@ -164,13 +201,36 @@ def _http_action_body() -> _HttpActionBody:
         "parameters": {
             "method": "post",
             "path": ingest_path,
-            "body": "${.}",
+            "body": ACTION_INGEST_BODY_TEMPLATE,
             "headers": {
                 "content-type": "application/json",
                 "x-internal-secret": secret,
             },
+            "max_retries": 2,
         },
     }
+
+
+def _http_action_put_body(desired: _HttpActionBody) -> _HttpActionPutBody:
+    return {
+        "connector": desired["connector"],
+        "parameters": desired["parameters"],
+    }
+
+
+def _http_action_needs_update(existing: dict[str, object], desired: _HttpActionBody) -> bool:
+    params = existing.get("parameters")
+    if not isinstance(params, dict):
+        return True
+    desired_params = desired["parameters"]
+    if params.get("body") != desired_params["body"]:
+        return True
+    if params.get("path") != desired_params["path"]:
+        return True
+    existing_headers = params.get("headers")
+    if not isinstance(existing_headers, dict):
+        return True
+    return existing_headers != desired_params["headers"]
 
 
 def _rule_body() -> _RuleBody:
@@ -190,10 +250,18 @@ async def _ensure_http_connector(client: httpx.AsyncClient) -> None:
 
 
 async def _ensure_http_action(client: httpx.AsyncClient) -> None:
-    existing = _items_from_list_response(await _get_json(client, "/api/v5/actions"))
-    if _resource_named(existing, ACTION_NAME):
+    existing_list = _items_from_list_response(await _get_json(client, "/api/v5/actions"))
+    desired = _http_action_body()
+    found = _find_resource_named(existing_list, ACTION_NAME)
+    if found is not None:
+        if _http_action_needs_update(found, desired):
+            await _put_json(
+                client,
+                f"/api/v5/actions/{HTTP_ACTION_REF}",
+                _http_action_put_body(desired),
+            )
         return
-    await _post_json(client, "/api/v5/actions", _http_action_body())
+    await _post_json(client, "/api/v5/actions", desired)
 
 
 async def _ensure_rule(client: httpx.AsyncClient) -> None:
