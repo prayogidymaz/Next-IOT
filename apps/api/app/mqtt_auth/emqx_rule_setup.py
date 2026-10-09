@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from typing import TypedDict
+from urllib.parse import urlparse, urlunparse
 
 import httpx
 from app.config import settings
@@ -13,8 +14,9 @@ logger = logging.getLogger(__name__)
 
 CONNECTOR_NAME = "api_mqtt_ingest"
 ACTION_NAME = "forward_telemetry"
-RULE_ID = "rule_forward_telemetry"
-RULE_SQL = 'SELECT topic, payload, clientid, username FROM "tenants/+/devices/+/telemetry"'
+RULE_NAME = "rule_forward_telemetry"
+RULE_SQL = 'SELECT * FROM "tenants/+/devices/+/telemetry"'
+HTTP_ACTION_REF = f"http:{ACTION_NAME}"
 
 _AUTH_FAILURE_MESSAGE = (
     "EMQX API auth failed. Check EMQX_API_KEY env match "
@@ -22,29 +24,41 @@ _AUTH_FAILURE_MESSAGE = (
 )
 
 
+class _SslEnableOnly(TypedDict):
+    enable: bool
+
+
 class _HttpConnectorBody(TypedDict):
     type: str
     name: str
     enable: bool
     url: str
+    connect_timeout: str
+    pool_type: str
+    pool_size: int
+    enable_pipelining: int
+    ssl: _SslEnableOnly
+
+
+class _HttpActionParameters(TypedDict):
     method: str
+    path: str
+    body: str
     headers: dict[str, str]
 
 
 class _HttpActionBody(TypedDict):
-    name: str
     type: str
+    name: str
     connector: str
-    enable: bool
-    parameters: dict[str, str | dict[str, str]]
-    resource_opts: dict[str, str | int]
+    parameters: _HttpActionParameters
 
 
 class _RuleBody(TypedDict):
-    id: str
+    name: str
+    enable: bool
     sql: str
     actions: list[str]
-    enable: bool
 
 
 def validate_emqx_api_credentials() -> None:
@@ -68,6 +82,26 @@ def _dashboard_url(path: str) -> str:
     return f"{base}{path}"
 
 
+def _ingest_webhook_parts() -> tuple[str, str]:
+    """Split ingest URL into HTTP connector base URL and action path (EMQX 5.8)."""
+    parsed = urlparse(settings.emqx_ingest_webhook_url.strip())
+    if not parsed.scheme or not parsed.netloc:
+        raise ValueError(f"Invalid EMQX ingest webhook URL: {settings.emqx_ingest_webhook_url}")
+    base_url = urlunparse((parsed.scheme, parsed.netloc, "", "", "", ""))
+    path = parsed.path if parsed.path else "/"
+    return base_url, path
+
+
+def _items_from_list_response(payload: object) -> list[object]:
+    if isinstance(payload, list):
+        return payload
+    if isinstance(payload, dict):
+        data = payload.get("data")
+        if isinstance(data, list):
+            return data
+    return []
+
+
 def _resource_named(items: object, name: str) -> bool:
     if not isinstance(items, list):
         return False
@@ -89,70 +123,84 @@ async def _get_json(client: httpx.AsyncClient, path: str) -> object:
 
 
 async def _post_json(client: httpx.AsyncClient, path: str, body: object) -> None:
+    logger.info("EMQX rule setup POST %s request_body=%s", path, body)
     response = await client.post(_dashboard_url(path), auth=_auth(), json=body)
     if response.status_code in (200, 201):
         return
     if response.status_code == 400 and "ALREADY_EXISTS" in response.text:
+        logger.info("EMQX rule setup POST %s already exists", path)
         return
+    logger.error(
+        "EMQX rule setup POST %s HTTP %s response_body=%s",
+        path,
+        response.status_code,
+        response.text,
+    )
     response.raise_for_status()
 
 
-async def _ensure_http_connector(client: httpx.AsyncClient) -> None:
-    existing = await _get_json(client, "/api/v5/connectors")
-    if _resource_named(existing, CONNECTOR_NAME):
-        return
-    secret = settings.mqtt_webhook_shared_secret
-    body: _HttpConnectorBody = {
+def _http_connector_body() -> _HttpConnectorBody:
+    base_url, _path = _ingest_webhook_parts()
+    return {
         "type": "http",
         "name": CONNECTOR_NAME,
         "enable": True,
-        "url": settings.emqx_ingest_webhook_url,
-        "method": "post",
-        "headers": {
-            "content-type": "application/json",
-            "x-internal-secret": secret,
+        "url": base_url,
+        "connect_timeout": "15s",
+        "pool_type": "random",
+        "pool_size": 8,
+        "enable_pipelining": 100,
+        "ssl": {"enable": False},
+    }
+
+
+def _http_action_body() -> _HttpActionBody:
+    _base, ingest_path = _ingest_webhook_parts()
+    secret = settings.mqtt_webhook_shared_secret
+    return {
+        "type": "http",
+        "name": ACTION_NAME,
+        "connector": CONNECTOR_NAME,
+        "parameters": {
+            "method": "post",
+            "path": ingest_path,
+            "body": "${.}",
+            "headers": {
+                "content-type": "application/json",
+                "x-internal-secret": secret,
+            },
         },
     }
-    await _post_json(client, "/api/v5/connectors", body)
+
+
+def _rule_body() -> _RuleBody:
+    return {
+        "name": RULE_NAME,
+        "enable": True,
+        "sql": RULE_SQL,
+        "actions": [HTTP_ACTION_REF],
+    }
+
+
+async def _ensure_http_connector(client: httpx.AsyncClient) -> None:
+    existing = _items_from_list_response(await _get_json(client, "/api/v5/connectors"))
+    if _resource_named(existing, CONNECTOR_NAME):
+        return
+    await _post_json(client, "/api/v5/connectors", _http_connector_body())
 
 
 async def _ensure_http_action(client: httpx.AsyncClient) -> None:
-    existing = await _get_json(client, "/api/v5/actions")
+    existing = _items_from_list_response(await _get_json(client, "/api/v5/actions"))
     if _resource_named(existing, ACTION_NAME):
         return
-    body: _HttpActionBody = {
-        "name": ACTION_NAME,
-        "type": "http",
-        "connector": CONNECTOR_NAME,
-        "enable": True,
-        "parameters": {
-            "method": "post",
-            "path": "",
-            "headers": {"content-type": "application/json"},
-            "body": (
-                '{"topic":"${topic}","payload":${payload},'
-                '"clientid":"${clientid}","username":"${username}"}'
-            ),
-        },
-        "resource_opts": {
-            "worker_pool_size": 8,
-            "health_check_interval": "15s",
-        },
-    }
-    await _post_json(client, "/api/v5/actions", body)
+    await _post_json(client, "/api/v5/actions", _http_action_body())
 
 
 async def _ensure_rule(client: httpx.AsyncClient) -> None:
-    existing = await _get_json(client, "/api/v5/rules")
-    if _resource_named(existing, RULE_ID):
+    existing = _items_from_list_response(await _get_json(client, "/api/v5/rules"))
+    if _resource_named(existing, RULE_NAME):
         return
-    body: _RuleBody = {
-        "id": RULE_ID,
-        "sql": RULE_SQL,
-        "actions": [ACTION_NAME],
-        "enable": True,
-    }
-    await _post_json(client, "/api/v5/rules", body)
+    await _post_json(client, "/api/v5/rules", _rule_body())
 
 
 async def _run_setup_once(client: httpx.AsyncClient) -> None:
@@ -164,6 +212,13 @@ async def _run_setup_once(client: httpx.AsyncClient) -> None:
 def _log_http_failure(exc: httpx.HTTPError) -> None:
     if isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code == 401:
         logger.error("%s (api_key prefix=%s)", _AUTH_FAILURE_MESSAGE, _api_key_log_prefix())
+        return
+    if isinstance(exc, httpx.HTTPStatusError):
+        logger.error(
+            "EMQX rule setup failed HTTP %s response_body=%s",
+            exc.response.status_code,
+            exc.response.text,
+        )
         return
     logger.warning("EMQX rule setup skipped (unreachable or misconfigured): %s", exc)
 
@@ -184,14 +239,19 @@ async def setup_telemetry_forwarding_rule() -> None:
         try:
             async with httpx.AsyncClient(timeout=settings.emqx_dashboard_timeout_seconds) as client:
                 await _run_setup_once(client)
-            logger.info("EMQX rule setup OK (%s)", RULE_ID)
+            logger.info("EMQX rule setup OK (%s)", RULE_NAME)
             return
         except httpx.HTTPStatusError as exc:
             last_error = exc
             if exc.response.status_code == 401:
                 _log_http_failure(exc)
                 return
-            logger.warning("EMQX rule setup attempt %s failed: %s", attempt, exc)
+            logger.warning(
+                "EMQX rule setup attempt %s failed HTTP %s: %s",
+                attempt,
+                exc.response.status_code,
+                exc.response.text,
+            )
         except httpx.HTTPError as exc:
             last_error = exc
             logger.warning("EMQX rule setup attempt %s failed: %s", attempt, exc)

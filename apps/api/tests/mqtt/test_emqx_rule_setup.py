@@ -74,6 +74,21 @@ async def test_setup_creates_connector_if_not_exists(monkeypatch: pytest.MonkeyP
 
 
 @pytest.mark.asyncio
+async def test_setup_skips_rule_if_paginated_list_has_name(monkeypatch: pytest.MonkeyPatch) -> None:
+    class _PagedRulesClient(_FakeAsyncClient):
+        async def get(self, url: str, auth: httpx.Auth | tuple[str, str] | None = None) -> _FakeResponse:
+            if url.endswith("/api/v5/rules"):
+                return _FakeResponse(200, {"data": [{"name": emqx_rule_setup.RULE_NAME}]})
+            return await super().get(url, auth)
+
+    fake = _PagedRulesClient(timeout=1.0)
+    monkeypatch.setattr(emqx_rule_setup.httpx, "AsyncClient", lambda **kwargs: fake)
+    await emqx_rule_setup.setup_telemetry_forwarding_rule()
+    rule_posts = [p for p in fake.posts if p[0].endswith("/api/v5/rules")]
+    assert len(rule_posts) == 0
+
+
+@pytest.mark.asyncio
 async def test_setup_skips_connector_if_exists(monkeypatch: pytest.MonkeyPatch) -> None:
     class _ExistingClient(_FakeAsyncClient):
         async def get(self, url: str, auth: httpx.Auth | tuple[str, str] | None = None) -> _FakeResponse:
@@ -107,6 +122,51 @@ async def test_setup_creates_rule_with_correct_sql(monkeypatch: pytest.MonkeyPat
     body = rule_posts[0][1]
     assert isinstance(body, dict)
     assert body.get("sql") == emqx_rule_setup.RULE_SQL
+
+
+@pytest.mark.asyncio
+async def test_setup_connector_body_matches_emqx_58_schema(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = _FakeAsyncClient(timeout=1.0)
+    monkeypatch.setattr(emqx_rule_setup.httpx, "AsyncClient", lambda **kwargs: fake)
+    await emqx_rule_setup.setup_telemetry_forwarding_rule()
+    connector_posts = [p for p in fake.posts if p[0].endswith("/api/v5/connectors")]
+    body = connector_posts[0][1]
+    assert isinstance(body, dict)
+    assert body["type"] == "http"
+    assert body["name"] == emqx_rule_setup.CONNECTOR_NAME
+    assert body["url"] == "http://api:8000"
+    assert body["ssl"] == {"enable": False}
+    assert "method" not in body
+    assert "headers" not in body
+
+
+@pytest.mark.asyncio
+async def test_setup_action_splits_url_and_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = _FakeAsyncClient(timeout=1.0)
+    monkeypatch.setattr(emqx_rule_setup.httpx, "AsyncClient", lambda **kwargs: fake)
+    await emqx_rule_setup.setup_telemetry_forwarding_rule()
+    action_posts = [p for p in fake.posts if p[0].endswith("/api/v5/actions")]
+    body = action_posts[0][1]
+    assert isinstance(body, dict)
+    assert body["connector"] == emqx_rule_setup.CONNECTOR_NAME
+    params = body["parameters"]
+    assert isinstance(params, dict)
+    assert params["path"] == "/api/v1/mqtt/ingest/telemetry"
+    assert params["body"] == "${.}"
+    assert params["headers"]["x-internal-secret"] == emqx_rule_setup.settings.mqtt_webhook_shared_secret
+
+
+@pytest.mark.asyncio
+async def test_setup_rule_uses_http_action_reference(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = _FakeAsyncClient(timeout=1.0)
+    monkeypatch.setattr(emqx_rule_setup.httpx, "AsyncClient", lambda **kwargs: fake)
+    await emqx_rule_setup.setup_telemetry_forwarding_rule()
+    rule_posts = [p for p in fake.posts if p[0].endswith("/api/v5/rules")]
+    body = rule_posts[0][1]
+    assert isinstance(body, dict)
+    assert body.get("name") == emqx_rule_setup.RULE_NAME
+    assert body.get("actions") == [emqx_rule_setup.HTTP_ACTION_REF]
+    assert "id" not in body
 
 
 @pytest.mark.asyncio
