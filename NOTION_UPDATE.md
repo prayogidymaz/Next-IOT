@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-10-06 (UTC+7)  
 
-- **REST automation:** API key bootstrap file on **emqx** + `EMQX_API_KEY`/`EMQX_API_SECRET` on **api** (not dashboard admin password for `/api/v5`).
+- **REST automation:** API key bootstrap file on **emqx** (`key:secret` lines only — no `#` comments) + `${EMQX_API_KEY}`/`${EMQX_API_SECRET}` on **api** (not dashboard password for `/api/v5`).
 
 ### Step 3B — Device Credentials UI + EMQX telemetry rule (synced)
 

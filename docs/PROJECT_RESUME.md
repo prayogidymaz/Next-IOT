@@ -99,6 +99,7 @@ Permanent rules live in **`.cursorrules`** (root):
 
 - **Bug:** Dashboard **admin password** does not authenticate `/api/v5/*` (401); login returns Bearer JWT only. Rule setup must use **API key** Basic Auth (`api_key:secret` from bootstrap file).
 - **Fix:** `infra/emqx/api-keys.conf` + `EMQX_API_KEY__BOOTSTRAP_FILE`; API uses `EMQX_API_KEY` / `EMQX_API_SECRET`. Dashboard env kept for **UI login only**.
+- **Attempt 7:** Bootstrap file must be **only** `key:secret` lines — `#` comment lines are parsed and break load (`invalid_role` on `SECRET[:ROLE]` in comment text). No `:administrator` suffix required on CE. Compose must pass `${EMQX_API_KEY}` / `${EMQX_API_SECRET}` into **api** (recreate containers after compose changes).
 
 **EMQX integration best practice (6 attempts):** cluster-override merge → HOCON literal webhook secret → dashboard password sync → **API key bootstrap** for automation; avoid assuming dashboard credentials work for REST.
 

@@ -59,8 +59,8 @@ services:
       REDIS_HOST: redis
       MQTT_WEBHOOK_SHARED_SECRET: ${MQTT_WEBHOOK_SHARED_SECRET:-dev-mqtt-webhook-secret}
       EMQX_DASHBOARD_URL: http://emqx:18083
-      EMQX_API_KEY: nextiot-api-key
-      EMQX_API_SECRET: nextiot-api-secret-change-in-prod
+      EMQX_API_KEY: ${EMQX_API_KEY:-nextiot-api-key}
+      EMQX_API_SECRET: ${EMQX_API_SECRET:-nextiot-api-secret-change-in-prod}
     depends_on:
       postgres:
         condition: service_healthy
