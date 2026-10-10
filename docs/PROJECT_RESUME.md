@@ -98,7 +98,7 @@ Permanent rules live in **`.cursorrules`** (root):
 ### Step 3C — asyncio-mqtt telemetry subscriber (2026-10-10)
 
 - **Replaces:** EMQX Rule Engine HTTP forward (parked — see `docs/TECH_DEBT.md`).
-- **Implementation:** `MqttSubscriberService` connects to EMQX with platform credentials, subscribes `tenants/+/devices/+/telemetry`, parses raw MQTT JSON, calls `persist_telemetry_from_mqtt` (shared with HTTP ingest webhook).
+- **Implementation:** `MqttSubscriberService` connects to EMQX with platform credentials, subscribes `tenants/+/devices/+/telemetry`, parses raw MQTT JSON, calls `persist_telemetry_from_mqtt` (shared with HTTP ingest webhook). **`_handle` commits/rolls back per message** (same transaction ownership as HTTP `get_db`); integration tests verify rows via a **new DB session**.
 - **Auth:** `MQTT_SUBSCRIBER_INTERNAL_*` env; EMQX HTTP auth/ACL allow subscribe-only on telemetry topics.
 - **Default:** `MQTT_SUBSCRIBER_ENABLED=true`, `EMQX_TELEMETRY_RULE_SETUP_ENABLED=false`.
 

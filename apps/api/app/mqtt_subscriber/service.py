@@ -77,8 +77,8 @@ class MqttSubscriberService:
             temp_log,
         )
 
-        try:
-            async with async_session() as db:
+        async with async_session() as db:
+            try:
                 result = await persist_telemetry_from_mqtt(
                     db,
                     self._redis,
@@ -87,13 +87,17 @@ class MqttSubscriberService:
                     client_id=_mqtt_client_identifier(),
                 )
                 await db.commit()
-        except Exception:
-            logger.exception("MQTT Subscriber ingest failed for %s", topic_str)
-            return
+            except Exception:
+                await db.rollback()
+                logger.exception("MQTT Subscriber persist failed on %s", topic_str)
+                return
 
-        accepted = result.get("accepted_count", 0)
-        if accepted:
-            logger.debug("MQTT Subscriber persisted telemetry for %s", topic_str)
+        logger.warning(
+            "MQTT Subscriber persisted: device=%s accepted=%s rejected=%s",
+            parsed_topic.device_id,
+            result.get("accepted_count", 0),
+            result.get("rejected", []),
+        )
 
     async def run(self) -> None:
         # Defer first connect until HTTP server accepts EMQX auth/ACL webhooks (same event loop).

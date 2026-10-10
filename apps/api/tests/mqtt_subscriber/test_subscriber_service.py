@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import aiomqtt
 import pytest
 from app.config import settings
+from app.database import async_session
+from app.models.telemetry_reading import TelemetryReading
 from app.mqtt_auth.acl import MqttAclDecision
 from app.mqtt_auth.schemas import MqttAuthRequest
 from app.mqtt_auth.subscriber_auth import (
@@ -23,8 +26,54 @@ from app.telemetry.mqtt_payload import parse_telemetry_payload_bytes
 from app.types.redis_client import RedisClient
 from httpx import AsyncClient
 from pydantic import JsonValue
+from sqlalchemy import select
 
 PASSWORD = "SecurePass123!"
+
+
+async def _register_device_online(
+    client: AsyncClient,
+    unique_slug: str,
+    unique_email: str,
+    *,
+    name: str,
+) -> tuple[str, str]:
+    """Return (device_id, tenant_id) with device in online status (heartbeat)."""
+    token = (
+        await client.post(
+            "/auth/register",
+            json={
+                "tenant_name": f"T {unique_slug}",
+                "tenant_slug": unique_slug,
+                "email": unique_email,
+                "password": PASSWORD,
+            },
+        )
+    ).json()["tokens"]["access_token"]
+    create = await client.post(
+        "/api/v1/devices",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": name, "device_type": "sensor"},
+    )
+    assert create.status_code == 201
+    body = create.json()
+    device_id = body["device"]["id"]
+    tenant_id = body["device"]["tenant_id"]
+    prov = await client.post(
+        f"/api/v1/devices/{device_id}/provision",
+        json={"provisioning_token": body["provisioning_token"]},
+    )
+    assert prov.status_code == 200
+    creds = prov.json()
+    basic = base64.b64encode(f"{creds['client_id']}:{creds['client_secret']}".encode()).decode()
+    hb = await client.post(
+        f"/api/v1/devices/{device_id}/heartbeat",
+        headers={"Authorization": f"Basic {basic}"},
+        json={},
+    )
+    assert hb.status_code == 200
+    assert hb.json()["status"] == "online"
+    return device_id, tenant_id
 
 
 @pytest.fixture(autouse=True)
@@ -100,6 +149,67 @@ def test_subscriber_parses_payload_json() -> None:
     raw = b'{"ts":"2026-10-09T12:00:00Z","values":{"temperature":42}}'
     payload: dict[str, JsonValue] = parse_telemetry_payload_bytes(raw)
     assert payload["values"] == {"temperature": 42}
+
+
+@pytest.mark.asyncio
+async def test_handle_message_commits_and_row_exists(
+    client: AsyncClient,
+    test_redis: RedisClient,
+    unique_slug: str,
+    unique_email: str,
+) -> None:
+    device_id, tenant_id = await _register_device_online(
+        client, unique_slug, unique_email, name="SubCommit"
+    )
+    unique_temp = 20 + (uuid.uuid4().int % 50)
+    topic = f"tenants/{tenant_id}/devices/{device_id}/telemetry"
+    message = MagicMock()
+    message.topic = topic
+    message.payload = f'{{"values":{{"temperature":{unique_temp}}}}}'.encode()
+
+    service = MqttSubscriberService(test_redis)
+    await service._handle(message)
+
+    async with async_session() as verify_session:
+        rows = list(
+            await verify_session.scalars(
+                select(TelemetryReading).where(TelemetryReading.device_id == uuid.UUID(device_id))
+            )
+        )
+    assert any(row.metrics.get("temperature") == unique_temp for row in rows)
+
+
+@pytest.mark.asyncio
+async def test_handle_message_rolls_back_on_error(
+    client: AsyncClient,
+    test_redis: RedisClient,
+    unique_slug: str,
+    unique_email: str,
+) -> None:
+    device_id, tenant_id = await _register_device_online(
+        client, unique_slug, unique_email, name="SubRollback"
+    )
+    unique_temp = 20 + (uuid.uuid4().int % 50)
+    topic = f"tenants/{tenant_id}/devices/{device_id}/telemetry"
+    message = MagicMock()
+    message.topic = topic
+    message.payload = f'{{"values":{{"temperature":{unique_temp}}}}}'.encode()
+
+    service = MqttSubscriberService(test_redis)
+    with patch(
+        "app.mqtt_subscriber.telemetry_ingest.ingest_telemetry",
+        new_callable=AsyncMock,
+        side_effect=RuntimeError("simulated ingest failure"),
+    ):
+        await service._handle(message)
+
+    async with async_session() as verify_session:
+        rows = list(
+            await verify_session.scalars(
+                select(TelemetryReading).where(TelemetryReading.device_id == uuid.UUID(device_id))
+            )
+        )
+    assert not any(row.metrics.get("temperature") == unique_temp for row in rows)
 
 
 @pytest.mark.asyncio
