@@ -8,6 +8,8 @@ import pytest
 from httpx import AsyncClient
 
 from app.config import settings
+from app.mqtt_auth.payload_parse import telemetry_payload_object
+from app.mqtt_auth.schemas import MqttTelemetryIngestRequest
 
 PASSWORD = "SecurePass123!"
 
@@ -40,6 +42,15 @@ async def _device_with_credential(client: AsyncClient, token: str) -> tuple[str,
     )
     assert gen.status_code == 201
     return tenant_id, device_id, gen.json()["access_token"]
+
+
+def test_telemetry_payload_object_decodes_bytes_utf8() -> None:
+    body = MqttTelemetryIngestRequest(
+        topic="tenants/t/d/telemetry",
+        payload=b'{"values":{"temp":1}}',
+    )
+    parsed = telemetry_payload_object(body)
+    assert parsed["values"] == {"temp": 1}
 
 
 @pytest.mark.asyncio

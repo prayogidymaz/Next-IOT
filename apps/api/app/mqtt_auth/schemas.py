@@ -45,4 +45,4 @@ class MqttTelemetryIngestRequest(BaseModel):
     topic: str
     username: str = ""
     clientid: str = ""
-    payload: str | dict[str, JsonValue] = Field(default="")
+    payload: str | dict[str, JsonValue] | bytes = Field(default="")

@@ -11,6 +11,8 @@ from pydantic import JsonValue
 
 def telemetry_payload_object(body: MqttTelemetryIngestRequest) -> dict[str, JsonValue]:
     raw = body.payload
+    if isinstance(raw, bytes):
+        raw = raw.decode("utf-8")
     if isinstance(raw, str):
         if not raw.strip():
             return {}
