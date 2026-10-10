@@ -17,11 +17,8 @@ ACTION_NAME = "forward_telemetry"
 RULE_NAME = "rule_forward_telemetry"
 RULE_SQL = 'SELECT * FROM "tenants/+/devices/+/telemetry"'
 HTTP_ACTION_REF = f"http:{ACTION_NAME}"
-# EMQX rule action template — only fields accepted by MqttTelemetryIngestRequest (no ${.} whole event).
-ACTION_INGEST_BODY_TEMPLATE = (
-    '{"topic":"${topic}","payload":${payload},'
-    '"clientid":"${clientid}","username":"${username}"}'
-)
+# Forward full rule event; ingest schema ignores extra EMQX fields (extra="ignore").
+ACTION_INGEST_BODY_TEMPLATE = "${.}"
 
 _AUTH_FAILURE_MESSAGE = (
     "EMQX API auth failed. Check EMQX_API_KEY env match "

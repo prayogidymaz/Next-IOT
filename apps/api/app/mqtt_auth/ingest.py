@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import json
 from datetime import UTC, datetime
-from typing import TypedDict
 
 from app.device_credentials.service import lookup_active_by_access_token
 from app.devices.dependencies import CurrentDevice
 from app.models.device import Device
 from app.mqtt_auth.acl import parse_device_topic
+from app.mqtt_auth.payload_parse import telemetry_payload_object
 from app.mqtt_auth.schemas import MqttTelemetryIngestRequest
 from app.telemetry.ingest_pipeline import split_telemetry_for_profile
 from app.telemetry.profile_loader import load_thing_model_for_device
@@ -20,11 +19,6 @@ from fastapi import HTTPException, status
 from pydantic import JsonValue
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-
-class _PayloadBody(TypedDict, total=False):
-    ts: str
-    values: dict[str, JsonValue]
 
 
 def _parse_timestamp(raw: str | None) -> datetime:
@@ -61,12 +55,7 @@ async def ingest_mqtt_telemetry(
             detail="Credential does not match topic device",
         )
 
-    try:
-        payload_obj = json.loads(body.payload) if body.payload else {}
-    except json.JSONDecodeError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid JSON payload") from exc
-    if not isinstance(payload_obj, dict):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Payload must be a JSON object")
+    payload_obj = telemetry_payload_object(body)
 
     values_raw = payload_obj.get("values")
     if not isinstance(values_raw, dict):

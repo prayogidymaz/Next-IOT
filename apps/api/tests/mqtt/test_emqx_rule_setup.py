@@ -162,22 +162,21 @@ async def test_setup_action_splits_url_and_path(monkeypatch: pytest.MonkeyPatch)
     params = body["parameters"]
     assert isinstance(params, dict)
     assert params["path"] == "/api/v1/mqtt/ingest/telemetry"
-    body_template = params["body"]
-    assert isinstance(body_template, str)
-    assert "${topic}" in body_template
-    assert "${clientid}" in body_template
-    assert "${username}" in body_template
-    assert '"payload":${payload}' in body_template
-    assert "${.}" not in body_template
-    assert body_template == emqx_rule_setup.ACTION_INGEST_BODY_TEMPLATE
+    assert params["body"] == emqx_rule_setup.ACTION_INGEST_BODY_TEMPLATE
+    assert params["body"] == "${.}"
     assert params["max_retries"] == 2
     assert params["headers"]["x-internal-secret"] == emqx_rule_setup.settings.mqtt_webhook_shared_secret
 
 
 @pytest.mark.asyncio
-async def test_setup_puts_action_when_existing_body_uses_whole_event_template(
+async def test_setup_puts_action_when_existing_body_uses_explicit_field_template(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    stale_body = (
+        '{"topic":"${topic}","payload":${payload},'
+        '"clientid":"${clientid}","username":"${username}"}'
+    )
+
     class _StaleActionClient(_FakeAsyncClient):
         async def get(self, url: str, auth: httpx.Auth | tuple[str, str] | None = None) -> _FakeResponse:
             if url.endswith("/api/v5/actions"):
@@ -189,7 +188,7 @@ async def test_setup_puts_action_when_existing_body_uses_whole_event_template(
                             "parameters": {
                                 "method": "post",
                                 "path": "/api/v1/mqtt/ingest/telemetry",
-                                "body": "${.}",
+                                "body": stale_body,
                                 "headers": {"content-type": "application/json"},
                             },
                         }

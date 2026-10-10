@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
 
 class MqttAuthResult(StrEnum):
@@ -40,7 +40,9 @@ class MqttAclResponse(BaseModel):
 
 
 class MqttTelemetryIngestRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
     topic: str
     username: str = ""
     clientid: str = ""
-    payload: str = ""
+    payload: str | dict[str, JsonValue] = Field(default="")

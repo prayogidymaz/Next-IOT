@@ -2,6 +2,7 @@
 
 **Last updated:** 2026-10-06 (UTC+7)  
 
+- **Ingest webhook:** accept EMQX whole-event JSON (`extra=ignore`); payload as string or dict.
 - **Credential rotate:** commit DB then invalidate Redis `mqtt:auth:*` for old + new access tokens; auth cache stores allows only.
 - **EMQX action body:** explicit ingest JSON template (not `${.}`); startup **PUT** when action body drifts.
 - **Windows dev MQTT:** default host port **11883** (EMQX container still 1883) — avoid Mosquitto service on 1883; UI broker URL from `NEXT_PUBLIC_MQTT_BROKER_URL`.
