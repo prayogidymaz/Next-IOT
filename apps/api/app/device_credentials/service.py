@@ -157,7 +157,10 @@ async def rotate_credential(
     device = await _get_device_for_user(db, device_id, user)
     active = await _get_active_credential_row(db, device.id)
     if active is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No active credential")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No active credential. Use POST /credentials to create one.",
+        )
     old_access_token = active.access_token
     await _deactivate_active(db, redis, device.id, mark_rotated=True)
     created = await _insert_active_credential(db, device, include_basic_secret=False)

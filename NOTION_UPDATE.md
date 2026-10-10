@@ -2,6 +2,11 @@
 
 **Last updated:** 2026-10-06 (UTC+7)  
 
+### Step 3C — MQTT asyncio subscriber (DONE)
+
+- **Status:** Platform `MqttSubscriberService` (asyncio-mqtt) replaces EMQX rule engine for telemetry; rule setup disabled by default.
+- **Env:** `MQTT_SUBSCRIBER_ENABLED`, `MQTT_SUBSCRIBER_INTERNAL_USER/PASSWORD`; HTTP `/mqtt/ingest` retained for compatibility.
+
 - **Ingest webhook:** raw body log (`MQTT INGEST RAW BODY`); manual JSON parse; action `${.}`; payload str/dict/bytes.
 - **Credential rotate:** commit DB then invalidate Redis `mqtt:auth:*` for old + new access tokens; auth cache stores allows only.
 - **EMQX action body:** explicit ingest JSON template (not `${.}`); startup **PUT** when action body drifts.

@@ -30,6 +30,7 @@ from app.mission.sar_emergency_router import router as sar_emergency_ws_router
 from app.models.user import User
 from app.mqtt_auth.emqx_rule_setup import setup_telemetry_forwarding_rule
 from app.mqtt_auth.router import router as mqtt_auth_router
+from app.mqtt_subscriber import MqttSubscriberService
 from app.notifications.router import router as notifications_router
 from app.notifications.worker import notification_dispatcher_loop
 from app.ota.router import router as ota_router
@@ -104,6 +105,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     stop_event = asyncio.Event()
     worker_tasks: list[asyncio.Task[None]] = []
+    mqtt_subscriber: MqttSubscriberService | None = None
     if settings.run_background_workers:
         worker_tasks = [
             asyncio.create_task(offline_checker_loop(redis, stop_event)),
@@ -113,11 +115,20 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         ]
     app.state.offline_worker_stop = stop_event
     app.state.startup_ready = True
-    logger.info("API fully ready (database, redis, EMQX rule setup, background workers)")
-
+    logger.info(
+        "API fully ready (database, redis, mqtt_subscriber=%s, emqx_rule_setup=%s, workers)",
+        settings.mqtt_subscriber_enabled,
+        settings.emqx_telemetry_rule_setup_enabled,
+    )
+    if settings.mqtt_subscriber_enabled:
+        mqtt_subscriber = MqttSubscriberService(redis)
+        worker_tasks.append(asyncio.create_task(mqtt_subscriber.run()))
+    app.state.mqtt_subscriber = mqtt_subscriber
     yield
 
     stop_event.set()
+    if mqtt_subscriber is not None:
+        mqtt_subscriber.request_stop()
     for task in worker_tasks:
         task.cancel()
         try:

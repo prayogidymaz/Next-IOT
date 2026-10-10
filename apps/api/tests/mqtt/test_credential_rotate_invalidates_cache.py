@@ -6,10 +6,9 @@ import uuid
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from httpx import AsyncClient
-
 from app.mqtt_auth.cache import get_cached_credential, set_cached_credential
 from app.types.redis_client import RedisClient
+from httpx import AsyncClient
 
 PASSWORD = "SecurePass123!"
 

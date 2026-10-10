@@ -15,6 +15,11 @@ from app.mqtt_auth.schemas import (
     MqttAuthResponse,
     MqttAuthResult,
 )
+from app.mqtt_auth.subscriber_auth import (
+    evaluate_platform_subscriber_acl,
+    is_platform_subscriber_acl_request,
+    is_platform_subscriber_auth,
+)
 from app.types.redis_client import RedisClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -52,6 +57,9 @@ async def handle_mqtt_auth(
     redis: RedisClient,
     payload: MqttAuthRequest,
 ) -> MqttAuthResponse:
+    if is_platform_subscriber_auth(payload):
+        return MqttAuthResponse(result=MqttAuthResult.ALLOW)
+
     token = _resolve_username(payload)
     if not token:
         return MqttAuthResponse(result=MqttAuthResult.DENY)
@@ -72,8 +80,17 @@ async def handle_mqtt_acl(
     redis: RedisClient,
     payload: MqttAclRequest,
 ) -> MqttAclResponse:
+    if not payload.topic:
+        return MqttAclResponse(result=MqttAuthResult.DENY)
+
+    if is_platform_subscriber_acl_request(payload):
+        decision = evaluate_platform_subscriber_acl(payload.topic, payload.action)
+        if decision == MqttAclDecision.ALLOW:
+            return MqttAclResponse(result=MqttAuthResult.ALLOW)
+        return MqttAclResponse(result=MqttAuthResult.DENY)
+
     token = payload.username.strip() or payload.clientid.strip()
-    if not token or not payload.topic:
+    if not token:
         return MqttAclResponse(result=MqttAuthResult.DENY)
 
     resolved = await _resolve_credential(db, redis, token)

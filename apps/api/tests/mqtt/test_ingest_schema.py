@@ -5,11 +5,10 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from httpx import AsyncClient
-
 from app.config import settings
 from app.mqtt_auth.payload_parse import telemetry_payload_object
 from app.mqtt_auth.schemas import MqttTelemetryIngestRequest
+from httpx import AsyncClient
 
 PASSWORD = "SecurePass123!"
 
@@ -60,7 +59,11 @@ async def test_ingest_accepts_whole_emqx_event(
     token = await _register_token(client, unique_slug, unique_email)
     tenant_id, device_id, access = await _device_with_credential(client, token)
     topic = f"tenants/{tenant_id}/devices/{device_id}/telemetry"
-    with patch("app.mqtt_auth.ingest.ingest_telemetry", new_callable=AsyncMock) as mock_ingest:
+    with patch(
+        "app.mqtt_auth.ingest.persist_telemetry_from_mqtt",
+        new_callable=AsyncMock,
+        return_value={"accepted_count": 1, "rejected": []},
+    ) as mock_ingest:
         resp = await client.post(
             "/api/v1/mqtt/ingest/telemetry",
             headers=_webhook_headers(),
@@ -91,7 +94,11 @@ async def test_ingest_payload_as_json_string_parses_correctly(
     token = await _register_token(client, unique_slug, unique_email)
     tenant_id, device_id, access = await _device_with_credential(client, token)
     topic = f"tenants/{tenant_id}/devices/{device_id}/telemetry"
-    with patch("app.mqtt_auth.ingest.ingest_telemetry", new_callable=AsyncMock) as mock_ingest:
+    with patch(
+        "app.mqtt_auth.ingest.persist_telemetry_from_mqtt",
+        new_callable=AsyncMock,
+        return_value={"accepted_count": 1, "rejected": []},
+    ) as mock_ingest:
         resp = await client.post(
             "/api/v1/mqtt/ingest/telemetry",
             headers=_webhook_headers(),
@@ -112,7 +119,11 @@ async def test_ingest_payload_as_dict_pass_through(
     token = await _register_token(client, unique_slug, unique_email)
     tenant_id, device_id, access = await _device_with_credential(client, token)
     topic = f"tenants/{tenant_id}/devices/{device_id}/telemetry"
-    with patch("app.mqtt_auth.ingest.ingest_telemetry", new_callable=AsyncMock) as mock_ingest:
+    with patch(
+        "app.mqtt_auth.ingest.persist_telemetry_from_mqtt",
+        new_callable=AsyncMock,
+        return_value={"accepted_count": 1, "rejected": []},
+    ) as mock_ingest:
         resp = await client.post(
             "/api/v1/mqtt/ingest/telemetry",
             headers=_webhook_headers(),

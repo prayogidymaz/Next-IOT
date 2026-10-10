@@ -61,6 +61,12 @@ services:
       EMQX_DASHBOARD_URL: http://emqx:18083
       EMQX_API_KEY: ${EMQX_API_KEY:-nextiot-api-key}
       EMQX_API_SECRET: ${EMQX_API_SECRET:-nextiot-api-secret-change-in-prod}
+      EMQX_TELEMETRY_RULE_SETUP_ENABLED: "false"
+      MQTT_BROKER_HOST: emqx
+      MQTT_BROKER_PORT: "1883"
+      MQTT_SUBSCRIBER_ENABLED: ${MQTT_SUBSCRIBER_ENABLED:-true}
+      MQTT_SUBSCRIBER_INTERNAL_USER: ${MQTT_SUBSCRIBER_INTERNAL_USER:-next-iot-subscriber}
+      MQTT_SUBSCRIBER_INTERNAL_PASSWORD: ${MQTT_SUBSCRIBER_INTERNAL_PASSWORD:-next-iot-subscriber-dev-password}
       MQTT_BROKER_URL_EXTERNAL: mqtt://localhost:${MQTT_PORT:-11883}
     depends_on:
       postgres:

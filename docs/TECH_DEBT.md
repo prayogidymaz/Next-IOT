@@ -42,6 +42,15 @@ Legacy lists (107 mypy modules, 19 ruff globs) live only in `pyproject.toml` —
 
 Do not disable ESLint rules to clear debt.
 
+## MQTT telemetry forwarding (Step 3B → 3C)
+
+| Item | Status |
+| --- | --- |
+| EMQX Rule Engine HTTP action (`${payload}` / `json_encode` → invalid JSON for ingest) | **Parked** — `emqx_rule_setup.py` kept; disabled via `EMQX_TELEMETRY_RULE_SETUP_ENABLED=false` |
+| **Step 3C** asyncio-mqtt platform subscriber (`app/mqtt_subscriber`) | **RESOLVED** — subscribe `tenants/+/devices/+/telemetry`, ingest via shared pipeline |
+
+Internal broker credentials: `MQTT_SUBSCRIBER_INTERNAL_USER` / `MQTT_SUBSCRIBER_INTERNAL_PASSWORD` (HTTP auth + ACL in `subscriber_auth.py`).
+
 ## Next actions
 
 1. Port rows from `apps/dashboard/FROZEN.md` into `apps/web`.

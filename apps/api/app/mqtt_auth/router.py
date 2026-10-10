@@ -4,6 +4,7 @@ import json
 import logging
 from typing import Annotated
 
+from app.config import settings
 from app.deps import DbSession, RedisDep
 from app.mqtt_auth.deps import require_mqtt_webhook_secret
 from app.mqtt_auth.ingest import ingest_mqtt_telemetry
@@ -62,11 +63,12 @@ async def mqtt_ingest_telemetry(
     _: MqttWebhookAuth,
 ) -> dict[str, int | list[str]]:
     raw_body = await request.body()
-    logger.info(
-        "MQTT INGEST RAW BODY len=%d first500=%r",
-        len(raw_body),
-        raw_body[:500],
-    )
+    if settings.mqtt_debug_raw_body:
+        logger.warning(
+            "MQTT INGEST RAW BODY len=%d first500=%r",
+            len(raw_body),
+            raw_body[:500],
+        )
     try:
         data_dict = json.loads(raw_body)
     except json.JSONDecodeError as exc:

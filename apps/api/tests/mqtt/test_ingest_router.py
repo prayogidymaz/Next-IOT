@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import logging
 from unittest.mock import patch
 
 import pytest
-from httpx import AsyncClient
-
 from app.config import settings
+from httpx import AsyncClient
 
 PASSWORD = "SecurePass123!"
 
@@ -18,19 +16,22 @@ def _webhook_headers() -> dict[str, str]:
 
 
 @pytest.mark.asyncio
-async def test_ingest_endpoint_logs_raw_body(client: AsyncClient) -> None:
-    raw = b'{"topic":"tenants/x/devices/y/telemetry","payload":"{}"}'
-    with patch.object(logging.getLogger("app.mqtt_auth.router"), "info") as log_info:
-        await client.post(
+async def test_ingest_endpoint_logs_raw_body(client: AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Raw-body parser returns structured 400; optional debug log when MQTT_DEBUG_RAW_BODY=true."""
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "mqtt_debug_raw_body", True)
+    with patch("app.mqtt_auth.router.logger") as log:
+        resp = await client.post(
             "/api/v1/mqtt/ingest/telemetry",
             headers={**_webhook_headers(), "Content-Type": "application/json"},
-            content=raw,
+            content=b"{not-closed",
         )
-    assert log_info.call_count >= 1
-    first_message = log_info.call_args_list[0][0][0]
-    assert first_message == "MQTT INGEST RAW BODY len=%d first500=%r"
-    assert log_info.call_args_list[0][0][1] == len(raw)
-    assert log_info.call_args_list[0][0][2] == raw[:500]
+    assert resp.status_code == 400
+    assert log.warning.call_count >= 1
+    detail = resp.json()["detail"]
+    assert isinstance(detail, str)
+    assert detail.startswith("Invalid JSON body:")
 
 
 @pytest.mark.asyncio

@@ -95,6 +95,13 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Step 3C — asyncio-mqtt telemetry subscriber (2026-10-10)
+
+- **Replaces:** EMQX Rule Engine HTTP forward (parked — see `docs/TECH_DEBT.md`).
+- **Implementation:** `MqttSubscriberService` connects to EMQX with platform credentials, subscribes `tenants/+/devices/+/telemetry`, parses raw MQTT JSON, calls `persist_telemetry_from_mqtt` (shared with HTTP ingest webhook).
+- **Auth:** `MQTT_SUBSCRIBER_INTERNAL_*` env; EMQX HTTP auth/ACL allow subscribe-only on telemetry topics.
+- **Default:** `MQTT_SUBSCRIBER_ENABLED=true`, `EMQX_TELEMETRY_RULE_SETUP_ENABLED=false`.
+
 ### Step 3B — Windows MQTT port conflict (2026-10-09)
 
 - **Bug:** Eclipse Mosquitto Windows service (winget) binds `127.0.0.1:1883`; `mosquitto_pub -h localhost -p 1883` hits **Windows Mosquitto**, not EMQX Docker → fake PUBACK, rule `matched: 0`, no DB rows.

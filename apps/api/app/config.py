@@ -73,7 +73,13 @@ class Settings(BaseModel):
     emqx_api_key: str = ""
     emqx_api_secret: str = ""
     emqx_dashboard_timeout_seconds: float = 10.0
-    emqx_telemetry_rule_setup_enabled: bool = True
+    emqx_telemetry_rule_setup_enabled: bool = False
+    mqtt_subscriber_enabled: bool = True
+    mqtt_subscriber_internal_user: str = "next-iot-subscriber"
+    mqtt_subscriber_internal_password: str = "next-iot-subscriber-dev-password"
+    mqtt_subscriber_client_id: str = "next-iot-api-subscriber"
+    mqtt_subscriber_reconnect_max_seconds: float = 30.0
+    mqtt_debug_raw_body: bool = False
     emqx_ingest_webhook_url: str = "http://api:8000/api/v1/mqtt/ingest/telemetry"
     device_credential_token_length: int = 36
     device_claim_token_default_ttl_hours: int = 24

@@ -126,8 +126,9 @@ async def test_ingest_webhook_calls_ingest_pipeline(
     tenant_id, device_id, access = await _device_with_credential(client, token)
     topic = f"tenants/{tenant_id}/devices/{device_id}/telemetry"
     with patch(
-        "app.mqtt_auth.ingest.ingest_telemetry",
+        "app.mqtt_auth.ingest.persist_telemetry_from_mqtt",
         new_callable=AsyncMock,
+        return_value={"accepted_count": 1, "rejected": []},
     ) as mock_ingest:
         resp = await client.post(
             "/api/v1/mqtt/ingest/telemetry",

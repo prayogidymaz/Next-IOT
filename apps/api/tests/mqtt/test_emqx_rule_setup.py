@@ -9,6 +9,11 @@ import pytest
 from app.mqtt_auth import emqx_rule_setup
 
 
+@pytest.fixture(autouse=True)
+def _enable_emqx_rule_setup_for_tests(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(emqx_rule_setup.settings, "emqx_telemetry_rule_setup_enabled", True)
+
+
 class _FakeResponse:
     def __init__(self, status_code: int, payload: object) -> None:
         self.status_code = status_code
