@@ -79,6 +79,13 @@ class Settings(BaseModel):
     mqtt_subscriber_internal_password: str = "next-iot-subscriber-dev-password"
     mqtt_subscriber_client_id: str = "next-iot-api-subscriber"
     mqtt_subscriber_reconnect_max_seconds: float = 30.0
+    mqtt_publisher_enabled: bool = True
+    mqtt_publisher_internal_user: str = "next-iot-publisher"
+    mqtt_publisher_internal_password: str = ""
+    rpc_default_timeout_seconds: int = 30
+    rpc_max_timeout_seconds: int = 300
+    rpc_rate_limit_per_minute: int = 10
+    attribute_shared_broadcast_qos: int = 1
     mqtt_debug_raw_body: bool = False
     emqx_ingest_webhook_url: str = "http://api:8000/api/v1/mqtt/ingest/telemetry"
     device_credential_token_length: int = 36
@@ -224,6 +231,8 @@ class Settings(BaseModel):
             self.database_url = self.build_database_url(async_driver=True)
         if _url_has_unexpanded_placeholders(self.database_url_sync):
             self.database_url_sync = self.build_database_url(async_driver=False)
+        if not self.mqtt_publisher_internal_password.strip():
+            self.mqtt_publisher_internal_password = self.mqtt_subscriber_internal_password
         return self
 
     @property

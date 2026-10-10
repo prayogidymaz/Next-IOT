@@ -34,6 +34,28 @@ def parse_device_topic(topic: str) -> ParsedDeviceTopic | None:
     return ParsedDeviceTopic(tenant_id=tenant_id, device_id=device_id, suffix=suffix)
 
 
+def _suffix_allows_command_response_publish(suffix: str) -> bool:
+    if suffix == "commands/response":
+        return True
+    parts = suffix.split("/")
+    if len(parts) == 3 and parts[0] == "commands" and parts[2] == "response":
+        try:
+            uuid.UUID(parts[1])
+            return True
+        except ValueError:
+            return False
+    return False
+
+
+def _suffix_allows_command_subscribe(suffix: str) -> bool:
+    if suffix == "commands/+/request":
+        return True
+    if suffix.startswith("commands/") and suffix != "commands/response":
+        if suffix.count("/") == 1:
+            return True
+    return False
+
+
 def evaluate_device_acl(
     *,
     credential_tenant_id: uuid.UUID,
@@ -53,14 +75,17 @@ def evaluate_device_acl(
     publish_allowed = {
         "telemetry",
         "attributes",
-        "commands/response",
     }
     if normalized_action == "publish":
-        return MqttAclDecision.ALLOW if suffix in publish_allowed else MqttAclDecision.DENY
-    if normalized_action == "subscribe":
-        if suffix == "attributes/shared":
+        if suffix in publish_allowed:
             return MqttAclDecision.ALLOW
-        if suffix.startswith("commands/") and suffix != "commands/response":
+        if _suffix_allows_command_response_publish(suffix):
+            return MqttAclDecision.ALLOW
+        return MqttAclDecision.DENY
+    if normalized_action == "subscribe":
+        if suffix == "attributes/shared/update":
+            return MqttAclDecision.ALLOW
+        if _suffix_allows_command_subscribe(suffix):
             return MqttAclDecision.ALLOW
         return MqttAclDecision.DENY
     return MqttAclDecision.DENY

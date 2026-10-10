@@ -53,6 +53,8 @@ Internal broker credentials: `MQTT_SUBSCRIBER_INTERNAL_USER` / `MQTT_SUBSCRIBER_
 
 **Transaction vs side effects:** `ingest_telemetry()` publishes Redis/WebSocket events after `flush()` but before the caller commits (HTTP `get_db` and MQTT subscriber both commit afterward). A rollback after publish can leave subscribers seeing events without a persisted row — acceptable for dev; tighten ordering if we need exactly-once semantics.
 
+**RPC sync wait:** `app/rpc/event_registry.py` is in-process only; multi-instance API needs Redis pub/sub (or similar) to resolve `request_id` across workers.
+
 ## Next actions
 
 1. Port rows from `apps/dashboard/FROZEN.md` into `apps/web`.

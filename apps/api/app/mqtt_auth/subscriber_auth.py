@@ -10,11 +10,19 @@ from app.mqtt_auth.schemas import MqttAclRequest, MqttAuthRequest
 
 SUBSCRIBER_TELEMETRY_FILTER = "tenants/+/devices/+/telemetry"
 SUBSCRIBER_TELEMETRY_SHARE_FILTER = "$share/nextiot-ingest/tenants/+/devices/+/telemetry"
+SUBSCRIBER_ATTRIBUTES_FILTER = "tenants/+/devices/+/attributes"
+SUBSCRIBER_ATTRIBUTES_SHARE_FILTER = "$share/nextiot-attributes/tenants/+/devices/+/attributes"
+SUBSCRIBER_RPC_RESPONSE_FILTER = "tenants/+/devices/+/commands/+/response"
+SUBSCRIBER_RPC_RESPONSE_SHARE_FILTER = "$share/nextiot-rpc/tenants/+/devices/+/commands/+/response"
 
 _SUBSCRIBER_SUBSCRIBE_TOPICS = frozenset(
     {
         SUBSCRIBER_TELEMETRY_FILTER,
         SUBSCRIBER_TELEMETRY_SHARE_FILTER,
+        SUBSCRIBER_ATTRIBUTES_FILTER,
+        SUBSCRIBER_ATTRIBUTES_SHARE_FILTER,
+        SUBSCRIBER_RPC_RESPONSE_FILTER,
+        SUBSCRIBER_RPC_RESPONSE_SHARE_FILTER,
     }
 )
 

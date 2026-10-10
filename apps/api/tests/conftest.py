@@ -81,7 +81,8 @@ def truncate_auth_tables() -> None:
     conn.autocommit = True
     truncate_sql = (
         "TRUNCATE audit_logs, ota_device_rollouts, firmware_releases, automation_pipelines, "
-        "sar_incidents, telemetry_anomalies, geofence_zones, device_commands, rules, "
+        "sar_incidents, telemetry_anomalies, geofence_zones, device_rpc_requests, device_attributes, "
+        "device_commands, rules, "
         "telemetry_readings, device_metadata, device_credentials, device_claim_tokens, devices, device_profiles, "
         "tenant_memberships, users, tenants RESTART IDENTITY CASCADE"
     )
@@ -132,7 +133,10 @@ async def test_redis() -> AsyncIterator[RedisClient]:
 async def client(test_redis: RedisClient) -> AsyncIterator[AsyncClient]:
     truncate_auth_tables()
 
+    from app.mqtt_publisher.noop import NoopMqttPublisher
+
     app.state.redis = test_redis
+    app.state.mqtt_publisher = NoopMqttPublisher()
     app.state.startup_ready = True
     app.dependency_overrides[get_redis] = _override_get_redis(test_redis)
 

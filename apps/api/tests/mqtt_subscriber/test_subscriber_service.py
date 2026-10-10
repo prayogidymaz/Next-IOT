@@ -15,6 +15,8 @@ from app.models.telemetry_reading import TelemetryReading
 from app.mqtt_auth.acl import MqttAclDecision
 from app.mqtt_auth.schemas import MqttAuthRequest
 from app.mqtt_auth.subscriber_auth import (
+    SUBSCRIBER_ATTRIBUTES_SHARE_FILTER,
+    SUBSCRIBER_RPC_RESPONSE_SHARE_FILTER,
     SUBSCRIBER_TELEMETRY_FILTER,
     SUBSCRIBER_TELEMETRY_SHARE_FILTER,
     evaluate_platform_subscriber_acl,
@@ -385,5 +387,9 @@ async def test_subscriber_connects_and_subscribes_share_topic() -> None:
             )
 
     assert connected
-    assert subscribed == [(SUBSCRIBER_TELEMETRY_SHARE_FILTER, 1)]
+    assert subscribed == [
+        (SUBSCRIBER_TELEMETRY_SHARE_FILTER, 1),
+        (SUBSCRIBER_ATTRIBUTES_SHARE_FILTER, 1),
+        (SUBSCRIBER_RPC_RESPONSE_SHARE_FILTER, 1),
+    ]
     assert TELEMETRY_SUBSCRIBE_FILTER == "tenants/+/devices/+/telemetry"

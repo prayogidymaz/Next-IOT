@@ -20,6 +20,11 @@ from app.mqtt_auth.subscriber_auth import (
     is_platform_subscriber_acl_request,
     is_platform_subscriber_auth,
 )
+from app.mqtt_publisher.auth import (
+    evaluate_platform_publisher_acl,
+    is_platform_publisher_acl_request,
+    is_platform_publisher_auth,
+)
 from app.types.redis_client import RedisClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -59,6 +64,8 @@ async def handle_mqtt_auth(
 ) -> MqttAuthResponse:
     if is_platform_subscriber_auth(payload):
         return MqttAuthResponse(result=MqttAuthResult.ALLOW)
+    if is_platform_publisher_auth(payload):
+        return MqttAuthResponse(result=MqttAuthResult.ALLOW)
 
     token = _resolve_username(payload)
     if not token:
@@ -85,6 +92,12 @@ async def handle_mqtt_acl(
 
     if is_platform_subscriber_acl_request(payload):
         decision = evaluate_platform_subscriber_acl(payload.topic, payload.action)
+        if decision == MqttAclDecision.ALLOW:
+            return MqttAclResponse(result=MqttAuthResult.ALLOW)
+        return MqttAclResponse(result=MqttAuthResult.DENY)
+
+    if is_platform_publisher_acl_request(payload):
+        decision = evaluate_platform_publisher_acl(payload.topic, payload.action)
         if decision == MqttAclDecision.ALLOW:
             return MqttAclResponse(result=MqttAuthResult.ALLOW)
         return MqttAclResponse(result=MqttAuthResult.DENY)

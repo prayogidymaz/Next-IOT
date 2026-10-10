@@ -95,6 +95,13 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Step 4 — Device attributes + RPC (2026-10-10)
+
+- **Attributes:** `device_attributes` table with scopes `server` | `shared` | `client`; REST under `/api/v1/devices/{id}/attributes`; client scope via MQTT `.../attributes` (subscriber shared group `nextiot-attributes`); shared updates broadcast on `.../attributes/shared/update` via internal **MQTT publisher**.
+- **RPC:** `device_rpc_requests` + sync POST `/api/v1/devices/{id}/rpc` (wait on in-memory event registry); command topic `.../commands/{request_id}/request`, response `.../response` (subscriber group `nextiot-rpc`); rate limit per device/minute.
+- **Web HQ:** Device detail — Attributes panel (3 tabs) + Remote Command (RPC) panel.
+- **Migrations:** `019_device_attributes`, `020_device_rpc_requests`.
+
 ### Step 3C — asyncio-mqtt telemetry subscriber (2026-10-10)
 
 - **Replaces:** EMQX Rule Engine HTTP forward (parked — see `docs/TECH_DEBT.md`).

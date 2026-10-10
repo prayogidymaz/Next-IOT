@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { DeviceProfileAssignPanel } from "@/components/device-profiles/DeviceProfileAssignPanel";
+import { AttributesPanel } from "@/components/devices/attributes-panel";
 import { MqttCredentialsPanel } from "@/components/devices/mqtt-credentials-panel";
+import { RpcPanel } from "@/components/devices/rpc-panel";
 import { HqPageContent } from "@/components/hq/HqPageContent";
 import { CreamCard } from "@/components/ui/CreamCard";
 import { useHqToast } from "@/hooks/useHqToast";
@@ -109,6 +111,8 @@ export function DeviceDetailPage({ deviceId }: { deviceId: string }) {
       </CreamCard>
       <DeviceProfileAssignPanel device={device} onAssigned={() => void reload()} />
       <MqttCredentialsPanel device={device} />
+      <AttributesPanel device={device} />
+      <RpcPanel device={device} />
     </HqPageContent>
   );
 }

@@ -2,12 +2,11 @@ import uuid
 from datetime import datetime
 from typing import Annotated, TypedDict
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from starlette.datastructures import UploadFile
 
-from app.auth.context import CurrentUser
-from app.auth.dependencies import RequireOperator, RequireTenantAdmin, require_roles
-from app.auth.rbac import UserRole
+from app.attributes.router import router as attributes_router
+from app.auth.dependencies import RequireOperator, RequireTenantAdmin
 from app.commands import service as command_service
 from app.commands.schemas import DeviceCommandRequest, DeviceCommandResponse
 from app.deps import DbSession, RedisDep
@@ -18,6 +17,7 @@ from app.device_profiles.schemas import AssignDeviceProfileRequest
 from app.devices import service
 from app.devices.bulk_import import BulkImportRequest, parse_bulk_import_payload
 from app.devices.dependencies import RequireDevice
+from app.devices.rbac import RequireDeviceReader
 from app.devices.schemas import (
     BulkImportResponse,
     DeviceCredentialsResponse,
@@ -29,22 +29,19 @@ from app.devices.schemas import (
     HeartbeatRequest,
     HeartbeatResponse,
 )
+from app.rpc.router import router as rpc_router
 from app.rules import service as rules_service
 from app.rules.schemas import RuleResponse
 from app.telemetry import service as telemetry_service
 from app.telemetry.schemas import TelemetryHistoryResponse, TelemetryLatestResponse
 
 router = APIRouter(prefix="/api/v1/devices", tags=["devices"])
+router.include_router(attributes_router, prefix="/{device_id}/attributes", tags=["device-attributes"])
+router.include_router(rpc_router, prefix="/{device_id}/rpc", tags=["device-rpc"])
 
 HistoryStartTime = Annotated[datetime | None, Query()]
 HistoryEndTime = Annotated[datetime | None, Query()]
 HistoryLimit = Annotated[int, Query(ge=1, le=1000)]
-
-RequireDeviceReader = Annotated[
-    CurrentUser,
-    Depends(require_roles(UserRole.VIEWER, UserRole.OPERATOR, UserRole.TENANT_ADMIN, UserRole.SUPER_ADMIN)),
-]
-
 
 class DeviceAuthCheckResponse(TypedDict):
     authenticated: bool

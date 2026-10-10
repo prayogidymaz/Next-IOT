@@ -1,6 +1,12 @@
 # Next-IOT — Notion Update Log (Master Changelog)
 
-**Last updated:** 2026-10-06 (UTC+7)  
+**Last updated:** 2026-10-10 (UTC+7)  
+
+### Step 4 — Attributes + RPC (DONE)
+
+- **Attributes:** server/shared/client scopes; API CRUD (client write via MQTT only); subscriber ingests `tenants/+/devices/+/attributes`; shared PUT broadcasts MQTT update.
+- **RPC:** two-way commands with DB history, sync wait + 408 timeout, offline 503; publisher user `MQTT_PUBLISHER_INTERNAL_*`; ACL for `commands/+/request` subscribe and `commands/{id}/response` publish.
+- **Web:** `/devices/[id]` — Attributes + RPC panels.
 
 ### Step 3C — MQTT asyncio subscriber (DONE)
 

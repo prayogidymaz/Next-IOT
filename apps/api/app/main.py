@@ -30,6 +30,8 @@ from app.mission.sar_emergency_router import router as sar_emergency_ws_router
 from app.models.user import User
 from app.mqtt_auth.emqx_rule_setup import setup_telemetry_forwarding_rule
 from app.mqtt_auth.router import router as mqtt_auth_router
+from app.mqtt_publisher import MqttPublisherService
+from app.mqtt_publisher.noop import NoopMqttPublisher
 from app.mqtt_subscriber import MqttSubscriberService
 from app.notifications.router import router as notifications_router
 from app.notifications.worker import notification_dispatcher_loop
@@ -113,6 +115,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             asyncio.create_task(pipeline_listener_loop(redis, stop_event)),
             asyncio.create_task(telemetry_retention_loop(stop_event)),
         ]
+    mqtt_publisher: MqttPublisherService | NoopMqttPublisher
+    if settings.mqtt_publisher_enabled and settings.run_background_workers:
+        mqtt_publisher = MqttPublisherService()
+        worker_tasks.append(asyncio.create_task(mqtt_publisher.run()))
+    else:
+        mqtt_publisher = NoopMqttPublisher()
+    app.state.mqtt_publisher = mqtt_publisher
     app.state.offline_worker_stop = stop_event
     app.state.startup_ready = True
     logger.info(
@@ -120,7 +129,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         settings.mqtt_subscriber_enabled,
         settings.emqx_telemetry_rule_setup_enabled,
     )
-    if settings.mqtt_subscriber_enabled:
+    if settings.mqtt_subscriber_enabled and settings.run_background_workers:
         mqtt_subscriber = MqttSubscriberService(redis)
         worker_tasks.append(asyncio.create_task(mqtt_subscriber.run()))
     app.state.mqtt_subscriber = mqtt_subscriber
@@ -129,6 +138,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     stop_event.set()
     if mqtt_subscriber is not None:
         mqtt_subscriber.request_stop()
+    if isinstance(mqtt_publisher, MqttPublisherService):
+        mqtt_publisher.request_stop()
     for task in worker_tasks:
         task.cancel()
         try:

@@ -1,4 +1,4 @@
-"""aiomqtt 2.x subscriber — forwards broker telemetry into the API ingest pipeline."""
+"""aiomqtt 2.x subscriber — telemetry, client attributes, and RPC responses."""
 
 from __future__ import annotations
 
@@ -10,17 +10,27 @@ import socket
 import aiomqtt
 from pydantic import JsonValue
 
+from app.attributes.client_ingest import persist_client_attributes_from_mqtt
+from app.attributes.mqtt_topics import parse_client_attributes_topic
 from app.config import settings
 from app.database import async_session
-from app.mqtt_auth.subscriber_auth import SUBSCRIBER_TELEMETRY_SHARE_FILTER
+from app.mqtt_auth.subscriber_auth import (
+    SUBSCRIBER_ATTRIBUTES_SHARE_FILTER,
+    SUBSCRIBER_RPC_RESPONSE_SHARE_FILTER,
+    SUBSCRIBER_TELEMETRY_SHARE_FILTER,
+)
 from app.mqtt_subscriber.schemas import TelemetryMqttTopic
 from app.mqtt_subscriber.telemetry_ingest import persist_telemetry_from_mqtt
+from app.rpc.mqtt_topics import parse_rpc_response_topic
+from app.rpc.response_ingest import handle_rpc_response_from_mqtt
 from app.telemetry.mqtt_payload import parse_telemetry_payload_bytes
 from app.types.redis_client import RedisClient
 
 logger = logging.getLogger(__name__)
 
 TELEMETRY_SUBSCRIBE_FILTER = "tenants/+/devices/+/telemetry"
+ATTRIBUTES_SUBSCRIBE_FILTER = "tenants/+/devices/+/attributes"
+RPC_RESPONSE_SUBSCRIBE_FILTER = "tenants/+/devices/+/commands/+/response"
 
 
 def _mqtt_client_identifier() -> str:
@@ -45,12 +55,11 @@ class MqttSubscriberService:
     def request_stop(self) -> None:
         self._stopping = True
 
-    async def _handle(self, message: aiomqtt.Message) -> None:
-        topic_str = str(message.topic)
+    async def _handle_telemetry(self, message: aiomqtt.Message, topic_str: str) -> None:
         try:
             parsed_topic = TelemetryMqttTopic.from_mqtt_topic(topic_str)
         except ValueError:
-            logger.warning("MQTT Subscriber ignored topic: %s", topic_str)
+            logger.warning("MQTT Subscriber ignored telemetry topic: %s", topic_str)
             return
 
         payload_bytes = _message_payload_bytes(message.payload)
@@ -99,8 +108,79 @@ class MqttSubscriberService:
             result.get("rejected", []),
         )
 
+    async def _handle_client_attributes(self, message: aiomqtt.Message, topic_str: str) -> None:
+        parsed = parse_client_attributes_topic(topic_str)
+        if parsed is None:
+            logger.warning("MQTT Subscriber ignored attributes topic: %s", topic_str)
+            return
+        tenant_id, device_id = parsed
+        payload_bytes = _message_payload_bytes(message.payload)
+        if payload_bytes is None:
+            return
+        try:
+            payload_obj: dict[str, JsonValue] = parse_telemetry_payload_bytes(payload_bytes)
+        except Exception as exc:
+            logger.warning("MQTT Subscriber invalid attributes payload on %s: %s", topic_str, exc)
+            return
+
+        async with async_session() as db:
+            try:
+                count = await persist_client_attributes_from_mqtt(
+                    db,
+                    tenant_id=tenant_id,
+                    device_id=device_id,
+                    payload=payload_obj,
+                )
+                await db.commit()
+            except Exception:
+                await db.rollback()
+                logger.exception("MQTT Subscriber client attributes failed on %s", topic_str)
+                return
+        logger.warning(
+            "MQTT Subscriber client attributes: device=%s keys=%s",
+            device_id,
+            count,
+        )
+
+    async def _handle_rpc_response(self, message: aiomqtt.Message, topic_str: str) -> None:
+        parsed = parse_rpc_response_topic(topic_str)
+        if parsed is None:
+            logger.warning("MQTT Subscriber ignored RPC topic: %s", topic_str)
+            return
+        payload_bytes = _message_payload_bytes(message.payload)
+        if payload_bytes is None:
+            return
+        try:
+            payload_obj: dict[str, JsonValue] = parse_telemetry_payload_bytes(payload_bytes)
+        except Exception as exc:
+            logger.warning("MQTT Subscriber invalid RPC payload on %s: %s", topic_str, exc)
+            return
+
+        async with async_session() as db:
+            try:
+                handled = await handle_rpc_response_from_mqtt(db, parsed, payload_obj)
+                await db.commit()
+            except Exception:
+                await db.rollback()
+                logger.exception("MQTT Subscriber RPC response failed on %s", topic_str)
+                return
+        if handled:
+            logger.warning("MQTT Subscriber RPC completed: request=%s", parsed.request_id)
+
+    async def _handle(self, message: aiomqtt.Message) -> None:
+        topic_str = str(message.topic)
+        if topic_str.endswith("/telemetry"):
+            await self._handle_telemetry(message, topic_str)
+            return
+        if topic_str.endswith("/attributes"):
+            await self._handle_client_attributes(message, topic_str)
+            return
+        if "/commands/" in topic_str and topic_str.endswith("/response"):
+            await self._handle_rpc_response(message, topic_str)
+            return
+        logger.warning("MQTT Subscriber unhandled topic: %s", topic_str)
+
     async def run(self) -> None:
-        # Defer first connect until HTTP server accepts EMQX auth/ACL webhooks (same event loop).
         await asyncio.sleep(1.0)
         backoff = 1.0
         max_backoff = min(settings.mqtt_subscriber_reconnect_max_seconds, 30.0)
@@ -115,9 +195,10 @@ class MqttSubscriberService:
                     keepalive=30,
                 ) as client:
                     await client.subscribe(SUBSCRIBER_TELEMETRY_SHARE_FILTER, qos=1)
+                    await client.subscribe(SUBSCRIBER_ATTRIBUTES_SHARE_FILTER, qos=1)
+                    await client.subscribe(SUBSCRIBER_RPC_RESPONSE_SHARE_FILTER, qos=1)
                     logger.warning(
-                        "MQTT Subscriber connected; Subscribed to %s",
-                        TELEMETRY_SUBSCRIBE_FILTER,
+                        "MQTT Subscriber connected; subscribed telemetry, attributes, rpc"
                     )
                     backoff = 1.0
                     async for message in client.messages:
