@@ -4,7 +4,7 @@
 
 ### Step 8 — Billing + Super Admin (DONE)
 
-- **Plans:** `subscription_plans` seed (free/starter/pro/pro/enterprise), `tenant_subscriptions` trial 14d on signup.
+- **Plans:** `subscription_plans` seed (free/starter/pro/enterprise), `tenant_subscriptions` trial 14d on signup.
 - **Quota:** Redis message counters; device cap on `POST /api/v1/devices` (429).
 - **Billing:** invoices + Midtrans/Xendit webhooks (dev mocks), billing cycle job, `/api/v1/billing/*`.
 - **Super Admin:** `/api/v1/super-admin/*` stats, tenants, revenue, health, impersonate audit log.

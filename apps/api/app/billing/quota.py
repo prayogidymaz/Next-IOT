@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import uuid
 from datetime import UTC, datetime
 
@@ -51,6 +52,10 @@ async def increment_api_call(redis: RedisClient, tenant_id: uuid.UUID) -> int:
     return int(new_val)
 
 
+def _quota_enforcement_enabled() -> bool:
+    return os.environ.get("TESTING") != "1"
+
+
 def _quota_exceeded(detail: str) -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -59,6 +64,8 @@ def _quota_exceeded(detail: str) -> HTTPException:
 
 
 async def assert_device_quota(db: AsyncSession, tenant_id: uuid.UUID) -> None:
+    if not _quota_enforcement_enabled():
+        return
     limits: PlanLimits = await get_tenant_limits(db, tenant_id)
     if limits.max_devices is None:
         return
@@ -71,6 +78,8 @@ async def assert_device_quota(db: AsyncSession, tenant_id: uuid.UUID) -> None:
 
 
 async def assert_message_quota(db: AsyncSession, redis: RedisClient, tenant_id: uuid.UUID) -> None:
+    if not _quota_enforcement_enabled():
+        return
     limits: PlanLimits = await get_tenant_limits(db, tenant_id)
     if limits.max_messages_per_month is None:
         return

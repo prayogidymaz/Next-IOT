@@ -66,7 +66,10 @@ async def test_subscription_create_default_trial(client: AsyncClient, unique_slu
 
 
 @pytest.mark.asyncio
-async def test_subscription_quota_devices_enforced(client: AsyncClient, unique_slug: str, unique_email: str) -> None:
+async def test_subscription_quota_devices_enforced(
+    client: AsyncClient, unique_slug: str, unique_email: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("TESTING", raising=False)
     reg = await _register(client, unique_slug, unique_email)
     token = str(reg["tokens"]["access_token"])
     for i in range(5):
@@ -86,8 +89,9 @@ async def test_subscription_quota_devices_enforced(client: AsyncClient, unique_s
 
 @pytest.mark.asyncio
 async def test_subscription_quota_messages_enforced(
-    client: AsyncClient, test_redis, unique_slug: str, unique_email: str
+    client: AsyncClient, test_redis, unique_slug: str, unique_email: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    monkeypatch.delenv("TESTING", raising=False)
     reg = await _register(client, unique_slug, unique_email)
     tenant_id = uuid.UUID(str(reg["tenant_id"]))
     async with async_session() as db:
