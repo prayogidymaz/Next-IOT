@@ -76,6 +76,10 @@ async def ingest_telemetry(
             detail=f"Device cannot ingest telemetry in status '{device.status}'. Device must be online.",
         )
 
+    from app.billing.quota import assert_message_quota, increment_message_count
+
+    await assert_message_quota(db, redis, device.tenant_id)
+
     recorded_at = _validate_timestamp(payload.timestamp)
     metrics = dict(payload.metrics)
 
@@ -87,6 +91,7 @@ async def ingest_telemetry(
     )
     db.add(reading)
     await db.flush()
+    await increment_message_count(redis, device.tenant_id)
 
     await cache_latest_telemetry(
         redis,

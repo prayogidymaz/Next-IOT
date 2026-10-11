@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.rbac import UserRole
 from app.auth.security import hash_password
+from app.billing.seed import seed_plans
 from app.config import settings
 from app.database import async_session
 from app.models.tenant import Tenant
@@ -57,6 +58,7 @@ async def ensure_default_admin(db: AsyncSession) -> bool:
 
 async def run_seed() -> bool:
     async with async_session() as db:
+        await seed_plans(db)
         return await ensure_default_admin(db)
 
 

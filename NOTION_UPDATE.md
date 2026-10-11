@@ -2,6 +2,14 @@
 
 **Last updated:** 2026-10-11 (UTC+7)  
 
+### Step 8 — Billing + Super Admin (DONE)
+
+- **Plans:** `subscription_plans` seed (free/starter/pro/pro/enterprise), `tenant_subscriptions` trial 14d on signup.
+- **Quota:** Redis message counters; device cap on `POST /api/v1/devices` (429).
+- **Billing:** invoices + Midtrans/Xendit webhooks (dev mocks), billing cycle job, `/api/v1/billing/*`.
+- **Super Admin:** `/api/v1/super-admin/*` stats, tenants, revenue, health, impersonate audit log.
+- **Migrations:** 025–030; **443** pytest collected.
+
 ### Step 7 — ESP32 SDK + Firmware Studio (DONE)
 
 - **SDK:** C++ NextIotClient (PubSubClient + ArduinoJson), examples, OTA handler stub.

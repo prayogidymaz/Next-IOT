@@ -1,4 +1,5 @@
 import os
+from decimal import Decimal
 from urllib.parse import quote_plus, urlparse, urlunparse
 
 from dotenv import dotenv_values
@@ -112,6 +113,17 @@ class Settings(BaseModel):
     seed_tenant_name: str = "Next-IOT Platform"
     seed_tenant_slug: str = "nextiot"
     seed_demo_telemetry: bool = True
+
+    subscription_trial_days: int = 14
+    subscription_past_due_grace_days: int = 7
+    subscription_expired_days: int = 30
+    invoice_tax_percent: Decimal = Decimal("11.0")
+    billing_provider_default: str = "midtrans"
+    midtrans_server_key: str = ""
+    midtrans_client_key: str = ""
+    midtrans_is_production: bool = False
+    xendit_secret_key: str = ""
+    xendit_callback_token: str = ""
 
     notification_dispatcher_enabled: bool = True
     notification_poll_interval_seconds: float = 1.0

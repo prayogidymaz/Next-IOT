@@ -78,12 +78,52 @@ def _run_test_migrations() -> None:
     command.upgrade(cfg, "head")
 
 
+def seed_subscription_plans_sync() -> None:
+    import json
+    import uuid
+
+    from app.billing.plan_definitions import plan_seed_rows
+
+    conn = psycopg2.connect(_test_sync_url)
+    conn.autocommit = True
+    with conn.cursor() as cur:
+        cur.execute("SELECT 1 FROM subscription_plans LIMIT 1")
+        if cur.fetchone() is not None:
+            conn.close()
+            return
+        for row in plan_seed_rows():
+            code_raw = row.get("code")
+            if not isinstance(code_raw, str):
+                continue
+            limits_raw = row.get("limits")
+            limits_obj = limits_raw if isinstance(limits_raw, dict) else {}
+            cur.execute(
+                """
+                INSERT INTO subscription_plans
+                (id, code, name, description, monthly_price_idr, yearly_price_idr, limits, is_active, display_order)
+                VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, true, %s)
+                """,
+                (
+                    str(uuid.uuid4()),
+                    code_raw,
+                    str(row.get("name", code_raw)),
+                    row.get("description"),
+                    row.get("monthly_price_idr"),
+                    row.get("yearly_price_idr"),
+                    json.dumps(limits_obj),
+                    int(row.get("display_order", 0)),
+                ),
+            )
+    conn.close()
+
+
 def truncate_auth_tables() -> None:
     settings.assert_test_database_url(_test_sync_url)
     conn = psycopg2.connect(_test_sync_url)
     conn.autocommit = True
     truncate_sql = (
-        "TRUNCATE audit_logs, ota_device_rollouts, firmware_releases, automation_pipelines, "
+        "TRUNCATE super_admin_actions, invoices, tenant_usage_daily, tenant_subscriptions, "
+        "payment_methods, subscription_plans, audit_logs, ota_device_rollouts, firmware_releases, automation_pipelines, "
         "rule_execution_log, notification_log, notification_rules, notification_channels, alarm_history, alarms, "
         "sar_incidents, telemetry_anomalies, geofence_zones, device_rpc_requests, device_attributes, "
         "device_commands, rules, "
@@ -109,6 +149,7 @@ def _prepare_test_database():
     assert not settings.run_background_workers
     _ensure_test_database()
     _run_test_migrations()
+    seed_subscription_plans_sync()
     yield
 
 
@@ -141,6 +182,7 @@ async def test_redis() -> AsyncIterator[RedisClient]:
 @pytest.fixture
 async def client(test_redis: RedisClient) -> AsyncIterator[AsyncClient]:
     truncate_auth_tables()
+    seed_subscription_plans_sync()
 
     publisher = NoopMqttPublisher()
     app.state.redis = test_redis

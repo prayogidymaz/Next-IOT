@@ -95,6 +95,14 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Step 8 — Billing + Super Admin (2026-10-11)
+
+- **Subscriptions:** Plans catalog, tenant trial/active lifecycle, usage snapshots, quota enforcement (devices + messages).
+- **Payments:** Invoices (PPN 11%), Midtrans/Xendit provider stubs + webhooks; manual billing cycle endpoint.
+- **Super Admin:** Platform stats, tenant suspend/trial/plan, revenue MRR, system health, audited actions.
+- **Web:** `/billing`, `/pricing`, `/super-admin/dashboard`.
+- **Migrations:** 025–030.
+
 ### Step 7 — ESP32 SDK + Firmware Studio (2026-10-11)
 
 - **SDK:** `firmware/next-iot-esp32-sdk` (PlatformIO library — MQTT telemetry, attributes, RPC, OTA).

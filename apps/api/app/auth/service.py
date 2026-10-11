@@ -94,6 +94,9 @@ async def register(db: AsyncSession, redis: RedisClient, payload: RegisterReques
             role=UserRole.TENANT_ADMIN,
         )
     )
+    from app.billing.subscription_service import ensure_tenant_subscription
+
+    await ensure_tenant_subscription(db, tenant.id)
     await db.commit()
     await db.refresh(user)
 

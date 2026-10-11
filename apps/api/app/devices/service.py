@@ -85,6 +85,10 @@ async def register_device(
     user: CurrentUser,
     payload: DeviceRegisterRequest,
 ) -> DeviceRegisterResponse:
+    from app.billing.quota import assert_device_quota
+
+    if not user.is_super_admin:
+        await assert_device_quota(db, user.tenant_id)
     category = payload.device_category
     if category is not None:
         try:
