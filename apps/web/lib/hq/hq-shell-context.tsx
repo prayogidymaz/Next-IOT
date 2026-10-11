@@ -10,6 +10,8 @@ import {
   type ReactNode,
 } from "react";
 
+import { fetchAuthMe } from "@/lib/auth/api";
+import { readAccessTokenFromDocument } from "@/lib/auth/token-role";
 import type { HqDomainId } from "@/lib/hq/domains";
 
 const TENANTS: string[] = ["Next-IoT Platform", "Acme Agri Co", "SkyLogistics Fleet"];
@@ -25,6 +27,7 @@ type HqShellContextValue = {
   setDomainId: (id: HqDomainId) => void;
   notificationCount: number;
   systemHealth: "healthy" | "degraded" | "unknown";
+  userRole: string | null;
 };
 
 const HqShellContext = createContext<HqShellContextValue | null>(null);
@@ -34,6 +37,7 @@ export function HqShellProvider({ children }: { children: ReactNode }) {
   const [tenant, setTenant] = useState<string>(DEFAULT_TENANT);
   const [domainId, setDomainId] = useState<HqDomainId>("smart-home");
   const [systemHealth, setSystemHealth] = useState<HqShellContextValue["systemHealth"]>("unknown");
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem("hq_sidebar_collapsed");
@@ -55,6 +59,15 @@ export function HqShellProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem("hq_tenant", tenant);
   }, [tenant]);
+
+  useEffect(() => {
+    const token = readAccessTokenFromDocument();
+    if (token) {
+      void fetchAuthMe(token)
+        .then((me) => setUserRole(me.role))
+        .catch(() => setUserRole(null));
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,8 +101,9 @@ export function HqShellProvider({ children }: { children: ReactNode }) {
       setDomainId,
       notificationCount: 3,
       systemHealth,
+      userRole,
     }),
-    [collapsed, toggleCollapsed, tenant, domainId, systemHealth],
+    [collapsed, toggleCollapsed, tenant, domainId, systemHealth, userRole],
   );
 
   return <HqShellContext.Provider value={value}>{children}</HqShellContext.Provider>;

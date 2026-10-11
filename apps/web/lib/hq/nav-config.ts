@@ -1,18 +1,22 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  Activity,
   BarChart3,
+  Building2,
+  Bell,
   Cpu,
   Crosshair,
   Key,
   Layers,
+  Mail,
   Map,
   QrCode,
   Radio,
+  Receipt,
   Settings,
+  Shield,
   Tag,
   Workflow,
-  Bell,
-  Mail,
 } from "lucide-react";
 
 export type HqNavItem = {
@@ -139,13 +143,6 @@ export const HQ_NAV_SECTIONS: HqNavSection[] = [
         iconBgClass: "bg-accent-amber-soft",
       },
       {
-        href: "/super-admin/dashboard",
-        label: "Super Admin",
-        icon: Settings,
-        accentClass: "text-accent-cobalt",
-        iconBgClass: "bg-accent-cobalt-soft",
-      },
-      {
         href: "/settings",
         label: "Settings",
         icon: Settings,
@@ -155,6 +152,47 @@ export const HQ_NAV_SECTIONS: HqNavSection[] = [
     ],
   },
 ];
+
+export const SUPER_ADMIN_NAV_SECTION: HqNavSection = {
+  label: "Super Admin",
+  items: [
+    {
+      href: "/super-admin/dashboard",
+      label: "Dashboard",
+      icon: Shield,
+      accentClass: "text-accent-cobalt",
+      iconBgClass: "bg-accent-cobalt-soft",
+    },
+    {
+      href: "/super-admin/tenants",
+      label: "Tenants",
+      icon: Building2,
+      accentClass: "text-accent-indigo",
+      iconBgClass: "bg-accent-indigo-soft",
+    },
+    {
+      href: "/super-admin/billing",
+      label: "Billing",
+      icon: Receipt,
+      accentClass: "text-accent-emerald",
+      iconBgClass: "bg-accent-emerald-soft",
+    },
+    {
+      href: "/super-admin/system",
+      label: "System Health",
+      icon: Activity,
+      accentClass: "text-accent-amber",
+      iconBgClass: "bg-accent-amber-soft",
+    },
+  ],
+};
+
+export function hqNavSectionsForRole(role: string | null): HqNavSection[] {
+  if (role === "super_admin") {
+    return [...HQ_NAV_SECTIONS, SUPER_ADMIN_NAV_SECTION];
+  }
+  return HQ_NAV_SECTIONS;
+}
 
 /** @deprecated Use HQ_NAV_SECTIONS — flat list for title lookup */
 export const HQ_NAV_ITEMS: HqNavItem[] = HQ_NAV_SECTIONS.flatMap((s) => s.items);
@@ -170,7 +208,10 @@ export const HQ_PAGE_TITLES: Record<string, string> = {
   "/firmware-studio": "Firmware Studio",
   "/firmware-releases": "Firmware Releases",
   "/billing": "Billing",
-  "/super-admin/dashboard": "Super Admin",
+  "/super-admin/dashboard": "Super Admin Dashboard",
+  "/super-admin/tenants": "Super Admin — Tenants",
+  "/super-admin/billing": "Super Admin — Billing",
+  "/super-admin/system": "Super Admin — System",
   "/pricing": "Pricing",
   "/studio/firmware": "Firmware Studio",
   "/studio/missions": "Mission Studio",

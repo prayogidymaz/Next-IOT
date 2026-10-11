@@ -19,8 +19,10 @@ from app.super_admin.schemas import (
     ImpersonateResponse,
     PlatformStatsResponse,
     RevenueResponse,
+    SuspendTenantRequest,
     SystemHealthResponse,
     TenantAdminItem,
+    TenantDetailResponse,
 )
 
 router = APIRouter(prefix="/api/v1/super-admin", tags=["super-admin"])
@@ -37,13 +39,25 @@ async def list_tenants(
     db: DbSession,
     status: str | None = Query(default=None),
     plan: str | None = Query(default=None),
+    q: str | None = Query(default=None),
 ) -> list[TenantAdminItem]:
-    return await service.list_tenants_admin(db, status_filter=status, plan_code=plan)
+    return await service.list_tenants_admin(db, status_filter=status, plan_code=plan, search=q)
+
+
+@router.get("/tenants/{tenant_id}", response_model=TenantDetailResponse)
+async def get_tenant_detail(tenant_id: uuid.UUID, user: RequireSuperAdmin, db: DbSession) -> TenantDetailResponse:
+    return await service.get_tenant_detail(db, tenant_id)
 
 
 @router.post("/tenants/{tenant_id}/suspend", status_code=204, response_class=Response)
-async def suspend_tenant(tenant_id: uuid.UUID, user: RequireSuperAdmin, db: DbSession) -> Response:
-    await service.suspend_tenant(db, user, tenant_id)
+async def suspend_tenant(
+    tenant_id: uuid.UUID,
+    user: RequireSuperAdmin,
+    db: DbSession,
+    payload: SuspendTenantRequest | None = None,
+) -> Response:
+    reason = payload.reason if payload is not None else None
+    await service.suspend_tenant(db, user, tenant_id, reason=reason)
     return Response(status_code=204)
 
 
@@ -95,8 +109,12 @@ async def list_invoices(
 
 
 @router.get("/revenue", response_model=RevenueResponse)
-async def get_revenue(user: RequireSuperAdmin, db: DbSession) -> RevenueResponse:
-    return await service.revenue_report(db)
+async def get_revenue(
+    user: RequireSuperAdmin,
+    db: DbSession,
+    months: int = Query(default=12, ge=1, le=24),
+) -> RevenueResponse:
+    return await service.revenue_report(db, months=months)
 
 
 @router.get("/system-health", response_model=SystemHealthResponse)

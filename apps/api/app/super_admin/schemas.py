@@ -26,7 +26,24 @@ class TenantAdminItem(BaseModel):
     plan_code: str | None
     subscription_status: str | None
     device_count: int
+    user_count: int
     created_at: datetime
+
+
+class SuperAdminAuditItem(BaseModel):
+    id: uuid.UUID
+    action: str
+    detail: dict[str, object]
+    created_at: datetime
+
+
+class TenantDetailResponse(TenantAdminItem):
+    trial_ends_at: datetime | None
+    audit_entries: list[SuperAdminAuditItem]
+
+
+class SuspendTenantRequest(BaseModel):
+    reason: str | None = Field(default=None, max_length=500)
 
 
 class ExtendTrialRequest(BaseModel):
@@ -38,10 +55,16 @@ class ChangePlanAdminRequest(BaseModel):
     prorate: bool = False
 
 
+class RevenueGrowthPoint(BaseModel):
+    month: str
+    revenue_idr: int
+
+
 class RevenueResponse(BaseModel):
     mrr_idr: int
     arr_idr: int
     by_plan: dict[str, int]
+    growth_12m: list[RevenueGrowthPoint] = Field(default_factory=list)
 
 
 class SystemHealthResponse(BaseModel):
@@ -50,6 +73,9 @@ class SystemHealthResponse(BaseModel):
     redis: str
     emqx: str
     scheduler: str
+    mqtt_subscriber: str
+    mqtt_publisher: str
+    checked_at: datetime
 
 
 class ImpersonateResponse(BaseModel):

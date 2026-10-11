@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, UserCircle2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { HQ_NAV_SECTIONS } from "@/lib/hq/nav-config";
+import { hqNavSectionsForRole } from "@/lib/hq/nav-config";
 import { useHqShell } from "@/lib/hq/hq-shell-context";
 
 function isActive(pathname: string, href: string) {
@@ -12,12 +12,14 @@ function isActive(pathname: string, href: string) {
   if (href === "/control-center") return pathname === "/control-center";
   if (href === "/device-profiles") return pathname.startsWith("/device-profiles");
   if (href === "/settings") return pathname === "/settings";
+  if (href.startsWith("/super-admin")) return pathname.startsWith(href);
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 export function HqSidebar() {
   const pathname = usePathname();
-  const { collapsed, toggleCollapsed, tenant, setTenant, tenants } = useHqShell();
+  const { collapsed, toggleCollapsed, tenant, setTenant, tenants, userRole } = useHqShell();
+  const sections = hqNavSectionsForRole(userRole);
 
   return (
     <aside
@@ -56,7 +58,7 @@ export function HqSidebar() {
       </div>
 
       <nav className="flex-1 space-y-4 overflow-y-auto p-3">
-        {HQ_NAV_SECTIONS.map((section) => (
+        {sections.map((section) => (
           <div key={section.label ?? section.items[0]?.href}>
             {!collapsed && section.label ? (
               <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-wider text-ink-tertiary">
