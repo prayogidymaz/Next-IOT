@@ -2,20 +2,18 @@ import type { LucideIcon } from "lucide-react";
 import {
   Activity,
   BarChart3,
-  Building2,
   Bell,
   Cpu,
-  Crosshair,
+  FileText,
   Key,
   Layers,
   Mail,
-  Map,
   QrCode,
   Radio,
   Receipt,
-  Settings,
-  Shield,
+  Sparkles,
   Tag,
+  Users,
   Workflow,
 } from "lucide-react";
 
@@ -25,15 +23,22 @@ export type HqNavItem = {
   icon: LucideIcon;
   accentClass: string;
   iconBgClass: string;
+  badgeKey?: "alarms";
+  shortcut?: string;
 };
 
 export type HqNavSection = {
-  label?: string;
+  id: string;
+  label: string;
+  collapsible?: boolean;
   items: HqNavItem[];
 };
 
 export const HQ_NAV_SECTIONS: HqNavSection[] = [
   {
+    id: "command",
+    label: "Command",
+    collapsible: true,
     items: [
       {
         href: "/dashboard",
@@ -41,13 +46,38 @@ export const HQ_NAV_SECTIONS: HqNavSection[] = [
         icon: BarChart3,
         accentClass: "text-accent-cobalt",
         iconBgClass: "bg-accent-cobalt-soft",
+        shortcut: "G D",
       },
       {
-        href: "/control-center",
-        label: "Control Center",
-        icon: Crosshair,
-        accentClass: "text-accent-emerald",
-        iconBgClass: "bg-accent-emerald-soft",
+        href: "/alarms",
+        label: "Alarms",
+        icon: Bell,
+        accentClass: "text-red-600",
+        iconBgClass: "bg-red-50",
+        badgeKey: "alarms",
+        shortcut: "G A",
+      },
+      {
+        href: "/studio/automation",
+        label: "Automations",
+        icon: Workflow,
+        accentClass: "text-accent-indigo",
+        iconBgClass: "bg-accent-indigo-soft",
+      },
+    ],
+  },
+  {
+    id: "fleet",
+    label: "Fleet",
+    collapsible: true,
+    items: [
+      {
+        href: "/devices",
+        label: "Devices",
+        icon: Radio,
+        accentClass: "text-accent-cobalt",
+        iconBgClass: "bg-accent-cobalt-soft",
+        shortcut: "G F",
       },
       {
         href: "/device-profiles",
@@ -56,39 +86,6 @@ export const HQ_NAV_SECTIONS: HqNavSection[] = [
         accentClass: "text-accent-indigo",
         iconBgClass: "bg-accent-indigo-soft",
       },
-      {
-        href: "/devices",
-        label: "Devices",
-        icon: Radio,
-        accentClass: "text-accent-cobalt",
-        iconBgClass: "bg-accent-cobalt-soft",
-      },
-      {
-        href: "/alarms",
-        label: "Alarms",
-        icon: Bell,
-        accentClass: "text-red-600",
-        iconBgClass: "bg-red-50",
-      },
-      {
-        href: "/notification-settings",
-        label: "Notifications",
-        icon: Mail,
-        accentClass: "text-accent-indigo",
-        iconBgClass: "bg-accent-indigo-soft",
-      },
-      {
-        href: "/claim-tokens",
-        label: "Claim Tokens",
-        icon: QrCode,
-        accentClass: "text-accent-amber",
-        iconBgClass: "bg-accent-amber-soft",
-      },
-    ],
-  },
-  {
-    label: "Studio",
-    items: [
       {
         href: "/firmware-studio",
         label: "Firmware Studio",
@@ -104,23 +101,61 @@ export const HQ_NAV_SECTIONS: HqNavSection[] = [
         iconBgClass: "bg-accent-emerald-soft",
       },
       {
-        href: "/studio/missions",
-        label: "Mission Studio",
-        icon: Map,
+        href: "/claim-tokens",
+        label: "Claim Tokens",
+        icon: QrCode,
         accentClass: "text-accent-amber",
         iconBgClass: "bg-accent-amber-soft",
-      },
-      {
-        href: "/studio/automation",
-        label: "Automation Studio",
-        icon: Workflow,
-        accentClass: "text-accent-indigo",
-        iconBgClass: "bg-accent-indigo-soft",
       },
     ],
   },
   {
+    id: "intelligence",
+    label: "Intelligence",
+    collapsible: true,
     items: [
+      {
+        href: "/dashboard",
+        label: "Analytics",
+        icon: Activity,
+        accentClass: "text-accent-violet",
+        iconBgClass: "bg-accent-violet-soft",
+      },
+      {
+        href: "/billing",
+        label: "Reports",
+        icon: FileText,
+        accentClass: "text-accent-cobalt",
+        iconBgClass: "bg-accent-cobalt-soft",
+      },
+      {
+        href: "/dashboard",
+        label: "AI Insights",
+        icon: Sparkles,
+        accentClass: "text-accent-amber",
+        iconBgClass: "bg-accent-amber-soft",
+      },
+    ],
+  },
+  {
+    id: "integration",
+    label: "Integration",
+    collapsible: true,
+    items: [
+      {
+        href: "/notification-settings",
+        label: "Notifications",
+        icon: Mail,
+        accentClass: "text-accent-indigo",
+        iconBgClass: "bg-accent-indigo-soft",
+      },
+      {
+        href: "/devices",
+        label: "MQTT Credentials",
+        icon: Key,
+        accentClass: "text-accent-cobalt",
+        iconBgClass: "bg-accent-cobalt-soft",
+      },
       {
         href: "/developer/api-keys",
         label: "API Keys",
@@ -128,24 +163,38 @@ export const HQ_NAV_SECTIONS: HqNavSection[] = [
         accentClass: "text-accent-indigo",
         iconBgClass: "bg-accent-indigo-soft",
       },
+    ],
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    collapsible: true,
+    items: [
       {
         href: "/billing",
         label: "Billing",
-        icon: Tag,
+        icon: Receipt,
         accentClass: "text-accent-emerald",
         iconBgClass: "bg-accent-emerald-soft",
       },
       {
+        href: "/settings",
+        label: "Users & Permissions",
+        icon: Users,
+        accentClass: "text-accent-indigo",
+        iconBgClass: "bg-accent-indigo-soft",
+      },
+      {
         href: "/settings/tenant-branding",
-        label: "White-Label",
+        label: "Tenant Settings",
         icon: Tag,
         accentClass: "text-accent-amber",
         iconBgClass: "bg-accent-amber-soft",
       },
       {
         href: "/settings",
-        label: "Settings",
-        icon: Settings,
+        label: "Audit Log",
+        icon: FileText,
         accentClass: "text-ink-secondary",
         iconBgClass: "bg-cream-muted",
       },
@@ -153,48 +202,11 @@ export const HQ_NAV_SECTIONS: HqNavSection[] = [
   },
 ];
 
-export const SUPER_ADMIN_NAV_SECTION: HqNavSection = {
-  label: "Super Admin",
-  items: [
-    {
-      href: "/super-admin/dashboard",
-      label: "Dashboard",
-      icon: Shield,
-      accentClass: "text-accent-cobalt",
-      iconBgClass: "bg-accent-cobalt-soft",
-    },
-    {
-      href: "/super-admin/tenants",
-      label: "Tenants",
-      icon: Building2,
-      accentClass: "text-accent-indigo",
-      iconBgClass: "bg-accent-indigo-soft",
-    },
-    {
-      href: "/super-admin/billing",
-      label: "Billing",
-      icon: Receipt,
-      accentClass: "text-accent-emerald",
-      iconBgClass: "bg-accent-emerald-soft",
-    },
-    {
-      href: "/super-admin/system",
-      label: "System Health",
-      icon: Activity,
-      accentClass: "text-accent-amber",
-      iconBgClass: "bg-accent-amber-soft",
-    },
-  ],
-};
-
 export function hqNavSectionsForRole(role: string | null): HqNavSection[] {
-  if (role === "super_admin") {
-    return [...HQ_NAV_SECTIONS, SUPER_ADMIN_NAV_SECTION];
-  }
+  void role;
   return HQ_NAV_SECTIONS;
 }
 
-/** @deprecated Use HQ_NAV_SECTIONS — flat list for title lookup */
 export const HQ_NAV_ITEMS: HqNavItem[] = HQ_NAV_SECTIONS.flatMap((s) => s.items);
 
 export const HQ_PAGE_TITLES: Record<string, string> = {
@@ -208,16 +220,11 @@ export const HQ_PAGE_TITLES: Record<string, string> = {
   "/firmware-studio": "Firmware Studio",
   "/firmware-releases": "Firmware Releases",
   "/billing": "Billing",
-  "/super-admin/dashboard": "Super Admin Dashboard",
-  "/super-admin/tenants": "Super Admin — Tenants",
-  "/super-admin/billing": "Super Admin — Billing",
-  "/super-admin/system": "Super Admin — System",
   "/pricing": "Pricing",
-  "/studio/firmware": "Firmware Studio",
+  "/studio/automation": "Automations",
   "/studio/missions": "Mission Studio",
-  "/studio/automation": "Automation Studio",
   "/developer/api-keys": "API Keys",
-  "/settings/tenant-branding": "White-Label",
+  "/settings/tenant-branding": "Tenant Settings",
   "/settings": "Settings",
 };
 

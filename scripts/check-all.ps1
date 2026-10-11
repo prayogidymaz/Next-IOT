@@ -44,6 +44,18 @@ Invoke-CheckStep "Web typecheck" {
     Pop-Location
 }
 
+Invoke-CheckStep "Admin lint" {
+    Push-Location "$Root/apps/admin"
+    npm run lint
+    Pop-Location
+}
+
+Invoke-CheckStep "Admin typecheck" {
+    Push-Location "$Root/apps/admin"
+    npm run typecheck
+    Pop-Location
+}
+
 Invoke-CheckStep "Flutter analyze (field_app)" {
     Push-Location "$Root/apps/mobile/field_app"
     flutter analyze
@@ -55,7 +67,10 @@ Invoke-CheckStep "Forbidden pattern scan" {
         "$Root/apps/web/app",
         "$Root/apps/web/components",
         "$Root/apps/web/hooks",
-        "$Root/apps/web/lib"
+        "$Root/apps/web/lib",
+        "$Root/apps/admin/app",
+        "$Root/apps/admin/components",
+        "$Root/apps/admin/lib"
     )
     $webHits = @()
     foreach ($p in $webPaths) {

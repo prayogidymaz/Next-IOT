@@ -19,6 +19,10 @@ body {
   @apply bg-cream-page font-sans text-ink-primary antialiased;
 }
 
+html.dark body {
+  @apply bg-[#121820] text-slate-100;
+}
+
 @layer components {
   .cream-card {
     @apply rounded-2xl border border-cream-border bg-white shadow-card;

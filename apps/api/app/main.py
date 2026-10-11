@@ -19,15 +19,14 @@ from app.audit.router import router as audit_router
 from app.auth.router import router as auth_router
 from app.automation.pipeline_listener import pipeline_listener_loop
 from app.automation.router import router as automation_router
+from app.billing.router import router as billing_router
 from app.config import settings
 from app.database import async_session, engine
 from app.device_claim_tokens.router import router as device_claim_tokens_router
 from app.device_profiles.router import router as device_profiles_router
 from app.devices.router import router as devices_router
 from app.devices.worker import offline_checker_loop
-from app.billing.router import router as billing_router
 from app.firmware_studio.router import router as firmware_studio_router
-from app.super_admin.router import router as super_admin_router
 from app.hardware.router import router as hardware_router
 from app.mavlink.router import router as mavlink_router
 from app.mission.router import router as mission_router
@@ -43,6 +42,7 @@ from app.notifications.gateway_router import rules_router as notification_rules_
 from app.notifications.router import router as notifications_router
 from app.notifications.worker import notification_dispatcher_loop
 from app.ota.router import router as ota_router
+from app.realtime.router import router as realtime_router
 from app.rules.alert_router import router as alerts_router
 from app.rules.executor import init_rule_executor
 from app.rules.router import router as rules_router
@@ -51,6 +51,7 @@ from app.seed import ensure_default_admin, run_seed
 from app.seed_device_profiles import run_device_profile_seed
 from app.seed_hardware import run_hardware_seed
 from app.seed_telemetry import run_telemetry_seed
+from app.super_admin.router import router as super_admin_router
 from app.system.router import router as system_router
 from app.telemetry.retention import telemetry_retention_loop
 from app.telemetry.router import router as telemetry_router
@@ -204,6 +205,7 @@ app.include_router(mqtt_auth_router)
 app.include_router(sar_emergency_ws_router)
 app.include_router(video_feed_router)
 app.include_router(telemetry_ws_router)
+app.include_router(realtime_router)
 app.include_router(mavlink_router)
 app.include_router(automation_router)
 app.include_router(ota_router)

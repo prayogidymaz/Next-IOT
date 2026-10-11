@@ -1,10 +1,11 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, UserCircle2 } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, UserCircle2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
-import { hqNavSectionsForRole } from "@/lib/hq/nav-config";
+import { hqNavSectionsForRole, type HqNavSection } from "@/lib/hq/nav-config";
 import { useHqShell } from "@/lib/hq/hq-shell-context";
 
 function isActive(pathname: string, href: string) {
@@ -12,14 +13,36 @@ function isActive(pathname: string, href: string) {
   if (href === "/control-center") return pathname === "/control-center";
   if (href === "/device-profiles") return pathname.startsWith("/device-profiles");
   if (href === "/settings") return pathname === "/settings";
-  if (href.startsWith("/super-admin")) return pathname.startsWith(href);
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function sectionOpenDefault(sections: HqNavSection[]): Record<string, boolean> {
+  const out: Record<string, boolean> = {};
+  for (const s of sections) out[s.id] = true;
+  return out;
 }
 
 export function HqSidebar() {
   const pathname = usePathname();
-  const { collapsed, toggleCollapsed, tenant, setTenant, tenants, userRole } = useHqShell();
+  const { collapsed, toggleCollapsed, tenant, setTenant, tenants, userRole, alarmCount } = useHqShell();
   const sections = hqNavSectionsForRole(userRole);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => sectionOpenDefault(sections));
+
+  useEffect(() => {
+    const raw = localStorage.getItem("hq_nav_sections_open");
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw) as Record<string, boolean>;
+        setOpenSections((prev) => ({ ...prev, ...parsed }));
+      } catch {
+        /* ignore */
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("hq_nav_sections_open", JSON.stringify(openSections));
+  }, [openSections]);
 
   return (
     <aside
@@ -57,40 +80,68 @@ export function HqSidebar() {
         ) : null}
       </div>
 
-      <nav className="flex-1 space-y-4 overflow-y-auto p-3">
-        {sections.map((section) => (
-          <div key={section.label ?? section.items[0]?.href}>
-            {!collapsed && section.label ? (
-              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-wider text-ink-tertiary">
-                {section.label}
-              </p>
-            ) : null}
-            <div className="space-y-1">
-              {section.items.map((item) => {
-                const active = isActive(pathname, item.href);
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    prefetch
-                    title={item.label}
-                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
-                      active
-                        ? "bg-cream-muted font-semibold text-ink-primary shadow-sm"
-                        : "text-ink-secondary hover:bg-cream-alt hover:text-ink-primary"
-                    }`}
-                  >
-                    <span className={`rounded-lg p-1.5 ${active ? item.iconBgClass : "bg-cream-muted"}`}>
-                      <Icon className={`h-4 w-4 ${active ? item.accentClass : "text-ink-tertiary"}`} />
-                    </span>
-                    {!collapsed ? <span className="truncate">{item.label}</span> : null}
-                  </Link>
-                );
-              })}
+      <nav className="flex-1 space-y-3 overflow-y-auto p-3">
+        {sections.map((section) => {
+          const open = openSections[section.id] !== false;
+          return (
+            <div key={section.id}>
+              {!collapsed && section.label ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOpenSections((prev) => ({
+                      ...prev,
+                      [section.id]: !open,
+                    }))
+                  }
+                  className="mb-1 flex w-full items-center justify-between px-3 text-[10px] font-bold uppercase tracking-wider text-ink-tertiary"
+                >
+                  {section.label}
+                  {section.collapsible ? <ChevronDown className={`h-3 w-3 transition ${open ? "" : "-rotate-90"}`} /> : null}
+                </button>
+              ) : null}
+              {open || collapsed ? (
+                <div className="space-y-1">
+                  {section.items.map((item) => {
+                    const active = isActive(pathname, item.href);
+                    const Icon = item.icon;
+                    const badge = item.badgeKey === "alarms" && alarmCount > 0 ? alarmCount : null;
+                    return (
+                      <Link
+                        key={`${section.id}-${item.label}-${item.href}`}
+                        href={item.href}
+                        prefetch
+                        title={item.label}
+                        className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
+                          active
+                            ? "bg-cream-muted font-semibold text-ink-primary shadow-sm"
+                            : "text-ink-secondary hover:bg-cream-alt hover:text-ink-primary"
+                        }`}
+                      >
+                        <span className={`rounded-lg p-1.5 ${active ? item.iconBgClass : "bg-cream-muted"}`}>
+                          <Icon className={`h-4 w-4 ${active ? item.accentClass : "text-ink-tertiary"}`} />
+                        </span>
+                        {!collapsed ? (
+                          <span className="flex min-w-0 flex-1 items-center justify-between gap-2 truncate">
+                            <span className="truncate">{item.label}</span>
+                            <span className="flex shrink-0 items-center gap-1">
+                              {badge !== null ? (
+                                <span className="rounded-full bg-red-100 px-1.5 text-[10px] font-bold text-red-700">{badge}</span>
+                              ) : null}
+                              {item.shortcut ? (
+                                <span className="hidden font-mono text-[9px] text-ink-tertiary xl:inline">{item.shortcut}</span>
+                              ) : null}
+                            </span>
+                          </span>
+                        ) : null}
+                      </Link>
+                    );
+                  })}
+                </div>
+              ) : null}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </nav>
 
       <div className="border-t border-cream-border p-3">

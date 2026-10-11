@@ -1,5 +1,5 @@
-import { HqDashboard } from "@/components/hq/HqDashboard";
+import { TenantPowerDashboard } from "@/components/dashboard/TenantPowerDashboard";
 
 export default function DashboardControlCenterPage() {
-  return <HqDashboard />;
+  return <TenantPowerDashboard />;
 }

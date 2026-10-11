@@ -1,6 +1,13 @@
 # Next-IOT — Notion Update Log (Master Changelog)
 
-**Last updated:** 2026-10-11 (UTC+7)  
+**Last updated:** 2026-10-12 (UTC+7)  
+
+### Step 8C — Admin app split + tenant command dashboard (DONE)
+
+- **`apps/admin`:** Next.js super-admin console on port **3001** (dark mission-control theme); login gated to `super_admin`.
+- **`apps/web`:** Removed `/super-admin/*` (404); tenant **Power Dashboard** (KPIs, heatmap, SSE-driven msg/min, Cmd+K nav); grouped sidebar (Command/Fleet/Intelligence/Integration/Settings).
+- **API:** `GET /api/v1/realtime/stream` (SSE, tenant-scoped, channel filter, 100 evt/s cap).
+- **Compose:** `admin` service; `check-all` includes admin lint/typecheck.
 
 ### Step 8 — Billing + Super Admin (DONE)
 

@@ -120,6 +120,33 @@ services:
     networks:
       - next-iot-net
 
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+      target: dev
+    container_name: next-iot-admin
+    restart: always
+    ports:
+      - "${ADMIN_PORT:-3001}:3001"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      API_PROXY_TARGET: http://api:8000
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./apps/admin:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      api:
+        condition: service_started
+    command: >
+      sh -c "if [ ! -d node_modules/next ] || [ ! -d node_modules/recharts ] || [ ! -d node_modules/zod ]; then npm ci; fi &&
+             npm run dev -- -H 0.0.0.0 -p 3001"
+    networks:
+      - next-iot-net
+
   tile-server:
     image: ghcr.io/consbio/mbtileserver:latest
     container_name: next-iot-tile-server

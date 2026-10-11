@@ -5,9 +5,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
-import { CreamCard } from "@/components/ui/CreamCard";
-import { HealthDot } from "@/components/super-admin/HealthDot";
-import { StatCard } from "@/components/super-admin/StatCard";
+import { CommandCard } from "@/components/ui/CommandCard";
+import { HealthDot } from "@/components/console/HealthDot";
+import { StatCard } from "@/components/console/StatCard";
 import {
   fetchSuperAdminRevenue,
   fetchSuperAdminStats,
@@ -32,8 +32,8 @@ export function SuperAdminDashboard() {
       .catch(() => setError("Requires super_admin role or API unavailable"));
   }, []);
 
-  if (error) return <p className="text-sm text-red-600">{error}</p>;
-  if (!stats) return <p className="text-sm text-ink-secondary">Loading platform stats…</p>;
+  if (error) return <p className="text-sm text-red-400">{error}</p>;
+  if (!stats) return <p className="text-sm text-command-secondary">Loading platform stats…</p>;
 
   const chartData = revenue?.growth_12m ?? [];
   const subTotal = stats.active_subscriptions + stats.trial_subscriptions;
@@ -42,15 +42,15 @@ export function SuperAdminDashboard() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-ink-secondary">Platform-wide overview for operators with super_admin access.</p>
+        <p className="text-sm text-command-secondary">Platform-wide overview for operators with super_admin access.</p>
         <div className="flex flex-wrap gap-2 text-sm">
-          <Link href="/super-admin/tenants" className="rounded-lg border border-cream-border px-3 py-1.5 hover:bg-cream-alt">
+          <Link href="/tenants" className="rounded-lg border border-command-border px-3 py-1.5 hover:bg-command-muted">
             Tenants
           </Link>
-          <Link href="/super-admin/billing" className="rounded-lg border border-cream-border px-3 py-1.5 hover:bg-cream-alt">
+          <Link href="/billing" className="rounded-lg border border-command-border px-3 py-1.5 hover:bg-command-muted">
             Billing
           </Link>
-          <Link href="/super-admin/system" className="rounded-lg border border-cream-border px-3 py-1.5 hover:bg-cream-alt">
+          <Link href="/system" className="rounded-lg border border-command-border px-3 py-1.5 hover:bg-command-muted">
             System
           </Link>
         </div>
@@ -62,8 +62,8 @@ export function SuperAdminDashboard() {
           value={String(stats.total_tenants)}
           subtitle={`${stats.active_tenants} active`}
           icon={Building2}
-          iconClass="text-accent-cobalt"
-          iconBgClass="bg-accent-cobalt-soft"
+          iconClass="text-command-accent"
+          iconBgClass="bg-command-accent-soft"
         />
         <StatCard
           title="Devices Platform"
@@ -92,9 +92,9 @@ export function SuperAdminDashboard() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <CreamCard className="p-5">
-          <h3 className="text-sm font-semibold text-ink-primary">Subscriptions</h3>
-          <p className="mt-1 text-xs text-ink-secondary">Active vs trial</p>
+        <CommandCard className="p-5">
+          <h3 className="text-sm font-semibold text-command-text">Subscriptions</h3>
+          <p className="mt-1 text-xs text-command-secondary">Active vs trial</p>
           <div className="mt-4 flex items-center justify-between text-sm">
             <span>Active {stats.active_subscriptions}</span>
             <span>Trial {stats.trial_subscriptions}</span>
@@ -102,10 +102,10 @@ export function SuperAdminDashboard() {
           <div className="mt-3 h-3 overflow-hidden rounded-full bg-cream-muted">
             <div className="h-full bg-accent-emerald" style={{ width: `${activePct}%` }} />
           </div>
-        </CreamCard>
+        </CommandCard>
 
-        <CreamCard className="p-5">
-          <h3 className="text-sm font-semibold text-ink-primary">System health</h3>
+        <CommandCard className="p-5">
+          <h3 className="text-sm font-semibold text-command-text">System health</h3>
           <ul className="mt-4 space-y-2 text-sm">
             {health ? (
               <>
@@ -118,8 +118,8 @@ export function SuperAdminDashboard() {
                   ] as const
                 ).map(([label, status]) => (
                   <li key={label} className="flex items-center justify-between gap-2">
-                    <span className="text-ink-secondary">{label}</span>
-                    <span className="flex items-center gap-2 font-medium capitalize text-ink-primary">
+                    <span className="text-command-secondary">{label}</span>
+                    <span className="flex items-center gap-2 font-medium capitalize text-command-text">
                       <HealthDot status={status} />
                       {status}
                     </span>
@@ -127,17 +127,17 @@ export function SuperAdminDashboard() {
                 ))}
               </>
             ) : (
-              <li className="text-ink-secondary">Checking…</li>
+              <li className="text-command-secondary">Checking…</li>
             )}
           </ul>
-        </CreamCard>
+        </CommandCard>
       </div>
 
-      <CreamCard className="p-5">
-        <h3 className="text-sm font-semibold text-ink-primary">Revenue growth (12 months)</h3>
+      <CommandCard className="p-5">
+        <h3 className="text-sm font-semibold text-command-text">Revenue growth (12 months)</h3>
         <div className="mt-4 h-64">
           {chartData.length === 0 ? (
-            <p className="flex h-full items-center justify-center text-sm text-ink-secondary">No revenue data yet</p>
+            <p className="flex h-full items-center justify-center text-sm text-command-secondary">No revenue data yet</p>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
@@ -150,7 +150,7 @@ export function SuperAdminDashboard() {
             </ResponsiveContainer>
           )}
         </div>
-      </CreamCard>
+      </CommandCard>
     </div>
   );
 }

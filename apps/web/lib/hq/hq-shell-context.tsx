@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { listAlarms } from "@/lib/api/alarms";
 import { fetchAuthMe } from "@/lib/auth/api";
 import { readAccessTokenFromDocument } from "@/lib/auth/token-role";
 import type { HqDomainId } from "@/lib/hq/domains";
@@ -26,6 +27,7 @@ type HqShellContextValue = {
   domainId: HqDomainId;
   setDomainId: (id: HqDomainId) => void;
   notificationCount: number;
+  alarmCount: number;
   systemHealth: "healthy" | "degraded" | "unknown";
   userRole: string | null;
 };
@@ -38,6 +40,7 @@ export function HqShellProvider({ children }: { children: ReactNode }) {
   const [domainId, setDomainId] = useState<HqDomainId>("smart-home");
   const [systemHealth, setSystemHealth] = useState<HqShellContextValue["systemHealth"]>("unknown");
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [alarmCount, setAlarmCount] = useState(0);
 
   useEffect(() => {
     const stored = localStorage.getItem("hq_sidebar_collapsed");
@@ -88,6 +91,12 @@ export function HqShellProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    void listAlarms({ status: "active" })
+      .then((items) => setAlarmCount(items.length))
+      .catch(() => setAlarmCount(0));
+  }, []);
+
   const toggleCollapsed = useCallback(() => setCollapsed((c) => !c), []);
 
   const value = useMemo(
@@ -99,11 +108,12 @@ export function HqShellProvider({ children }: { children: ReactNode }) {
       tenants: TENANTS,
       domainId,
       setDomainId,
-      notificationCount: 3,
+      notificationCount: alarmCount,
+      alarmCount,
       systemHealth,
       userRole,
     }),
-    [collapsed, toggleCollapsed, tenant, domainId, systemHealth, userRole],
+    [collapsed, toggleCollapsed, tenant, domainId, systemHealth, userRole, alarmCount],
   );
 
   return <HqShellContext.Provider value={value}>{children}</HqShellContext.Provider>;

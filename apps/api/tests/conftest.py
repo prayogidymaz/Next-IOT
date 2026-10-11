@@ -123,7 +123,8 @@ def truncate_auth_tables() -> None:
     conn.autocommit = True
     truncate_sql = (
         "TRUNCATE super_admin_actions, invoices, tenant_usage_daily, tenant_subscriptions, "
-        "payment_methods, subscription_plans, audit_logs, ota_device_rollouts, firmware_releases, automation_pipelines, "
+        "payment_methods, subscription_plans, audit_logs, ota_device_rollouts, "
+        "firmware_releases, automation_pipelines, "
         "rule_execution_log, notification_log, notification_rules, notification_channels, alarm_history, alarms, "
         "sar_incidents, telemetry_anomalies, geofence_zones, device_rpc_requests, device_attributes, "
         "device_commands, rules, "

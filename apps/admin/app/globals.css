@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  @apply bg-command-bg font-sans text-command-text antialiased;
+}
+
+@layer components {
+  .command-card {
+    @apply rounded-lg border border-command-border bg-command-panel shadow-panel;
+  }
+
+  .command-input {
+    @apply rounded-md border border-command-border bg-command-muted px-3 py-2 text-sm text-command-text outline-none focus:border-command-accent;
+  }
+
+  .command-nav-link {
+    @apply flex items-center gap-3 rounded-md border border-transparent px-3 py-2.5 text-sm text-command-secondary transition hover:border-command-border hover:bg-command-muted hover:text-command-text;
+  }
+
+  .command-nav-link-active {
+    @apply border-command-accent/40 bg-command-accent-soft font-semibold text-command-accent;
+  }
+}

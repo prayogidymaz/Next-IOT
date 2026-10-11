@@ -95,12 +95,18 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Step 8C — Admin console split + tenant dashboard (2026-10-12)
+
+- **`apps/admin`:** Standalone super-admin Next.js app (port 3001, dark command-center UI); docker service `admin`.
+- **`apps/web`:** Super-admin routes removed (404); tenant dashboard KPIs, live SSE metrics, device heatmap, Cmd+K palette; nav grouped by Command/Fleet/Intelligence/Integration/Settings.
+- **API:** SSE `/api/v1/realtime/stream` (tenant JWT, multi-channel, rate-limited).
+
 ### Step 8 — Billing + Super Admin (2026-10-11)
 
 - **Subscriptions:** Plans catalog, tenant trial/active lifecycle, usage snapshots, quota enforcement (devices + messages).
 - **Payments:** Invoices (PPN 11%), Midtrans/Xendit provider stubs + webhooks; manual billing cycle endpoint.
 - **Super Admin:** Platform stats, tenant suspend/trial/plan, revenue MRR, system health, audited actions.
-- **Web:** `/billing`, `/pricing`, `/super-admin/dashboard`.
+- **Web:** `/billing`, `/pricing` (super-admin UI moved to `apps/admin` in Step 8C).
 - **Migrations:** 025–030.
 
 ### Step 7 — ESP32 SDK + Firmware Studio (2026-10-11)
