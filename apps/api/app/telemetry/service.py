@@ -67,6 +67,8 @@ async def ingest_telemetry(
     redis: RedisClient,
     device: CurrentDevice,
     payload: TelemetryIngestRequest,
+    *,
+    defer_rule_execution: bool = False,
 ) -> TelemetryIngestResponse:
     if device.status not in INGEST_ALLOWED_STATUSES:
         raise HTTPException(
@@ -108,16 +110,17 @@ async def ingest_telemetry(
 
     legacy_redis = as_legacy_redis_stub(redis)
     rules_triggered = 0
-    device_row = await db.scalar(select(Device).where(Device.id == device.device_id))
-    executor = get_rule_executor()
-    if executor is not None and device_row is not None:
-        rules_triggered = await executor.on_telemetry_metrics(
-            db,
-            device=device_row,
-            metrics=numeric_metrics(metrics),
-            recorded_at=recorded_at,
-            reading_id=reading.id,
-        )
+    if not defer_rule_execution:
+        device_row = await db.scalar(select(Device).where(Device.id == device.device_id))
+        executor = get_rule_executor()
+        if executor is not None and device_row is not None:
+            rules_triggered = await executor.on_telemetry_metrics(
+                db,
+                device=device_row,
+                metrics=numeric_metrics(metrics),
+                recorded_at=recorded_at,
+                reading_id=reading.id,
+            )
 
     anomaly_rows = await detect_and_persist_anomalies(
         db,

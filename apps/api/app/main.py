@@ -141,7 +141,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         settings.emqx_telemetry_rule_setup_enabled,
     )
     if settings.mqtt_subscriber_enabled and settings.run_background_workers:
-        mqtt_subscriber = MqttSubscriberService(redis)
+        mqtt_subscriber = MqttSubscriberService(redis, rule_executor=rule_executor)
         worker_tasks.append(asyncio.create_task(mqtt_subscriber.run()))
     app.state.mqtt_subscriber = mqtt_subscriber
     yield

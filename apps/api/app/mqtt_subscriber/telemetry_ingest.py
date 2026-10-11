@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.devices.dependencies import CurrentDevice
 from app.models.device import Device
 from app.mqtt_subscriber.schemas import TelemetryMqttTopic
+from app.rules.telemetry_event import TelemetryRuleEvent
 from app.telemetry.ingest_pipeline import split_telemetry_for_profile
 from app.telemetry.mqtt_payload import parse_telemetry_payload_object
 from app.telemetry.profile_loader import load_thing_model_for_device
@@ -24,7 +25,7 @@ async def persist_telemetry_from_mqtt(
     topic: TelemetryMqttTopic,
     payload_obj: dict[str, JsonValue],
     client_id: str,
-) -> dict[str, int | list[str]]:
+) -> dict[str, int | list[str] | TelemetryRuleEvent | None]:
     metrics, recorded_at = parse_telemetry_payload_object(payload_obj)
 
     device = await db.scalar(
@@ -34,7 +35,7 @@ async def persist_telemetry_from_mqtt(
         )
     )
     if device is None:
-        return {"accepted_count": 0, "rejected": ["device_not_found"]}
+        return {"accepted_count": 0, "rejected": ["device_not_found"], "rule_event": None}
 
     spec = await load_thing_model_for_device(db, device)
     split = split_telemetry_for_profile(spec, metrics)
@@ -57,7 +58,11 @@ async def persist_telemetry_from_mqtt(
             metric_keys=set(split.metrics_to_persist.keys()),
         )
     if not split.metrics_to_persist:
-        return {"accepted_count": 0, "rejected": [entry.key for entry in split.rejected]}
+        return {
+            "accepted_count": 0,
+            "rejected": [entry.key for entry in split.rejected],
+            "rule_event": None,
+        }
 
     current = CurrentDevice(
         device_id=device.id,
@@ -66,5 +71,18 @@ async def persist_telemetry_from_mqtt(
         status=device.status,
     )
     ingest_req = TelemetryIngestRequest(timestamp=recorded_at, metrics=split.metrics_to_persist)
-    await ingest_telemetry(db, redis, current, ingest_req)
-    return {"accepted_count": 1, "rejected": [entry.key for entry in split.rejected]}
+    ingest_result = await ingest_telemetry(
+        db, redis, current, ingest_req, defer_rule_execution=True
+    )
+    rule_event = TelemetryRuleEvent(
+        tenant_id=device.tenant_id,
+        device_id=device.id,
+        metrics=dict(split.metrics_to_persist),
+        recorded_at=recorded_at,
+        reading_id=ingest_result.reading_id,
+    )
+    return {
+        "accepted_count": 1,
+        "rejected": [entry.key for entry in split.rejected],
+        "rule_event": rule_event,
+    }

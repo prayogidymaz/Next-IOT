@@ -148,18 +148,22 @@ async def put_device_attribute(
             qos=settings.attribute_shared_broadcast_qos,
         )
 
-    from app.rules.executor import get_rule_executor
+    if old_value != value:
+        from app.rules.executor import get_rule_executor
+        from app.rules.hooks import apply_attribute_change_rules
 
-    executor = get_rule_executor()
-    if executor is not None and old_value != value:
-        await executor.on_attribute_change(
-            db,
-            device=device,
-            scope=scope_enum.value,
-            key=key,
-            old_value=old_value,
-            new_value=value,
-        )
+        executor = get_rule_executor()
+        if executor is not None:
+            await apply_attribute_change_rules(
+                executor,
+                db,
+                tenant_id=device.tenant_id,
+                device_id=device.id,
+                scope=scope_enum.value,
+                key=key,
+                old_value=old_value,
+                new_value=value,
+            )
 
     return DeviceAttributePutResponse(
         key=row.key,

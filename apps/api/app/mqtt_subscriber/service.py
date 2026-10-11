@@ -23,6 +23,10 @@ from app.mqtt_subscriber.schemas import TelemetryMqttTopic
 from app.mqtt_subscriber.telemetry_ingest import persist_telemetry_from_mqtt
 from app.rpc.mqtt_topics import parse_rpc_response_topic
 from app.rpc.response_ingest import handle_rpc_response_from_mqtt
+from app.rules.attribute_event import AttributeChangeEvent
+from app.rules.executor import RuleExecutor
+from app.rules.hooks import apply_attribute_change_rules, apply_telemetry_rules
+from app.rules.telemetry_event import TelemetryRuleEvent
 from app.telemetry.mqtt_payload import parse_telemetry_payload_bytes
 from app.types.redis_client import RedisClient
 
@@ -48,9 +52,30 @@ def _message_payload_bytes(payload: object) -> bytes | None:
 
 
 class MqttSubscriberService:
-    def __init__(self, redis: RedisClient) -> None:
+    def __init__(self, redis: RedisClient, rule_executor: RuleExecutor | None = None) -> None:
         self._redis = redis
+        self._rule_executor = rule_executor
         self._stopping = False
+
+    async def _run_telemetry_rules_after_commit(self, event: TelemetryRuleEvent) -> None:
+        if self._rule_executor is None:
+            logger.warning("Rule executor missing; skipping telemetry rules for device=%s", event.device_id)
+            return
+        async with async_session() as db:
+            try:
+                await apply_telemetry_rules(
+                    self._rule_executor,
+                    db,
+                    tenant_id=event.tenant_id,
+                    device_id=event.device_id,
+                    metrics=event.metrics,
+                    recorded_at=event.recorded_at,
+                    reading_id=event.reading_id,
+                )
+                await db.commit()
+            except Exception:
+                await db.rollback()
+                logger.exception("Rule executor batch failed after telemetry persist device=%s", event.device_id)
 
     def request_stop(self) -> None:
         self._stopping = True
@@ -101,6 +126,10 @@ class MqttSubscriberService:
                 logger.exception("MQTT Subscriber persist failed on %s", topic_str)
                 return
 
+        rule_event_raw = result.get("rule_event")
+        if isinstance(rule_event_raw, TelemetryRuleEvent):
+            await self._run_telemetry_rules_after_commit(rule_event_raw)
+
         logger.warning(
             "MQTT Subscriber persisted: device=%s accepted=%s rejected=%s",
             parsed_topic.device_id,
@@ -123,9 +152,10 @@ class MqttSubscriberService:
             logger.warning("MQTT Subscriber invalid attributes payload on %s: %s", topic_str, exc)
             return
 
+        attr_changes: list[AttributeChangeEvent] = []
         async with async_session() as db:
             try:
-                count = await persist_client_attributes_from_mqtt(
+                count, attr_changes = await persist_client_attributes_from_mqtt(
                     db,
                     tenant_id=tenant_id,
                     device_id=device_id,
@@ -136,6 +166,24 @@ class MqttSubscriberService:
                 await db.rollback()
                 logger.exception("MQTT Subscriber client attributes failed on %s", topic_str)
                 return
+        if self._rule_executor is not None and attr_changes:
+            async with async_session() as rule_db:
+                try:
+                    for change in attr_changes:
+                        await apply_attribute_change_rules(
+                            self._rule_executor,
+                            rule_db,
+                            tenant_id=tenant_id,
+                            device_id=device_id,
+                            scope=change.scope,
+                            key=change.key,
+                            old_value=change.old_value,
+                            new_value=change.new_value,
+                        )
+                    await rule_db.commit()
+                except Exception:
+                    await rule_db.rollback()
+                    logger.exception("Rule executor failed after client attributes device=%s", device_id)
         logger.warning(
             "MQTT Subscriber client attributes: device=%s keys=%s",
             device_id,

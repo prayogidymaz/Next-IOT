@@ -18,8 +18,9 @@ async def rule_schedule_loop(stop_event: asyncio.Event) -> None:
         if executor is not None:
             try:
                 async with async_session() as db:
-                    await executor.run_schedule_tick(db, datetime.now(UTC))
+                    checked, fired = await executor.run_schedule_tick(db, datetime.now(UTC))
                     await db.commit()
+                logger.info("Schedule scan: %s schedule rules checked, %s fired", checked, fired)
             except Exception:
                 logger.exception("Rule schedule tick failed")
         try:

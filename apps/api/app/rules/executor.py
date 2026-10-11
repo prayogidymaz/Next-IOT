@@ -75,9 +75,13 @@ class RuleExecutor:
                 grouped[trigger] = []
             grouped[trigger].append(row)
         self._by_trigger = grouped
-        logger.info(
-            "Rule executor loaded %s active rules",
-            sum(len(v) for v in grouped.values()),
+        logger.warning(
+            "Rule Executor loaded: telemetry=%s, attribute=%s, alarm=%s, schedule=%s, manual=%s",
+            len(grouped.get(RuleTriggerType.TELEMETRY, [])),
+            len(grouped.get(RuleTriggerType.ATTRIBUTE_CHANGE, [])),
+            len(grouped.get(RuleTriggerType.ALARM, [])),
+            len(grouped.get(RuleTriggerType.SCHEDULE, [])),
+            len(grouped.get(RuleTriggerType.MANUAL, [])),
         )
 
     async def on_telemetry(
@@ -104,6 +108,13 @@ class RuleExecutor:
                 continue
             if not match_telemetry_rule(rule, device=device, metric_key=metric_key, value=value):
                 continue
+            logger.info(
+                "Rule match telemetry: rule=%s device=%s metric=%s value=%s",
+                rule.name,
+                device.id,
+                metric_key,
+                value,
+            )
             await self._execute(db, rule, context)
             triggered += 1
         return triggered
@@ -221,8 +232,10 @@ class RuleExecutor:
                 errors.append(str(exc))
         return rendered, errors
 
-    async def run_schedule_tick(self, db: AsyncSession, now: datetime) -> None:
-        for rule in self._by_trigger.get(RuleTriggerType.SCHEDULE, []):
+    async def run_schedule_tick(self, db: AsyncSession, now: datetime) -> tuple[int, int]:
+        schedule_rules = self._by_trigger.get(RuleTriggerType.SCHEDULE, [])
+        fired = 0
+        for rule in schedule_rules:
             cron_expr = rule.trigger_config.get("cron_expr")
             if not isinstance(cron_expr, str):
                 continue
@@ -230,6 +243,8 @@ class RuleExecutor:
                 continue
             context: dict[str, object] = {"now_utc": now.isoformat()}
             await self._execute(db, rule, context)
+            fired += 1
+        return len(schedule_rules), fired
 
     async def _execute(self, db: AsyncSession, rule: Rule, context: dict[str, object]) -> None:
         start = time.perf_counter()
@@ -267,6 +282,17 @@ class RuleExecutor:
             )
         )
         await db.flush()
+        device_label = context.get("device_id", context.get("device"))
+        if isinstance(device_label, Device):
+            device_label = str(device_label.id)
+        logger.warning(
+            "Rule '%s' executed on device %s: status=%s actions=%s duration_ms=%s",
+            rule.name,
+            device_label,
+            status,
+            actions_run,
+            duration_ms,
+        )
 
 
 _executor: RuleExecutor | None = None
