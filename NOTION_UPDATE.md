@@ -2,6 +2,12 @@
 
 **Last updated:** 2026-10-11 (UTC+7)  
 
+### Step 7 — ESP32 SDK + Firmware Studio (DONE)
+
+- **SDK:** C++ NextIotClient (PubSubClient + ArduinoJson), examples, OTA handler stub.
+- **Generator:** ZIP with platformio.ini, main.cpp, embedded SDK; docker mount `./firmware:/firmware`.
+- **Web:** `/firmware-studio` code preview + download.
+
 ### Step 6 — Rule engine executor (DONE)
 
 - **Existing audit:** `rules` (legacy metric/threshold/alert), `automation_pipelines` + Studio xyflow UI (import/export via `/api/v1/rules/import` still pipelines).

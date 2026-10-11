@@ -150,7 +150,10 @@ async def upsert_alarm(
 
     executor = get_rule_executor()
     if executor is not None:
-        await executor.on_alarm_event(db, alarm=row, event_type="created")
+        try:
+            await executor.on_alarm_event(db, alarm=row, event_type="created")
+        except Exception:
+            logger.exception("Rule executor failed on alarm create alarm_id=%s", row.id)
     return row
 
 

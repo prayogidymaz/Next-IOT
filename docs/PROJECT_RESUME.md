@@ -95,6 +95,13 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Step 7 — ESP32 SDK + Firmware Studio (2026-10-11)
+
+- **SDK:** `firmware/next-iot-esp32-sdk` (PlatformIO library — MQTT telemetry, attributes, RPC, OTA).
+- **Firmware Studio API:** `/api/v1/firmware-studio` — sensor driver catalog, Jinja2 ZIP generator from Device Profile.
+- **OTA:** MQTT `ota/update` publish on firmware release rollout; migration **024** (`device_profile_id`, `release_notes` on releases).
+- **Web HQ:** `/firmware-studio` wizard (profile → config → preview → download ZIP).
+
 ### Step 6 — Rule engine executor (2026-10-11)
 
 - **Audit:** Legacy `rules` table (004) + `automation_pipelines` (009); Automation Studio canvas at `apps/web/app/(hq)/studio/automation/` (xyflow JSON, separate from DB rules).

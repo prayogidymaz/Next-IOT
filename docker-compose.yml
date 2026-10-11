@@ -79,6 +79,7 @@ services:
         condition: service_healthy
     volumes:
       - ./apps/api:/app
+      - ./firmware:/firmware:ro
       - ./packages/shared:/packages/shared:ro
       - ./infra/emqx:/infra/emqx:ro
       - ./docker-compose.yml:/docker-compose.yml:ro

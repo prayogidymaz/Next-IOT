@@ -86,11 +86,18 @@ export const HQ_NAV_SECTIONS: HqNavSection[] = [
     label: "Studio",
     items: [
       {
-        href: "/studio/firmware",
+        href: "/firmware-studio",
         label: "Firmware Studio",
         icon: Cpu,
         accentClass: "text-accent-violet",
         iconBgClass: "bg-accent-violet-soft",
+      },
+      {
+        href: "/firmware-releases",
+        label: "Firmware Releases",
+        icon: Cpu,
+        accentClass: "text-accent-emerald",
+        iconBgClass: "bg-accent-emerald-soft",
       },
       {
         href: "/studio/missions",
@@ -146,6 +153,8 @@ export const HQ_PAGE_TITLES: Record<string, string> = {
   "/alarms": "Alarms",
   "/notification-settings": "Notification Settings",
   "/claim-tokens": "Claim Tokens",
+  "/firmware-studio": "Firmware Studio",
+  "/firmware-releases": "Firmware Releases",
   "/studio/firmware": "Firmware Studio",
   "/studio/missions": "Mission Studio",
   "/studio/automation": "Automation Studio",

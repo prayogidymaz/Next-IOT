@@ -1,0 +1,8 @@
+{
+  "name": "next-iot-esp32-sdk",
+  "version": "0.1.0",
+  "description": "Next-IOT ESP32 client — MQTT telemetry, attributes, RPC, OTA",
+  "keywords": "mqtt, iot, esp32, next-iot",
+  "frameworks": "arduino",
+  "platforms": "espressif32"
+}

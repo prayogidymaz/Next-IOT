@@ -25,6 +25,7 @@ from app.device_claim_tokens.router import router as device_claim_tokens_router
 from app.device_profiles.router import router as device_profiles_router
 from app.devices.router import router as devices_router
 from app.devices.worker import offline_checker_loop
+from app.firmware_studio.router import router as firmware_studio_router
 from app.hardware.router import router as hardware_router
 from app.mavlink.router import router as mavlink_router
 from app.mission.router import router as mission_router
@@ -204,6 +205,7 @@ app.include_router(telemetry_ws_router)
 app.include_router(mavlink_router)
 app.include_router(automation_router)
 app.include_router(ota_router)
+app.include_router(firmware_studio_router)
 app.include_router(tenants_router)
 app.include_router(users_router)
 app.include_router(audit_router)

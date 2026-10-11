@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import CurrentUser, RequireTenantAdmin, require_roles
@@ -53,9 +53,16 @@ async def upload_firmware_release(
 async def publish_firmware_release(
     release_id: uuid.UUID,
     user: RequireTenantAdmin,
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
-    return await ota_service.publish_release(db, user, release_id)
+    result = await ota_service.publish_release(db, user, release_id)
+    publisher = getattr(request.app.state, "mqtt_publisher", None)
+    if publisher is not None:
+        from app.ota.mqtt_notify import publish_ota_rollouts_for_release
+
+        await publish_ota_rollouts_for_release(db, publisher, release_id)
+    return result
 
 
 @router.get("/releases/{release_id}/rollouts", response_model=list[OtaRolloutResponse])

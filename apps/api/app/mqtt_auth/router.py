@@ -21,6 +21,7 @@ from app.mqtt_auth.schemas import (
     MqttTelemetryIngestRequest,
 )
 from app.mqtt_auth.service import handle_mqtt_acl, handle_mqtt_auth
+from app.rules.telemetry_event import TelemetryRuleEvent
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import ValidationError
 
@@ -61,7 +62,7 @@ async def mqtt_ingest_telemetry(
     db: DbSession,
     redis: RedisDep,
     _: MqttWebhookAuth,
-) -> dict[str, int | list[str]]:
+) -> dict[str, int | list[str] | TelemetryRuleEvent | None]:
     raw_body = await request.body()
     if settings.mqtt_debug_raw_body:
         logger.warning(

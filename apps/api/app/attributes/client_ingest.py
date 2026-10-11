@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.attributes.schemas import validate_attribute_key
+from app.attributes.service import _attribute_value
 from app.models.device import Device
 from app.models.device_attribute import DeviceAttribute, DeviceAttributeScope
 from app.rules.attribute_event import AttributeChangeEvent
@@ -43,7 +44,7 @@ async def persist_client_attributes_from_mqtt(
                 DeviceAttribute.key == key,
             )
         )
-        old_value: JsonValue = existing.value_json if existing is not None else None
+        old_value: JsonValue = _attribute_value(existing) if existing is not None else None
         if existing is None:
             db.add(
                 DeviceAttribute(

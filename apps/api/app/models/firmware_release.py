@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import DateTime, ForeignKey, String, func
+from sqlalchemy import DateTime, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -26,6 +26,10 @@ class FirmwareRelease(Base):
     target_device_category: Mapped[str] = mapped_column(String(64), nullable=False)
     file_url: Mapped[str] = mapped_column(String(512), nullable=False)
     checksum_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    device_profile_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("device_profiles.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    release_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(
         String(32), nullable=False, default=FirmwareReleaseStatus.DRAFT
     )

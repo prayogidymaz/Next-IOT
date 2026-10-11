@@ -8,6 +8,7 @@ from app.mqtt_auth.payload_parse import telemetry_payload_object
 from app.mqtt_auth.schemas import MqttTelemetryIngestRequest
 from app.mqtt_subscriber.schemas import TelemetryMqttTopic
 from app.mqtt_subscriber.telemetry_ingest import persist_telemetry_from_mqtt
+from app.rules.telemetry_event import TelemetryRuleEvent
 from app.types.redis_client import RedisClient
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,7 +18,7 @@ async def ingest_mqtt_telemetry(
     db: AsyncSession,
     redis: RedisClient,
     body: MqttTelemetryIngestRequest,
-) -> dict[str, int | list[str]]:
+) -> dict[str, int | list[str] | TelemetryRuleEvent | None]:
     parsed_topic = parse_device_topic(body.topic)
     if parsed_topic is None or parsed_topic.suffix != "telemetry":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid telemetry topic")
