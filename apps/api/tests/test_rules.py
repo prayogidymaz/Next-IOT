@@ -62,6 +62,14 @@ async def _setup_with_rule(client: AsyncClient, slug: str, email: str, threshold
         )
         await session.commit()
 
+    from app.rules.executor import get_rule_executor
+
+    executor = get_rule_executor()
+    if executor is not None:
+        async with async_session() as reload_session:
+            await executor.reload(reload_session)
+            await reload_session.commit()
+
     return {
         "device_id": str(device_id),
         "device_headers": device_headers,
@@ -116,8 +124,18 @@ async def test_inactive_rule_not_evaluated(client: AsyncClient, unique_slug: str
     async with async_session() as session:
         from sqlalchemy import update
 
-        await session.execute(update(Rule).where(Rule.is_active.is_(True)).values(is_active=False))
+        await session.execute(
+            update(Rule).where(Rule.is_active.is_(True)).values(is_active=False, enabled=False)
+        )
         await session.commit()
+
+    from app.rules.executor import get_rule_executor
+
+    executor = get_rule_executor()
+    if executor is not None:
+        async with async_session() as reload_session:
+            await executor.reload(reload_session)
+            await reload_session.commit()
 
     resp = await client.post(
         "/api/v1/telemetry",

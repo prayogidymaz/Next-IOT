@@ -68,7 +68,7 @@ class NotificationLogItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    alarm_id: uuid.UUID
+    alarm_id: uuid.UUID | None
     channel_id: uuid.UUID | None
     channel_type: str
     status: str

@@ -104,6 +104,17 @@ RequireOperator = Annotated[
     CurrentUser,
     Depends(require_roles(UserRole.OPERATOR, UserRole.TENANT_ADMIN, UserRole.SUPER_ADMIN)),
 ]
+RequireViewer = Annotated[
+    CurrentUser,
+    Depends(
+        require_roles(
+            UserRole.VIEWER,
+            UserRole.OPERATOR,
+            UserRole.TENANT_ADMIN,
+            UserRole.SUPER_ADMIN,
+        )
+    ),
+]
 RequireSuperAdmin = Annotated[CurrentUser, Depends(require_roles(UserRole.SUPER_ADMIN))]
 
 
@@ -139,6 +150,7 @@ __all__ = [
     "RequireAutomationManage",
     "RequireAutomationRun",
     "RequireOperator",
+    "RequireViewer",
     "RequireSuperAdmin",
     "RequireTenantAdmin",
     "get_current_user",

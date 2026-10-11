@@ -95,6 +95,13 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Step 6 — Rule engine executor (2026-10-11)
+
+- **Audit:** Legacy `rules` table (004) + `automation_pipelines` (009); Automation Studio canvas at `apps/web/app/(hq)/studio/automation/` (xyflow JSON, separate from DB rules).
+- **Executor:** `RuleExecutor` loads enabled rules at startup; triggers telemetry / attribute change / alarm / schedule (cron) / manual; actions: create_alarm, send_command (fire-and-forget RPC), set_attribute, send_notification, log_event, webhook; Jinja2 StrictUndefined; `rule_execution_log`.
+- **API:** Extended `/api/v1/rules` (PUT, execute, test, enable/disable, execution-log); CRUD tenant_admin; canvas adapter `app/rules/canvas_adapter.py`.
+- **Migration:** `023_rules_executor` (+ nullable `notification_log.alarm_id` for direct sends).
+
 ### Step 5 — Alarms + notification gateway (2026-10-11)
 
 - **Alarms:** PostgreSQL lifecycle (`alarms`, `alarm_history`), dedup fingerprint, state machine (ack before resolve), REST `/api/v1/alarms`, validator hook `validation_failed`, maintenance auto-clear.

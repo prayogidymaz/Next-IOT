@@ -146,6 +146,11 @@ async def upsert_alarm(
     await _append_history(db, row.id, AlarmHistoryAction.CREATED)
     if notify:
         _schedule_notifications(row.id)
+    from app.rules.executor import get_rule_executor
+
+    executor = get_rule_executor()
+    if executor is not None:
+        await executor.on_alarm_event(db, alarm=row, event_type="created")
     return row
 
 

@@ -74,8 +74,8 @@ class NotificationLog(Base):
     __tablename__ = "notification_log"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    alarm_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("alarms.id", ondelete="CASCADE"), nullable=False, index=True
+    alarm_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("alarms.id", ondelete="CASCADE"), nullable=True, index=True
     )
     channel_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("notification_channels.id", ondelete="SET NULL"), nullable=True

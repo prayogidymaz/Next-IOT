@@ -13,9 +13,9 @@ from app.config import settings
 from app.devices.dependencies import CurrentDevice
 from app.devices.service import _get_device_for_user
 from app.mission.sar_emergency_service import sar_emergency_service
-from app.models.device import DeviceStatus
+from app.models.device import Device, DeviceStatus
 from app.models.telemetry_reading import TelemetryReading
-from app.rules.evaluator import evaluate_rules_for_telemetry
+from app.rules.executor import get_rule_executor
 from app.telemetry import metrics as telemetry_metrics
 from app.telemetry.anomaly_detector import detect_and_persist_anomalies
 from app.telemetry.cache import cache_latest_telemetry, get_latest_telemetry
@@ -107,14 +107,17 @@ async def ingest_telemetry(
     )
 
     legacy_redis = as_legacy_redis_stub(redis)
-    rules_triggered = await evaluate_rules_for_telemetry(
-        db,
-        legacy_redis,
-        device_id=device.device_id,
-        tenant_id=device.tenant_id,
-        metrics=numeric_metrics(metrics),
-        reading_id=reading.id,
-    )
+    rules_triggered = 0
+    device_row = await db.scalar(select(Device).where(Device.id == device.device_id))
+    executor = get_rule_executor()
+    if executor is not None and device_row is not None:
+        rules_triggered = await executor.on_telemetry_metrics(
+            db,
+            device=device_row,
+            metrics=numeric_metrics(metrics),
+            recorded_at=recorded_at,
+            reading_id=reading.id,
+        )
 
     anomaly_rows = await detect_and_persist_anomalies(
         db,

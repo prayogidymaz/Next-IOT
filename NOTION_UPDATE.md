@@ -2,6 +2,12 @@
 
 **Last updated:** 2026-10-11 (UTC+7)  
 
+### Step 6 — Rule engine executor (DONE)
+
+- **Existing audit:** `rules` (legacy metric/threshold/alert), `automation_pipelines` + Studio xyflow UI (import/export via `/api/v1/rules/import` still pipelines).
+- **Executor:** telemetry/attribute/alarm/schedule/manual triggers; action runner + execution log; wired from telemetry ingest, attribute PUT, alarm create.
+- **Migration 023:** extended `rules`, `rule_execution_log`.
+
 ### Step 5 — Alarms + notification gateway (DONE)
 
 - **Alarms:** DB lifecycle, dedup, ack/resolve/clear, `/api/v1/alarms`, validator integration, 5-min maintenance worker.

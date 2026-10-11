@@ -45,6 +45,8 @@ from app.config import settings
 from app.database import engine
 from app.deps import get_redis
 from app.main import app
+from app.mqtt_publisher.noop import NoopMqttPublisher
+from app.rules.executor import init_rule_executor
 from app.types.redis_client import RedisClient, close_redis, redis_from_url
 from fastapi import Request
 from httpx import ASGITransport, AsyncClient
@@ -82,7 +84,7 @@ def truncate_auth_tables() -> None:
     conn.autocommit = True
     truncate_sql = (
         "TRUNCATE audit_logs, ota_device_rollouts, firmware_releases, automation_pipelines, "
-        "notification_log, notification_rules, notification_channels, alarm_history, alarms, "
+        "rule_execution_log, notification_log, notification_rules, notification_channels, alarm_history, alarms, "
         "sar_incidents, telemetry_anomalies, geofence_zones, device_rpc_requests, device_attributes, "
         "device_commands, rules, "
         "telemetry_readings, device_metadata, device_credentials, device_claim_tokens, devices, device_profiles, "
@@ -140,10 +142,12 @@ async def test_redis() -> AsyncIterator[RedisClient]:
 async def client(test_redis: RedisClient) -> AsyncIterator[AsyncClient]:
     truncate_auth_tables()
 
-    from app.mqtt_publisher.noop import NoopMqttPublisher
-
+    publisher = NoopMqttPublisher()
     app.state.redis = test_redis
-    app.state.mqtt_publisher = NoopMqttPublisher()
+    app.state.mqtt_publisher = publisher
+    rule_executor = init_rule_executor(test_redis, publisher)
+    await rule_executor.startup()
+    app.state.rule_executor = rule_executor
     app.state.startup_ready = True
     app.dependency_overrides[get_redis] = _override_get_redis(test_redis)
 

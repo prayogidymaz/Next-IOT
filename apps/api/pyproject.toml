@@ -61,6 +61,10 @@ disallow_untyped_defs = false
 module = "aiosmtplib"
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = "croniter"
+ignore_missing_imports = true
+
 
 # LEGACY RATCHET — list only shrinks. See docs/TECH_DEBT.md
 [[tool.mypy.overrides]]

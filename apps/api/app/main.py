@@ -41,7 +41,9 @@ from app.notifications.router import router as notifications_router
 from app.notifications.worker import notification_dispatcher_loop
 from app.ota.router import router as ota_router
 from app.rules.alert_router import router as alerts_router
+from app.rules.executor import init_rule_executor
 from app.rules.router import router as rules_router
+from app.rules.scheduler import rule_schedule_loop
 from app.seed import ensure_default_admin, run_seed
 from app.seed_device_profiles import run_device_profile_seed
 from app.seed_hardware import run_hardware_seed
@@ -119,6 +121,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             asyncio.create_task(pipeline_listener_loop(redis, stop_event)),
             asyncio.create_task(telemetry_retention_loop(stop_event)),
             asyncio.create_task(alarm_maintenance_loop(stop_event)),
+            asyncio.create_task(rule_schedule_loop(stop_event)),
         ]
     mqtt_publisher: MqttPublisherService | NoopMqttPublisher
     if settings.mqtt_publisher_enabled and settings.run_background_workers:
@@ -127,6 +130,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     else:
         mqtt_publisher = NoopMqttPublisher()
     app.state.mqtt_publisher = mqtt_publisher
+    rule_executor = init_rule_executor(redis, mqtt_publisher)
+    await rule_executor.startup()
+    app.state.rule_executor = rule_executor
     app.state.offline_worker_stop = stop_event
     app.state.startup_ready = True
     logger.info(
