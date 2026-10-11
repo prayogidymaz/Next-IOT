@@ -38,6 +38,24 @@ async def persist_telemetry_from_mqtt(
 
     spec = await load_thing_model_for_device(db, device)
     split = split_telemetry_for_profile(spec, metrics)
+    if split.rejected:
+        from app.alarms.validator_hooks import handle_rejected_metrics_alarms
+
+        await handle_rejected_metrics_alarms(
+            db,
+            tenant_id=device.tenant_id,
+            device_id=device.id,
+            rejected=split.rejected,
+        )
+    if split.metrics_to_persist:
+        from app.alarms.validator_hooks import clear_validation_alarms_for_metrics
+
+        await clear_validation_alarms_for_metrics(
+            db,
+            tenant_id=device.tenant_id,
+            device_id=device.id,
+            metric_keys=set(split.metrics_to_persist.keys()),
+        )
     if not split.metrics_to_persist:
         return {"accepted_count": 0, "rejected": [entry.key for entry in split.rejected]}
 

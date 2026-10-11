@@ -95,6 +95,13 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Step 5 — Alarms + notification gateway (2026-10-11)
+
+- **Alarms:** PostgreSQL lifecycle (`alarms`, `alarm_history`), dedup fingerprint, state machine (ack before resolve), REST `/api/v1/alarms`, validator hook `validation_failed`, maintenance auto-clear.
+- **Notifications:** Channels (WA/Telegram/FCM/email/SMS providers), rules + throttle (Redis), `notification_log`, dispatcher on alarm create/escalate.
+- **Web HQ:** `/alarms`, `/notification-settings`, sidebar entries.
+- **Migrations:** `021_alarms`, `022_notification_channels_rules_log`.
+
 ### Step 4 — Device attributes + RPC (2026-10-10)
 
 - **Attributes:** `device_attributes` table with scopes `server` | `shared` | `client`; REST under `/api/v1/devices/{id}/attributes`; client scope via MQTT `.../attributes` (subscriber shared group `nextiot-attributes`); shared updates broadcast on `.../attributes/shared/update` via internal **MQTT publisher**.

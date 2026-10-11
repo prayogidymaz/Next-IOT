@@ -11,6 +11,8 @@ import {
   Settings,
   Tag,
   Workflow,
+  Bell,
+  Mail,
 } from "lucide-react";
 
 export type HqNavItem = {
@@ -56,6 +58,20 @@ export const HQ_NAV_SECTIONS: HqNavSection[] = [
         icon: Radio,
         accentClass: "text-accent-cobalt",
         iconBgClass: "bg-accent-cobalt-soft",
+      },
+      {
+        href: "/alarms",
+        label: "Alarms",
+        icon: Bell,
+        accentClass: "text-red-600",
+        iconBgClass: "bg-red-50",
+      },
+      {
+        href: "/notification-settings",
+        label: "Notifications",
+        icon: Mail,
+        accentClass: "text-accent-indigo",
+        iconBgClass: "bg-accent-indigo-soft",
       },
       {
         href: "/claim-tokens",
@@ -127,6 +143,8 @@ export const HQ_PAGE_TITLES: Record<string, string> = {
   "/control-center": "Control Center",
   "/device-profiles": "Device Profiles",
   "/devices": "Devices",
+  "/alarms": "Alarms",
+  "/notification-settings": "Notification Settings",
   "/claim-tokens": "Claim Tokens",
   "/studio/firmware": "Firmware Studio",
   "/studio/missions": "Mission Studio",

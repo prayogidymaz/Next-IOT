@@ -1,6 +1,12 @@
 # Next-IOT — Notion Update Log (Master Changelog)
 
-**Last updated:** 2026-10-10 (UTC+7)  
+**Last updated:** 2026-10-11 (UTC+7)  
+
+### Step 5 — Alarms + notification gateway (DONE)
+
+- **Alarms:** DB lifecycle, dedup, ack/resolve/clear, `/api/v1/alarms`, validator integration, 5-min maintenance worker.
+- **Notifications:** Multi-channel gateway (Fonnte/Telegram/email mock-friendly, FCM/SMS stubs), rules, throttle, log API.
+- **Web:** Alarms page + notification settings shell.
 
 ### Step 4 — Attributes + RPC (DONE)
 

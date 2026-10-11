@@ -11,6 +11,7 @@ os.environ.setdefault("EMQX_API_KEY", "nextiot-api-key")
 os.environ.setdefault("EMQX_API_SECRET", "nextiot-api-secret-change-in-prod")
 os.environ.setdefault("TESTING", "1")
 os.environ.setdefault("MQTT_SUBSCRIBER_ENABLED", "false")
+os.environ.setdefault("ALARM_NOTIFICATIONS_ENABLED", "false")
 os.environ.setdefault("MQTT_SUBSCRIBER_INTERNAL_PASSWORD", "next-iot-subscriber-dev-password")
 
 
@@ -81,6 +82,7 @@ def truncate_auth_tables() -> None:
     conn.autocommit = True
     truncate_sql = (
         "TRUNCATE audit_logs, ota_device_rollouts, firmware_releases, automation_pipelines, "
+        "notification_log, notification_rules, notification_channels, alarm_history, alarms, "
         "sar_incidents, telemetry_anomalies, geofence_zones, device_rpc_requests, device_attributes, "
         "device_commands, rules, "
         "telemetry_readings, device_metadata, device_credentials, device_claim_tokens, devices, device_profiles, "
@@ -106,6 +108,11 @@ def _prepare_test_database():
     _ensure_test_database()
     _run_test_migrations()
     yield
+
+
+@pytest.fixture(autouse=True)
+def _disable_alarm_notification_tasks(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "alarm_notifications_enabled", False)
 
 
 @pytest.fixture(autouse=True)

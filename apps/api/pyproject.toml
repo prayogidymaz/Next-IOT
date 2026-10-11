@@ -57,6 +57,10 @@ warn_required_dynamic_aliases = true
 module = "tests.*"
 disallow_untyped_defs = false
 
+[[tool.mypy.overrides]]
+module = "aiosmtplib"
+ignore_missing_imports = true
+
 
 # LEGACY RATCHET — list only shrinks. See docs/TECH_DEBT.md
 [[tool.mypy.overrides]]

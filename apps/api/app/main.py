@@ -11,6 +11,8 @@ from fastapi.responses import JSONResponse, Response
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from sqlalchemy import select, text
 
+from app.alarms.maintenance import alarm_maintenance_loop
+from app.alarms.router import router as alarms_router
 from app.api.v1.router import router as v1_router
 from app.audit.middleware import AuditLoggingMiddleware
 from app.audit.router import router as audit_router
@@ -33,6 +35,8 @@ from app.mqtt_auth.router import router as mqtt_auth_router
 from app.mqtt_publisher import MqttPublisherService
 from app.mqtt_publisher.noop import NoopMqttPublisher
 from app.mqtt_subscriber import MqttSubscriberService
+from app.notifications.gateway_router import channels_router, log_router
+from app.notifications.gateway_router import rules_router as notification_rules_router
 from app.notifications.router import router as notifications_router
 from app.notifications.worker import notification_dispatcher_loop
 from app.ota.router import router as ota_router
@@ -114,6 +118,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             asyncio.create_task(notification_dispatcher_loop(redis, stop_event)),
             asyncio.create_task(pipeline_listener_loop(redis, stop_event)),
             asyncio.create_task(telemetry_retention_loop(stop_event)),
+            asyncio.create_task(alarm_maintenance_loop(stop_event)),
         ]
     mqtt_publisher: MqttPublisherService | NoopMqttPublisher
     if settings.mqtt_publisher_enabled and settings.run_background_workers:
@@ -177,7 +182,11 @@ app.include_router(device_profiles_router)
 app.include_router(telemetry_router)
 app.include_router(rules_router)
 app.include_router(alerts_router)
+app.include_router(alarms_router)
 app.include_router(notifications_router)
+app.include_router(channels_router)
+app.include_router(notification_rules_router)
+app.include_router(log_router)
 app.include_router(hardware_router)
 app.include_router(tiles_router)
 app.include_router(mission_router)
