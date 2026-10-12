@@ -3,19 +3,18 @@ import { authUserSchema, registerResponseSchema, tokenResponseSchema } from "@/l
 const DEFAULT_DEV_API = "http://localhost:8000";
 
 export function getApiBaseUrl(): string {
-  const fromEnv = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
-  if (fromEnv) return fromEnv;
-
   if (typeof window !== "undefined") {
     const { hostname, port, origin } = window.location;
-    // Next.js dev server — API runs on FastAPI :8000, not :3000
+    // Use same-origin /api rewrite (see next.config) so admin :3001 does not call itself or hang on :8000 reload.
     if (hostname === "localhost" || hostname === "127.0.0.1") {
-      if (port === "3000" || port === "") {
-        return DEFAULT_DEV_API;
+      if (port === "3000" || port === "3001" || port === "3002" || port === "") {
+        return origin;
       }
     }
-    return origin;
   }
+
+  const fromEnv = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+  if (fromEnv) return fromEnv;
 
   return DEFAULT_DEV_API;
 }
@@ -52,6 +51,7 @@ export async function login(email: string, password: string): Promise<TokenRespo
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ email, password }),
+    signal: AbortSignal.timeout(30_000),
   });
   if (!res.ok) throw new Error(await parseError(res));
   const json: unknown = await res.json();

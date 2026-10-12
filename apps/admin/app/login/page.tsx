@@ -29,6 +29,7 @@ function LoginForm() {
       const tokens = await login(email.trim(), password);
       if (roleFromAccessToken(tokens.access_token) !== "super_admin") {
         setError("This console is restricted to super_admin operators.");
+        setLoading(false);
         return;
       }
       setSessionTokens(tokens.access_token, tokens.refresh_token);
