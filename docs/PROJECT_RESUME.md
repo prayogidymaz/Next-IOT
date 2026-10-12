@@ -95,6 +95,13 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Step 9C — Placeholder features complete (2026-10-12)
+
+- **Migration 032:** email templates, support tickets, partners/referrals/commissions, backups, impersonation sessions.
+- **API:** super-admin routes for templates, tickets, partners, backups, impersonation audit; tenant `/api/v1/support/tickets`.
+- **Admin UI:** functional list/editor pages for email templates, support, partners, backup, impersonation audit.
+- **Tests:** 51 passing under `tests/super_admin/`.
+
 ### Step 9B — Super admin enterprise console (2026-10-12)
 
 - **`apps/admin`:** Six-group sidebar (~22 routes), ⌘K command palette (G T / G B / N A), dense tables, audit/analytics/MQTT/logs/timeline/announcements/promo/settings/feature flags/finance pages; dashboard 6 KPIs + watch list; tenant impersonate (1h JWT); settings 404 fixed.

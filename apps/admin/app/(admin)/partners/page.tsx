@@ -1,10 +1,10 @@
 import { AdminShell } from "@/components/AdminShell";
-import { AdminPlaceholder } from "@/components/console/AdminPlaceholder";
+import { PartnersListPanel } from "@/components/console/Step9CAdminPanels";
 
 export default function Page() {
   return (
     <AdminShell title="Partners">
-      <AdminPlaceholder title="Partners" description="Reseller and integration partner registry — placeholder until partner billing ships." />
+      <PartnersListPanel />
     </AdminShell>
   );
 }

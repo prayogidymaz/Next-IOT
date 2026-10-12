@@ -43,6 +43,7 @@ from app.super_admin.schemas import (
     TenantDetailResponse,
     WatchListItem,
 )
+from app.super_admin.step9c_router import router as step9c_router
 
 router = APIRouter(prefix="/api/v1/super-admin", tags=["super-admin"])
 
@@ -110,8 +111,7 @@ async def change_plan(
 
 @router.post("/tenants/{tenant_id}/impersonate", response_model=ImpersonateResponse)
 async def impersonate(tenant_id: uuid.UUID, user: RequireSuperAdmin, db: DbSession) -> ImpersonateResponse:
-    token = await service.impersonate_tenant(db, user, tenant_id)
-    return ImpersonateResponse(access_token=token, tenant_id=tenant_id)
+    return await service.impersonate_tenant(db, user, tenant_id)
 
 
 @router.get("/invoices", response_model=list[InvoiceResponse])
@@ -301,3 +301,6 @@ async def finance_export(
             headers={"X-Format-Note": "xlsx requires openpyxl; returned csv"},
         )
     return PlainTextResponse(content=csv_body, media_type="text/csv")
+
+
+router.include_router(step9c_router)

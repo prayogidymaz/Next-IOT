@@ -83,6 +83,7 @@ class SystemHealthResponse(BaseModel):
 class ImpersonateResponse(BaseModel):
     access_token: str
     tenant_id: uuid.UUID
+    impersonation_session_id: uuid.UUID
 
 
 class AuditLogEntry(BaseModel):

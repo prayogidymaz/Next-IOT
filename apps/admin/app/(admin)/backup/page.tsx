@@ -1,10 +1,10 @@
 import { AdminShell } from "@/components/AdminShell";
-import { AdminPlaceholder } from "@/components/console/AdminPlaceholder";
+import { BackupListPanel } from "@/components/console/Step9CAdminPanels";
 
 export default function Page() {
   return (
     <AdminShell title="Backup / restore">
-      <AdminPlaceholder title="Backup & restore" description="Trigger Postgres snapshots and restore drills from infrastructure runbooks." />
+      <BackupListPanel />
     </AdminShell>
   );
 }

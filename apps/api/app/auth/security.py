@@ -45,13 +45,20 @@ def create_access_token(*, user_id: uuid.UUID, tenant_id: uuid.UUID, role: str) 
 IMPERSONATION_TOKEN_EXPIRE_MINUTES = 60
 
 
-def create_impersonation_access_token(*, user_id: uuid.UUID, tenant_id: uuid.UUID, role: str) -> str:
+def create_impersonation_access_token(
+    *,
+    user_id: uuid.UUID,
+    tenant_id: uuid.UUID,
+    role: str,
+    impersonation_session_id: uuid.UUID,
+) -> str:
     payload: dict[str, JsonValue] = {
         "sub": str(user_id),
         "tenant_id": str(tenant_id),
         "role": role,
         "type": TOKEN_TYPE_ACCESS,
         "impersonation": True,
+        "imp_session": str(impersonation_session_id),
         "iat": int(datetime.now(UTC).timestamp()),
         "exp": int(_build_expiry(minutes=IMPERSONATION_TOKEN_EXPIRE_MINUTES).timestamp()),
     }

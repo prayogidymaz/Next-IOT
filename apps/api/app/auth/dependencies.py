@@ -66,6 +66,12 @@ async def get_current_user(
         security_tier=current.security_tier,
     )
 
+    imp_raw = as_json_str(payload.get("imp_session"))
+    if imp_raw is not None and payload.get("impersonation") is True:
+        from app.super_admin.step9c_service import log_impersonation_request
+
+        await log_impersonation_request(db, uuid.UUID(imp_raw), request.method, request.url.path)
+
     request.state.current_user = current
     return current
 

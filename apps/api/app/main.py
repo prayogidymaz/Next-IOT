@@ -52,6 +52,7 @@ from app.seed_device_profiles import run_device_profile_seed
 from app.seed_hardware import run_hardware_seed
 from app.seed_telemetry import run_telemetry_seed
 from app.super_admin.router import router as super_admin_router
+from app.support.router import router as support_router
 from app.system.router import router as system_router
 from app.telemetry.retention import telemetry_retention_loop
 from app.telemetry.router import router as telemetry_router
@@ -212,6 +213,7 @@ app.include_router(ota_router)
 app.include_router(firmware_studio_router)
 app.include_router(billing_router)
 app.include_router(super_admin_router)
+app.include_router(support_router)
 app.include_router(tenants_router)
 app.include_router(users_router)
 app.include_router(audit_router)

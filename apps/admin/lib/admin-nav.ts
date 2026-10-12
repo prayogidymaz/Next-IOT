@@ -21,6 +21,7 @@ import {
   Ticket,
   Timer,
   TrendingDown,
+  UserSearch,
   Wallet,
 } from "lucide-react";
 
@@ -67,6 +68,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { href: "/mqtt-monitor", label: "MQTT monitor", icon: Radio },
       { href: "/rate-limits", label: "Rate limit monitor", icon: Shield },
       { href: "/timeline", label: "Activity timeline", icon: Timer },
+      { href: "/impersonation-audit", label: "Impersonation audit", icon: UserSearch },
     ],
   },
   {

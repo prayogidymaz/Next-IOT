@@ -22,6 +22,7 @@ from app.models.tenant_subscription import TenantSubscription
 from app.models.user import User
 from app.super_admin.audit import record_super_admin_action
 from app.super_admin.schemas import (
+    ImpersonateResponse,
     PlatformStatsResponse,
     RevenueGrowthPoint,
     RevenueResponse,
@@ -261,22 +262,35 @@ async def change_plan_admin(
     await db.commit()
 
 
-async def impersonate_tenant(db: AsyncSession, user: CurrentUser, tenant_id: uuid.UUID) -> str:
+async def impersonate_tenant(db: AsyncSession, user: CurrentUser, tenant_id: uuid.UUID) -> ImpersonateResponse:
     tenant = await db.scalar(select(Tenant).where(Tenant.id == tenant_id))
     if tenant is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
     actor = await db.scalar(select(User).where(User.id == user.user_id))
     if actor is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    from app.super_admin.step9c_service import start_impersonation_session
+
+    session_id = await start_impersonation_session(db, user.user_id, tenant_id)
     await record_super_admin_action(
         db,
         actor_user_id=user.user_id,
         action="impersonate_tenant",
         target_tenant_id=tenant_id,
-        detail={"actor_email": actor.email},
+        detail={"actor_email": actor.email, "impersonation_session_id": str(session_id)},
     )
     await db.commit()
-    return create_impersonation_access_token(user_id=actor.id, tenant_id=tenant_id, role=actor.role)
+    token = create_impersonation_access_token(
+        user_id=actor.id,
+        tenant_id=tenant_id,
+        role=actor.role,
+        impersonation_session_id=session_id,
+    )
+    return ImpersonateResponse(
+        access_token=token,
+        tenant_id=tenant_id,
+        impersonation_session_id=session_id,
+    )
 
 
 async def system_health(db: AsyncSession, redis: RedisClient) -> SystemHealthResponse:

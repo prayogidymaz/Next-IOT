@@ -3,6 +3,7 @@ import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/constants";
 type JwtPayload = {
   role?: string;
   exp?: number;
+  sub?: string;
 };
 
 export function readAccessTokenFromDocument(): string | null {
@@ -28,4 +29,22 @@ export function roleFromAccessToken(token: string | undefined | null): string | 
 
 export function readRoleFromDocumentCookie(): string | null {
   return roleFromAccessToken(readAccessTokenFromDocument());
+}
+
+export function userIdFromAccessToken(token: string | undefined | null): string | null {
+  if (!token) return null;
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  try {
+    const encoded = parts[1];
+    if (!encoded) return null;
+    const payload = JSON.parse(atob(encoded.replace(/-/g, "+").replace(/_/g, "/"))) as JwtPayload;
+    return typeof payload.sub === "string" ? payload.sub : null;
+  } catch {
+    return null;
+  }
+}
+
+export function readUserIdFromDocumentCookie(): string | null {
+  return userIdFromAccessToken(readAccessTokenFromDocument());
 }

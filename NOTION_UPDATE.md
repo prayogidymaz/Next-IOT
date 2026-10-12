@@ -2,6 +2,13 @@
 
 **Last updated:** 2026-10-12 (UTC+7)  
 
+### Step 9C — Super admin placeholder features (DONE)
+
+- **Migration 032:** `platform_email_templates`, support tickets + messages, partners/referrals/commissions, `platform_backups`, impersonation sessions/actions; `tenants.referred_by_partner_id`; 10 seeded email templates (ID).
+- **API:** `/api/v1/super-admin/email-templates`, `support-tickets`, `partners`, `backups`, `impersonation/sessions`; tenant `POST/GET /api/v1/support/tickets`.
+- **Admin UI:** Email template editor, support ticket list + detail, partners list + detail tabs, backup trigger list, impersonation audit table.
+- **Tests:** `tests/super_admin/` (email templates, tickets, partners, backups, impersonation) — 50+ passing.
+
 ### Step 9B — Super admin enterprise console (DONE)
 
 - **`apps/admin`:** Expanded sidebar (6 groups), ⌘K palette, audit/analytics/health/MQTT/logs/timeline/announcements/promo/settings/feature flags/finance; dashboard watch list; tenant “view as”; platform settings route.
