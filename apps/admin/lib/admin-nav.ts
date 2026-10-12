@@ -18,6 +18,7 @@ import {
   ScrollText,
   Settings,
   Shield,
+  Sprout,
   Ticket,
   Timer,
   TrendingDown,
@@ -86,6 +87,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     items: [
       { href: "/promo-codes", label: "Promo codes", icon: BadgePercent },
       { href: "/partners", label: "Partners", icon: Handshake },
+      { href: "/agriculture", label: "Agriculture", icon: Sprout },
       { href: "/finance", label: "Finance export", icon: Wallet },
     ],
   },

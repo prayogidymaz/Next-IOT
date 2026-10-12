@@ -1,6 +1,6 @@
 # Next-IOT Platform
 
-Multi-tenant IoT platform — monorepo bootstrap.
+Multi-tenant IoT platform — monorepo bootstrap. Includes **Smart Agriculture** vertical (LoRa farms, `/api/agriculture`, tenant dashboard `/agriculture`).
 
 ## Structure
 

@@ -11,6 +11,8 @@ from fastapi.responses import JSONResponse, Response
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from sqlalchemy import select, text
 
+from app.agriculture.router import router as agriculture_router
+from app.agriculture.worker import agriculture_jobs_loop
 from app.alarms.maintenance import alarm_maintenance_loop
 from app.alarms.router import router as alarms_router
 from app.api.v1.router import router as v1_router
@@ -127,6 +129,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             asyncio.create_task(telemetry_retention_loop(stop_event)),
             asyncio.create_task(alarm_maintenance_loop(stop_event)),
             asyncio.create_task(rule_schedule_loop(stop_event)),
+            asyncio.create_task(agriculture_jobs_loop(redis, stop_event)),
         ]
     mqtt_publisher: MqttPublisherService | NoopMqttPublisher
     if settings.mqtt_publisher_enabled and settings.run_background_workers:
@@ -214,6 +217,7 @@ app.include_router(firmware_studio_router)
 app.include_router(billing_router)
 app.include_router(super_admin_router)
 app.include_router(support_router)
+app.include_router(agriculture_router)
 app.include_router(tenants_router)
 app.include_router(users_router)
 app.include_router(audit_router)

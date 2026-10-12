@@ -43,6 +43,7 @@ from app.super_admin.schemas import (
     TenantDetailResponse,
     WatchListItem,
 )
+from app.super_admin.agriculture_router import router as agriculture_admin_router
 from app.super_admin.step9c_router import router as step9c_router
 
 router = APIRouter(prefix="/api/v1/super-admin", tags=["super-admin"])
@@ -304,3 +305,4 @@ async def finance_export(
 
 
 router.include_router(step9c_router)
+router.include_router(agriculture_admin_router)

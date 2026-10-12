@@ -95,6 +95,16 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Step 11 — Smart Agriculture vertical (2026-10-13)
+
+- **Migration 033:** LoRa agriculture schema (8 tables + irrigation logs + battery history); demo farms (kopi, sawit, padi).
+- **API:** `app/agriculture/` — farms/plots/sensors/gateways/irrigation/disease/yield/analytics under `/api/agriculture`.
+- **Jobs:** Disease predictor (coffee rust, berry borer, rice blast, ganoderma); irrigation scheduler + BMKG forecast cache.
+- **Firmware Studio:** `agri_soil_sensor`, `agri_weather_station`, `agri_irrigation_controller`, `agri_npk_sensor`.
+- **UI:** `apps/web` agriculture hub; `apps/admin` platform agri stats.
+- **Seeder:** `python scripts/seed_agriculture_demo.py` (in API container).
+- **Tests:** 40+ in `tests/agriculture/`.
+
 ### Step 9C — Placeholder features complete (2026-10-12)
 
 - **Migration 032:** email templates, support tickets, partners/referrals/commissions, backups, impersonation sessions.

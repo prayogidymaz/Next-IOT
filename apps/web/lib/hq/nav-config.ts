@@ -14,6 +14,7 @@ import {
   Sparkles,
   Tag,
   Users,
+  Sprout,
   Workflow,
 } from "lucide-react";
 
@@ -106,6 +107,13 @@ export const HQ_NAV_SECTIONS: HqNavSection[] = [
         icon: QrCode,
         accentClass: "text-accent-amber",
         iconBgClass: "bg-accent-amber-soft",
+      },
+      {
+        href: "/agriculture",
+        label: "Smart Agriculture",
+        icon: Sprout,
+        accentClass: "text-accent-emerald",
+        iconBgClass: "bg-accent-emerald-soft",
       },
     ],
   },

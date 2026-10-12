@@ -1,6 +1,14 @@
 # Next-IOT — Notion Update Log (Master Changelog)
 
-**Last updated:** 2026-10-12 (UTC+7)  
+**Last updated:** 2026-10-13 (UTC+7)  
+
+### Step 11 — Smart Agriculture vertical (DONE)
+
+- **Migration 033:** farms, plots, LoRa sensors/gateways, irrigation valves/logs, disease alerts, crop calendar, yield; demo farms seed.
+- **API:** `/api/agriculture/*` CRUD + analytics; disease rules + 30m job; BMKG cache + auto-irrigation; Fonnte WA templates.
+- **Firmware:** 4 `agri_*.cpp` templates via Firmware Studio.
+- **Web/Admin:** Agriculture hub + farm shell; super-admin agri stats.
+- **Tests:** `tests/agriculture/` (40+).
 
 ### Step 9C — Super admin placeholder features (DONE)
 
