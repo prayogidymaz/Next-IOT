@@ -1,15 +1,18 @@
 "use client";
 
 import { Bell, ChevronRight, Moon, Search, Sun, UserCircle2 } from "lucide-react";
+import type { RefObject } from "react";
 
 import { useAdminTheme } from "@/components/AdminThemeProvider";
 
 type AdminTopBarProps = {
   title: string;
   breadcrumb?: string;
+  searchRef?: RefObject<HTMLInputElement | null>;
+  onOpenCommandPalette?: () => void;
 };
 
-export function AdminTopBar({ title, breadcrumb = "Platform" }: AdminTopBarProps) {
+export function AdminTopBar({ title, breadcrumb = "Platform", searchRef, onOpenCommandPalette }: AdminTopBarProps) {
   const { dark, toggleDark } = useAdminTheme();
 
   return (
@@ -26,8 +29,15 @@ export function AdminTopBar({ title, breadcrumb = "Platform" }: AdminTopBarProps
         <div className="flex flex-wrap items-center gap-2">
           <div className="hidden items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 md:flex dark:border-slate-700 dark:bg-slate-900">
             <Search className="h-4 w-4" />
-            <span>Search</span>
-            <kbd className="rounded border border-slate-200 px-1 text-[10px] dark:border-slate-600">⌘K</kbd>
+            <input
+              ref={searchRef}
+              className="w-40 bg-transparent text-sm outline-none"
+              placeholder="Search tenants…"
+              aria-label="Search"
+            />
+            <button type="button" className="flex items-center gap-1" onClick={onOpenCommandPalette}>
+              <kbd className="rounded border border-slate-200 px-1 text-[10px] dark:border-slate-600">⌘K</kbd>
+            </button>
           </div>
           <button type="button" className="relative rounded-md border border-slate-200 p-2 dark:border-slate-700" aria-label="Notifications">
             <Bell className="h-4 w-4 text-slate-600" />

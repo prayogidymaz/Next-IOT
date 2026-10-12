@@ -95,6 +95,12 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Step 9B — Super admin enterprise console (2026-10-12)
+
+- **`apps/admin`:** Six-group sidebar (~22 routes), ⌘K command palette (G T / G B / N A), dense tables, audit/analytics/MQTT/logs/timeline/announcements/promo/settings/feature flags/finance pages; dashboard 6 KPIs + watch list; tenant impersonate (1h JWT); settings 404 fixed.
+- **API:** Migration `031` (`platform_announcements`, `promo_codes`, `platform_settings`, `feature_flags`); super-admin endpoints for audit log, analytics, health scores, MQTT proxy, rate limits, log tail, announcements, promo codes, platform settings, feature flags, finance CSV export.
+- **Tests:** `tests/super_admin/test_super_admin_console.py` (+16 cases).
+
 ### Step 9A — Landing page + admin white theme (2026-10-12)
 
 - **`apps/landing`:** Public pre-sales site on port 3002; pricing, features, use-case pages, OG metadata.

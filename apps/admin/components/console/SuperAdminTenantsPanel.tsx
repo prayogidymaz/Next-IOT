@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { AdminCard } from "@/components/ui/AdminCard";
+import { impersonateTenant } from "@/lib/api/super-admin-extended";
 import {
   changeTenantPlan,
   extendTenantTrial,
@@ -22,6 +23,7 @@ export function SuperAdminTenantsPanel() {
   const [selected, setSelected] = useState<TenantDetail | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [detailTab, setDetailTab] = useState<"overview" | "audit">("overview");
 
   const refresh = useCallback(async () => {
     const data = await fetchSuperAdminTenants({
@@ -138,7 +140,32 @@ export function SuperAdminTenantsPanel() {
               Close
             </button>
           </div>
+          <div className="flex gap-2 border-b border-slate-200 text-sm">
+            {(["overview", "audit"] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                className={`border-b-2 px-2 py-1 capitalize ${detailTab === tab ? "border-blue-800 text-blue-800" : "border-transparent text-slate-500"}`}
+                onClick={() => setDetailTab(tab)}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              className="rounded-lg border border-blue-200 px-3 py-1.5 text-sm text-blue-900"
+              onClick={() =>
+                void impersonateTenant(selected.id).then((token) => {
+                  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+                  window.open(`${appUrl}/dashboard?impersonation_token=${encodeURIComponent(token)}`, "_blank");
+                })
+              }
+            >
+              View as tenant
+            </button>
             {selected.is_active ? (
               <button
                 type="button"
@@ -181,9 +208,8 @@ export function SuperAdminTenantsPanel() {
               </button>
             ))}
           </div>
-          <details className="rounded-lg border border-slate-200 p-3">
-            <summary className="cursor-pointer text-sm font-medium">Audit log</summary>
-            <ul className="mt-3 space-y-2 text-xs text-slate-500">
+          {detailTab === "audit" ? (
+            <ul className="space-y-2 text-xs text-slate-500">
               {selected.audit_entries.length === 0 ? (
                 <li>No super-admin actions recorded</li>
               ) : (
@@ -194,7 +220,11 @@ export function SuperAdminTenantsPanel() {
                 ))
               )}
             </ul>
-          </details>
+          ) : (
+            <p className="text-sm text-slate-500">
+              {selected.device_count} devices · {selected.user_count} users · plan {selected.plan_code ?? "—"}
+            </p>
+          )}
         </AdminCard>
         </div>
       ) : null}

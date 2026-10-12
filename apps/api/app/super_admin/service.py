@@ -10,7 +10,7 @@ from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import CurrentUser
-from app.auth.security import create_access_token
+from app.auth.security import create_impersonation_access_token
 from app.billing.subscription_service import change_plan, extend_trial, get_tenant_subscription
 from app.config import settings
 from app.models.device import Device
@@ -57,6 +57,9 @@ async def platform_stats(db: AsyncSession) -> PlatformStatsResponse:
             Invoice.paid_at >= month_start,
         )
     )
+    from app.super_admin.console_service import messages_today
+
+    msg_today = await messages_today(db)
     return PlatformStatsResponse(
         total_tenants=total_tenants,
         active_tenants=active_tenants,
@@ -64,7 +67,9 @@ async def platform_stats(db: AsyncSession) -> PlatformStatsResponse:
         active_subscriptions=active_subs,
         total_devices=total_devices,
         mrr_idr=mrr,
+        arr_idr=mrr * 12,
         revenue_mtd_idr=int(mtd or 0),
+        messages_today=msg_today,
     )
 
 
@@ -271,7 +276,7 @@ async def impersonate_tenant(db: AsyncSession, user: CurrentUser, tenant_id: uui
         detail={"actor_email": actor.email},
     )
     await db.commit()
-    return create_access_token(user_id=actor.id, tenant_id=tenant_id, role=actor.role)
+    return create_impersonation_access_token(user_id=actor.id, tenant_id=tenant_id, role=actor.role)
 
 
 async def system_health(db: AsyncSession, redis: RedisClient) -> SystemHealthResponse:
@@ -288,11 +293,14 @@ async def system_health(db: AsyncSession, redis: RedisClient) -> SystemHealthRes
         redis_status = "degraded"
     mqtt_sub = "ok" if settings.mqtt_subscriber_enabled else "stopped"
     mqtt_pub = "ok" if settings.mqtt_publisher_enabled else "stopped"
+    from app.super_admin.console_service import emqx_health_status
+
+    emqx_status = await emqx_health_status()
     return SystemHealthResponse(
         api=api_status,
         database=db_status,
         redis=redis_status,
-        emqx="unknown",
+        emqx=emqx_status,
         scheduler="ok",
         mqtt_subscriber=mqtt_sub,
         mqtt_publisher=mqtt_pub,

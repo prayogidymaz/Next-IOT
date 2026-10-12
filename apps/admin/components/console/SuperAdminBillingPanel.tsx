@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
+import Link from "next/link";
+
 import { AdminCard } from "@/components/ui/AdminCard";
 import {
   fetchSuperAdminInvoices,
@@ -13,7 +15,7 @@ import {
   type RevenueReport,
 } from "@/lib/api/super-admin";
 
-type Tab = "invoices" | "revenue" | "cycle";
+type Tab = "invoices" | "revenue" | "cycle" | "promo" | "refunds";
 
 export function SuperAdminBillingPanel() {
   const [tab, setTab] = useState<Tab>("invoices");
@@ -24,7 +26,7 @@ export function SuperAdminBillingPanel() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (tab === "invoices") {
+    if (tab === "invoices" || tab === "refunds") {
       void fetchSuperAdminInvoices(invoiceStatus || undefined)
         .then(setInvoices)
         .catch(() => setInvoices([]));
@@ -58,6 +60,8 @@ export function SuperAdminBillingPanel() {
             ["invoices", "Invoices"],
             ["revenue", "Revenue"],
             ["cycle", "Billing cycle"],
+            ["promo", "Promo stats"],
+            ["refunds", "Refunds"],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -151,6 +155,29 @@ export function SuperAdminBillingPanel() {
             Run billing cycle
           </button>
           {cycleLog ? <p className="text-sm text-slate-900">{cycleLog}</p> : null}
+        </AdminCard>
+      ) : null}
+
+      {tab === "promo" ? (
+        <AdminCard className="space-y-3 p-5">
+          <p className="text-sm text-slate-500">Promo code usage and revenue impact.</p>
+          <Link href="/promo-codes" className="text-sm font-medium text-blue-800 hover:underline">
+            Manage promo codes →
+          </Link>
+        </AdminCard>
+      ) : null}
+
+      {tab === "refunds" ? (
+        <AdminCard className="p-5">
+          <p className="text-sm text-slate-500">Refund queue — process manual refunds from paid invoices (integration pending).</p>
+          <ul className="mt-3 text-sm text-slate-600">
+            {invoices.filter((i) => i.status === "paid").slice(0, 5).map((i) => (
+              <li key={i.id} className="flex justify-between border-b border-slate-100 py-2">
+                <span>{i.invoice_number}</span>
+                <span>{formatIdr(i.total_idr)}</span>
+              </li>
+            ))}
+          </ul>
         </AdminCard>
       ) : null}
     </div>

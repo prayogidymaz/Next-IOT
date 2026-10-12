@@ -42,6 +42,22 @@ def create_access_token(*, user_id: uuid.UUID, tenant_id: uuid.UUID, role: str) 
     return _encode_jwt(payload)
 
 
+IMPERSONATION_TOKEN_EXPIRE_MINUTES = 60
+
+
+def create_impersonation_access_token(*, user_id: uuid.UUID, tenant_id: uuid.UUID, role: str) -> str:
+    payload: dict[str, JsonValue] = {
+        "sub": str(user_id),
+        "tenant_id": str(tenant_id),
+        "role": role,
+        "type": TOKEN_TYPE_ACCESS,
+        "impersonation": True,
+        "iat": int(datetime.now(UTC).timestamp()),
+        "exp": int(_build_expiry(minutes=IMPERSONATION_TOKEN_EXPIRE_MINUTES).timestamp()),
+    }
+    return _encode_jwt(payload)
+
+
 def create_refresh_token(*, user_id: uuid.UUID, tenant_id: uuid.UUID) -> tuple[str, str]:
     jti = str(uuid.uuid4())
     payload: dict[str, JsonValue] = {

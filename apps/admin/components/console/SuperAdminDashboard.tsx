@@ -1,11 +1,12 @@
 "use client";
 
-import { Building2, Cpu, DollarSign, TrendingUp } from "lucide-react";
+import { Building2, Cpu, DollarSign, MessageSquare, TrendingUp, Users } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { AdminCard } from "@/components/ui/AdminCard";
+import { WatchListSection } from "@/components/console/SuperAdminExtendedPanels";
 import { HealthDot } from "@/components/console/HealthDot";
 import { StatCard } from "@/components/console/StatCard";
 import {
@@ -43,46 +44,26 @@ export function SuperAdminDashboard() {
     <div className="space-y-6">
       <p className="text-sm text-slate-500">Platform-wide overview for super_admin operators.</p>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          title="Total Tenants"
-          value={String(stats.total_tenants)}
-          subtitle={`${stats.active_tenants} active`}
-          trend={{ direction: "up", label: "4% MoM" }}
-          icon={Building2}
-        />
-        <StatCard
-          title="Devices Platform"
-          value={String(stats.total_devices)}
-          subtitle="Registered on platform"
-          trend={{ direction: "up", label: "12% MoM" }}
-          icon={Cpu}
-        />
-        <StatCard
-          title="MRR (Rp)"
-          value={formatIdr(stats.mrr_idr)}
-          subtitle="Monthly recurring"
-          trend={{ direction: "up", label: "8% MoM" }}
-          icon={TrendingUp}
-        />
-        <StatCard
-          title="Revenue MTD (Rp)"
-          value={formatIdr(stats.revenue_mtd_idr)}
-          subtitle="Month-to-date"
-          trend={{ direction: "down", label: "2% vs target" }}
-          icon={DollarSign}
-        />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <StatCard title="Total tenants" value={String(stats.total_tenants)} subtitle={`${stats.active_tenants} active`} icon={Building2} />
+        <StatCard title="Active subs" value={String(stats.active_subscriptions)} subtitle={`${stats.trial_subscriptions} trial`} icon={Users} />
+        <StatCard title="MRR" value={formatIdr(stats.mrr_idr)} subtitle="Monthly recurring" icon={TrendingUp} />
+        <StatCard title="ARR" value={formatIdr(stats.arr_idr ?? stats.mrr_idr * 12)} subtitle="Annual run rate" icon={DollarSign} />
+        <StatCard title="Devices" value={String(stats.total_devices)} subtitle="Platform-wide" icon={Cpu} />
+        <StatCard title="Messages today" value={String(stats.messages_today ?? 0)} subtitle="Telemetry + MQTT" icon={MessageSquare} />
       </div>
 
+      <WatchListSection />
+
       <div className="flex flex-wrap gap-2">
-        <Link href="/tenants" className="rounded-md bg-blue-800 px-4 py-2 text-sm font-medium text-white hover:bg-blue-900">
-          Extend trial
+        <Link href="/announcements" className="rounded-md bg-blue-800 px-4 py-2 text-sm font-medium text-white hover:bg-blue-900">
+          Send announcement
         </Link>
-        <Link href="/tenants" className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">
-          Suspend tenant
+        <Link href="/system-logs" className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">
+          View logs
         </Link>
-        <Link href="/tenants" className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">
-          Change plan
+        <Link href="/billing" className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">
+          Trigger billing
         </Link>
       </div>
 

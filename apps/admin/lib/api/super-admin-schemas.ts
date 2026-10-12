@@ -7,7 +7,9 @@ export const platformStatsSchema = z.object({
   active_subscriptions: z.number(),
   total_devices: z.number(),
   mrr_idr: z.number(),
+  arr_idr: z.number().optional(),
   revenue_mtd_idr: z.number(),
+  messages_today: z.number().optional(),
 });
 
 export const tenantAdminItemSchema = z.object({

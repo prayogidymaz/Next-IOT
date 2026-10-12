@@ -2,6 +2,12 @@
 
 **Last updated:** 2026-10-12 (UTC+7)  
 
+### Step 9B — Super admin enterprise console (DONE)
+
+- **`apps/admin`:** Expanded sidebar (6 groups), ⌘K palette, audit/analytics/health/MQTT/logs/timeline/announcements/promo/settings/feature flags/finance; dashboard watch list; tenant “view as”; platform settings route.
+- **API:** Alembic `031`; `/api/v1/super-admin/audit-log`, analytics, health-scores, mqtt/stats, rate-limits, logs/tail, announcements, promo-codes, platform-settings, feature-flags, finance/export; impersonation JWT **60 min**.
+- **Tests:** `test_super_admin_console.py` (30 super-admin tests total).
+
 ### Step 9A — Landing + admin white redesign (DONE)
 
 - **`apps/landing`:** Public marketing site port **3002** (hero, features, use cases, pricing, SEO/sitemap).
