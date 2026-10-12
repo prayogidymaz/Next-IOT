@@ -14,6 +14,6 @@ def test_lora_key_roundtrip() -> None:
 
 
 @pytest.mark.asyncio
-async def test_disease_scan_runs() -> None:
-    count = await run_disease_scan_once()
+async def test_disease_scan_runs(test_redis) -> None:
+    count = await run_disease_scan_once(test_redis)
     assert count >= 0

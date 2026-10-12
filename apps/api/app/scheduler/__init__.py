@@ -1,0 +1,1 @@
+"""Platform scheduler job registry."""

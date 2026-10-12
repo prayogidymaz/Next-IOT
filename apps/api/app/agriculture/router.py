@@ -13,6 +13,7 @@ from app.agriculture.schemas import (
     CalendarEntryResponse,
     DiseaseAlertResponse,
     FarmCreateRequest,
+    FarmMapDataResponse,
     FarmOverviewResponse,
     FarmResponse,
     FarmUpdateRequest,
@@ -20,6 +21,8 @@ from app.agriculture.schemas import (
     GatewayResponse,
     GatewayStatsResponse,
     HeatmapPoint,
+    NotificationSettingsResponse,
+    NotificationSettingsUpdate,
     PlotCreateRequest,
     PlotResponse,
     PlotUpdateRequest,
@@ -73,6 +76,38 @@ async def farm_overview(user: RequireAuth, db: DbSession, farm_id: uuid.UUID) ->
     return await svc.farm_overview(db, user, farm_id)
 
 
+@router.get("/farms/{farm_id}/map-data", response_model=FarmMapDataResponse)
+async def farm_map_data(user: RequireAuth, db: DbSession, farm_id: uuid.UUID) -> FarmMapDataResponse:
+    return await svc.farm_map_data(db, user, farm_id)
+
+
+@router.get("/farms/{farm_id}/valves")
+async def farm_valves(user: RequireAuth, db: DbSession, farm_id: uuid.UUID) -> list[ValveResponse]:
+    return await svc.list_farm_valves(db, user, farm_id)
+
+
+@router.get("/farms/{farm_id}/notification-settings", response_model=NotificationSettingsResponse)
+async def get_notification_settings(
+    user: RequireAuth, db: DbSession, farm_id: uuid.UUID
+) -> NotificationSettingsResponse:
+    return await svc.get_notification_settings(db, user, farm_id)
+
+
+@router.put("/farms/{farm_id}/notification-settings", response_model=NotificationSettingsResponse)
+async def put_notification_settings(
+    user: RequireAuth,
+    db: DbSession,
+    farm_id: uuid.UUID,
+    payload: NotificationSettingsUpdate,
+) -> NotificationSettingsResponse:
+    return await svc.update_notification_settings(db, user, farm_id, payload)
+
+
+@router.post("/farms/{farm_id}/notification-settings/test")
+async def test_notification(user: RequireAuth, db: DbSession, redis: RedisDep, farm_id: uuid.UUID) -> dict[str, bool]:
+    return await svc.test_farm_notification(db, redis, user, farm_id)
+
+
 @router.get("/farms/{farm_id}/plots")
 async def list_plots(user: RequireAuth, db: DbSession, farm_id: uuid.UUID) -> list[PlotResponse]:
     return await svc.list_plots(db, user, farm_id)
@@ -121,8 +156,11 @@ async def sensor_readings(
     sensor_id: uuid.UUID,
     aggregation: str = Query(default="hourly"),
     hours: int = Query(default=24, ge=1, le=720),
+    range: str | None = Query(default=None),
 ) -> list[ReadingPoint]:
-    return await svc.sensor_readings(db, user, sensor_id, aggregation=aggregation, hours=hours)
+    return await svc.sensor_readings(
+        db, user, sensor_id, aggregation=aggregation, hours=hours, range_key=range
+    )
 
 
 @router.post("/sensors/{sensor_id}/calibrate")
@@ -170,14 +208,18 @@ async def create_valve(
 
 @router.post("/valves/{valve_id}/open")
 async def open_valve(
-    user: RequireAuth, db: DbSession, valve_id: uuid.UUID, payload: ValveOpenRequest
+    user: RequireAuth,
+    db: DbSession,
+    redis: RedisDep,
+    valve_id: uuid.UUID,
+    payload: ValveOpenRequest,
 ) -> ValveResponse:
-    return await svc.open_valve(db, user, valve_id, payload.duration_minutes)
+    return await svc.open_valve(db, redis, user, valve_id, payload.duration_minutes)
 
 
 @router.post("/valves/{valve_id}/close")
-async def close_valve(user: RequireAuth, db: DbSession, valve_id: uuid.UUID) -> ValveResponse:
-    return await svc.close_valve(db, user, valve_id)
+async def close_valve(user: RequireAuth, db: DbSession, redis: RedisDep, valve_id: uuid.UUID) -> ValveResponse:
+    return await svc.close_valve(db, redis, user, valve_id)
 
 
 @router.get("/valves/{valve_id}/schedule")
@@ -216,6 +258,12 @@ async def acknowledge_alert(
 @router.post("/disease-alerts/{alert_id}/resolve")
 async def resolve_alert(user: RequireAuth, db: DbSession, alert_id: uuid.UUID) -> DiseaseAlertResponse:
     return await svc.resolve_alert(db, user, alert_id)
+
+
+@router.post("/disease-alerts/{alert_id}/snooze", status_code=204, response_class=Response)
+async def snooze_alert(user: RequireAuth, db: DbSession, alert_id: uuid.UUID) -> Response:
+    await svc.snooze_alert(db, user, alert_id)
+    return Response(status_code=204)
 
 
 @router.get("/farms/{farm_id}/disease-risk-forecast")

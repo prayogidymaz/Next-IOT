@@ -26,12 +26,17 @@ from app.agriculture.models import (
     AgriSensorDevice,
     AgriYieldRecord,
 )
+from app.agriculture.notification_dispatcher import (
+    AgriNotificationDispatcher,
+    farm_notification_settings,
+)
 from app.agriculture.schemas import (
     AnalyticsSeries,
     CalendarEntryRequest,
     CalendarEntryResponse,
     DiseaseAlertResponse,
     FarmCreateRequest,
+    FarmMapDataResponse,
     FarmOverviewResponse,
     FarmResponse,
     FarmUpdateRequest,
@@ -39,6 +44,12 @@ from app.agriculture.schemas import (
     GatewayResponse,
     GatewayStatsResponse,
     HeatmapPoint,
+    MapGatewayItem,
+    MapPlotItem,
+    MapSensorItem,
+    MapValveItem,
+    NotificationSettingsResponse,
+    NotificationSettingsUpdate,
     PlotCreateRequest,
     PlotResponse,
     PlotUpdateRequest,
@@ -286,6 +297,11 @@ async def calibrate_sensor(
     return SensorResponse.model_validate(row)
 
 
+def _hours_for_range(range_key: str) -> int:
+    mapping = {"24h": 24, "7d": 24 * 7, "30d": 24 * 30}
+    return mapping.get(range_key, 24)
+
+
 async def sensor_readings(
     db: AsyncSession,
     user: CurrentUser,
@@ -293,7 +309,10 @@ async def sensor_readings(
     *,
     aggregation: str,
     hours: int,
+    range_key: str | None = None,
 ) -> list[ReadingPoint]:
+    if range_key:
+        hours = _hours_for_range(range_key)
     row = await db.scalar(select(AgriSensorDevice).where(AgriSensorDevice.id == sensor_id))
     if row is None or row.tenant_id != user.tenant_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sensor not found")
@@ -392,7 +411,11 @@ async def list_valves_for_plot(db: AsyncSession, user: CurrentUser, plot_id: uui
 
 
 async def open_valve(
-    db: AsyncSession, user: CurrentUser, valve_id: uuid.UUID, duration_minutes: int
+    db: AsyncSession,
+    redis: RedisClient,
+    user: CurrentUser,
+    valve_id: uuid.UUID,
+    duration_minutes: int,
 ) -> ValveResponse:
     row = await _valve_for_user(db, user, valve_id)
     row.current_state = "open"
@@ -410,10 +433,14 @@ async def open_valve(
     )
     await db.commit()
     await db.refresh(row)
+    dispatcher = AgriNotificationDispatcher(db, redis)
+    await dispatcher.send_irrigation_notification("started", valve_id)
     return ValveResponse.model_validate(row)
 
 
-async def close_valve(db: AsyncSession, user: CurrentUser, valve_id: uuid.UUID) -> ValveResponse:
+async def close_valve(
+    db: AsyncSession, redis: RedisClient, user: CurrentUser, valve_id: uuid.UUID
+) -> ValveResponse:
     row = await _valve_for_user(db, user, valve_id)
     row.current_state = "closed"
     row.last_closed_at = datetime.now(tz=UTC)
@@ -428,7 +455,115 @@ async def close_valve(db: AsyncSession, user: CurrentUser, valve_id: uuid.UUID) 
     )
     await db.commit()
     await db.refresh(row)
+    dispatcher = AgriNotificationDispatcher(db, redis)
+    await dispatcher.send_irrigation_notification("completed", valve_id)
     return ValveResponse.model_validate(row)
+
+
+async def list_farm_valves(db: AsyncSession, user: CurrentUser, farm_id: uuid.UUID) -> list[ValveResponse]:
+    await _farm_for_tenant(db, user.tenant_id, farm_id)
+    rows = await db.scalars(select(AgriIrrigationValve).where(AgriIrrigationValve.farm_id == farm_id))
+    return [ValveResponse.model_validate(r) for r in rows.all()]
+
+
+async def farm_map_data(db: AsyncSession, user: CurrentUser, farm_id: uuid.UUID) -> FarmMapDataResponse:
+    farm = await _farm_for_tenant(db, user.tenant_id, farm_id)
+    plots = await db.scalars(select(AgriPlot).where(AgriPlot.farm_id == farm_id))
+    plot_items = [
+        MapPlotItem(id=p.id, name=p.name, polygon=p.polygon, moisture_pct=42.0) for p in plots.all()
+    ]
+    sensors = await db.scalars(select(AgriSensorDevice).where(AgriSensorDevice.farm_id == farm_id))
+    sensor_items = [
+        MapSensorItem(
+            id=s.id,
+            name=s.name,
+            sensor_type=s.sensor_type,
+            lat=float(s.position_lat) if s.position_lat is not None else None,
+            lng=float(s.position_lng) if s.position_lng is not None else None,
+            last_moisture=42.0,
+        )
+        for s in sensors.all()
+    ]
+    gateways = await db.scalars(select(AgriLoraGateway).where(AgriLoraGateway.farm_id == farm_id))
+    gw_items = [
+        MapGatewayItem(
+            id=g.id,
+            name=g.name,
+            lat=float(g.position_lat) if g.position_lat is not None else None,
+            lng=float(g.position_lng) if g.position_lng is not None else None,
+        )
+        for g in gateways.all()
+    ]
+    valves = await db.scalars(select(AgriIrrigationValve).where(AgriIrrigationValve.farm_id == farm_id))
+    valve_items = [
+        MapValveItem(
+            id=v.id,
+            name=v.name,
+            plot_id=v.plot_id,
+            lat=float(v.position_lat) if v.position_lat is not None else None,
+            lng=float(v.position_lng) if v.position_lng is not None else None,
+            current_state=v.current_state,
+        )
+        for v in valves.all()
+    ]
+    lat = float(farm.location_lat or -2.5)
+    lng = float(farm.location_lng or 118.0)
+    bounds = {"south": lat - 0.05, "north": lat + 0.05, "west": lng - 0.05, "east": lng + 0.05}
+    return FarmMapDataResponse(
+        farm=_farm_response(farm),
+        plots=plot_items,
+        sensors=sensor_items,
+        gateways=gw_items,
+        valves=valve_items,
+        bounds=bounds,
+    )
+
+
+async def get_notification_settings(
+    db: AsyncSession, user: CurrentUser, farm_id: uuid.UUID
+) -> NotificationSettingsResponse:
+    farm = await _farm_for_tenant(db, user.tenant_id, farm_id)
+    raw = farm_notification_settings(farm)
+    return NotificationSettingsResponse(
+        disease_alerts=bool(raw.get("disease_alerts", True)),
+        irrigation=bool(raw.get("irrigation", True)),
+        battery=bool(raw.get("battery", True)),
+        weather=bool(raw.get("weather", True)),
+        harvest=bool(raw.get("harvest", True)),
+        whatsapp_number=str(raw.get("whatsapp_number", "")),
+    )
+
+
+async def update_notification_settings(
+    db: AsyncSession, user: CurrentUser, farm_id: uuid.UUID, payload: NotificationSettingsUpdate
+) -> NotificationSettingsResponse:
+    farm = await _farm_for_tenant(db, user.tenant_id, farm_id)
+    current = farm_notification_settings(farm)
+    for field in ("disease_alerts", "irrigation", "battery", "weather", "harvest", "whatsapp_number"):
+        val = getattr(payload, field)
+        if val is not None:
+            current[field] = val
+    meta = dict(farm.metadata_json)
+    meta["notification_settings"] = current
+    farm.metadata_json = meta
+    await db.commit()
+    await db.refresh(farm)
+    return await get_notification_settings(db, user, farm_id)
+
+
+async def snooze_alert(db: AsyncSession, user: CurrentUser, alert_id: uuid.UUID, hours: int = 24) -> None:
+    row = await _alert_for_user(db, user, alert_id)
+    row.snoozed_until = datetime.now(tz=UTC) + timedelta(hours=hours)
+    await db.commit()
+
+
+async def test_farm_notification(
+    db: AsyncSession, redis: RedisClient, user: CurrentUser, farm_id: uuid.UUID
+) -> dict[str, bool]:
+    await _farm_for_tenant(db, user.tenant_id, farm_id)
+    dispatcher = AgriNotificationDispatcher(db, redis)
+    ok = await dispatcher.send_test(farm_id)
+    return {"sent": ok}
 
 
 async def _valve_for_user(db: AsyncSession, user: CurrentUser, valve_id: uuid.UUID) -> AgriIrrigationValve:

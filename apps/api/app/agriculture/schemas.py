@@ -263,3 +263,62 @@ class AnalyticsSeries(BaseModel):
 class AutoIrrigationSettings(BaseModel):
     enabled: bool = True
     moisture_threshold_pct: Decimal = Decimal("30")
+
+
+class NotificationSettingsResponse(BaseModel):
+    disease_alerts: bool = True
+    irrigation: bool = True
+    battery: bool = True
+    weather: bool = True
+    harvest: bool = True
+    whatsapp_number: str = ""
+
+
+class NotificationSettingsUpdate(BaseModel):
+    disease_alerts: bool | None = None
+    irrigation: bool | None = None
+    battery: bool | None = None
+    weather: bool | None = None
+    harvest: bool | None = None
+    whatsapp_number: str | None = None
+
+
+class MapPlotItem(BaseModel):
+    id: uuid.UUID
+    name: str
+    polygon: dict[str, object]
+    moisture_pct: float | None
+
+
+class MapSensorItem(BaseModel):
+    id: uuid.UUID
+    name: str
+    sensor_type: str
+    lat: float | None
+    lng: float | None
+    last_moisture: float | None
+
+
+class MapGatewayItem(BaseModel):
+    id: uuid.UUID
+    name: str
+    lat: float | None
+    lng: float | None
+
+
+class MapValveItem(BaseModel):
+    id: uuid.UUID
+    name: str
+    plot_id: uuid.UUID
+    lat: float | None
+    lng: float | None
+    current_state: str
+
+
+class FarmMapDataResponse(BaseModel):
+    farm: FarmResponse
+    plots: list[MapPlotItem]
+    sensors: list[MapSensorItem]
+    gateways: list[MapGatewayItem]
+    valves: list[MapValveItem]
+    bounds: dict[str, float]

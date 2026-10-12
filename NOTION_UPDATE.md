@@ -5,10 +5,12 @@
 ### Step 11 — Smart Agriculture vertical (DONE)
 
 - **Migration 033:** farms, plots, LoRa sensors/gateways, irrigation valves/logs, disease alerts, crop calendar, yield; demo farms seed.
-- **API:** `/api/agriculture/*` CRUD + analytics; disease rules + 30m job; BMKG cache + auto-irrigation; Fonnte WA templates.
+- **Migration 034:** `notified_at` / `snoozed_until` on disease alerts for WA dispatch.
+- **API:** `/api/agriculture/*` CRUD + analytics; disease rules + 30m job; BMKG cache + auto-irrigation; map-data + notification-settings.
+- **Notifications:** `AgriNotificationDispatcher` (Fonnte), Redis dedup; battery/weather/harvest monitors; hooks on disease + irrigation.
 - **Firmware:** 4 `agri_*.cpp` templates via Firmware Studio.
-- **Web/Admin:** Agriculture hub + farm shell; super-admin agri stats.
-- **Tests:** `tests/agriculture/` (40+).
+- **Web/Admin:** Farm detail (Leaflet map), sensor/irrigation/alerts/calendar/yield/analytics/settings; admin firmware fleet + agri analytics.
+- **Tests:** `tests/agriculture/` (45).
 
 ### Step 9C — Super admin placeholder features (DONE)
 

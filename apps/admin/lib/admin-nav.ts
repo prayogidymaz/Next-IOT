@@ -88,6 +88,8 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { href: "/promo-codes", label: "Promo codes", icon: BadgePercent },
       { href: "/partners", label: "Partners", icon: Handshake },
       { href: "/agriculture", label: "Agriculture", icon: Sprout },
+      { href: "/agriculture/firmware", label: "Agri firmware", icon: Sprout },
+      { href: "/agriculture/analytics", label: "Agri analytics", icon: Sprout },
       { href: "/finance", label: "Finance export", icon: Wallet },
     ],
   },

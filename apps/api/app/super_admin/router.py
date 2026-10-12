@@ -15,6 +15,7 @@ from app.billing.schemas import InvoiceResponse
 from app.deps import DbSession, RedisDep
 from app.models.invoice import Invoice
 from app.super_admin import console_service, service
+from app.super_admin.agriculture_router import router as agriculture_admin_router
 from app.super_admin.schemas import (
     AnalyticsDeepDiveResponse,
     AnnouncementCreateRequest,
@@ -43,7 +44,6 @@ from app.super_admin.schemas import (
     TenantDetailResponse,
     WatchListItem,
 )
-from app.super_admin.agriculture_router import router as agriculture_admin_router
 from app.super_admin.step9c_router import router as step9c_router
 
 router = APIRouter(prefix="/api/v1/super-admin", tags=["super-admin"])

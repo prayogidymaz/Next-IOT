@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agriculture.bmkg_weather import get_cached_forecast, irrigation_window_ok
 from app.agriculture.models import AgriFarm, AgriIrrigationLog, AgriIrrigationValve, AgriPlot
+from app.agriculture.notification_dispatcher import AgriNotificationDispatcher
 from app.types.redis_client import RedisClient
 
 
@@ -71,4 +72,7 @@ async def run_auto_irrigation_for_farm(
         opened.append(valve.id)
     if opened:
         await db.commit()
+        dispatcher = AgriNotificationDispatcher(db, redis)
+        for valve_id in opened:
+            await dispatcher.send_irrigation_notification("started", valve_id)
     return opened
