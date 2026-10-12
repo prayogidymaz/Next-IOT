@@ -11,6 +11,7 @@
 - **Firmware:** 4 `agri_*.cpp` templates via Firmware Studio.
 - **Web/Admin:** Farm detail (Leaflet map), sensor/irrigation/alerts/calendar/yield/analytics/settings; admin firmware fleet + agri analytics.
 - **Tests:** `tests/agriculture/` (45).
+- **Seeder fix:** register `Partner` in `app/models/__init__.py` for `tenants.referred_by_partner_id` FK (`cbb0cd8`).
 
 ### Step 9C — Super admin placeholder features (DONE)
 
