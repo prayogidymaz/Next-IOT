@@ -1,0 +1,12 @@
+.git
+.cursor
+terminals
+**/.next
+**/node_modules
+apps/web/node_modules
+apps/admin/node_modules
+apps/landing/node_modules
+packages/ui/node_modules
+**/__pycache__
+**/.pytest_cache
+scripts/.*.out

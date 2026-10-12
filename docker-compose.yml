@@ -127,6 +127,7 @@ services:
       target: dev
     container_name: next-iot-admin
     restart: always
+    working_dir: /work/apps/admin
     ports:
       - "${ADMIN_PORT:-3001}:3001"
     environment:
@@ -135,15 +136,15 @@ services:
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
     volumes:
-      - ./apps/admin:/app
-      - ./packages/ui:/packages/ui
-      - /app/node_modules
-      - /app/.next
+      - ./apps/admin:/work/apps/admin
+      - ./packages/ui:/work/packages/ui
+      - /work/apps/admin/node_modules
+      - /work/apps/admin/.next
     depends_on:
       api:
         condition: service_started
     command: >
-      sh -c "if [ ! -d node_modules/next ] || [ ! -d node_modules/recharts ] || [ ! -d node_modules/zod ]; then npm ci; fi &&
+      sh -c "if [ ! -d node_modules/next ] || [ ! -d node_modules/@next-iot/ui ]; then npm ci; fi &&
              npm run dev -- -H 0.0.0.0 -p 3001"
     networks:
       - next-iot-net
@@ -155,6 +156,7 @@ services:
       target: dev
     container_name: next-iot-landing
     restart: always
+    working_dir: /work/apps/landing
     ports:
       - "${LANDING_PORT:-3002}:3002"
     environment:
@@ -164,15 +166,15 @@ services:
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
     volumes:
-      - ./apps/landing:/app
-      - ./packages/ui:/packages/ui
-      - /app/node_modules
-      - /app/.next
+      - ./apps/landing:/work/apps/landing
+      - ./packages/ui:/work/packages/ui
+      - /work/apps/landing/node_modules
+      - /work/apps/landing/.next
     depends_on:
       api:
         condition: service_started
     command: >
-      sh -c "if [ ! -d node_modules/next ]; then npm ci; fi &&
+      sh -c "if [ ! -d node_modules/next ] || [ ! -d node_modules/@next-iot/ui ]; then npm ci; fi &&
              npm run dev -- -H 0.0.0.0 -p 3002"
     networks:
       - next-iot-net
