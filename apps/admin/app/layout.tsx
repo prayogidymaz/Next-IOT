@@ -13,8 +13,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrains.variable}`}>
-      <body>{children}</body>
+    <html lang="en" className={`h-full ${inter.variable} ${jetbrains.variable}`}>
+      <body className="h-full overflow-hidden">{children}</body>
     </html>
   );
 }

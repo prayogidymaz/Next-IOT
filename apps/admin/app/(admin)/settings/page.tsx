@@ -1,5 +1,5 @@
 import { AdminShell } from "@/components/AdminShell";
-import { PlatformSettingsPanel } from "@/components/console/SuperAdminExtendedPanels";
+import { PlatformSettingsPanel } from "@/components/console/PlatformSettingsPanel";
 
 export default function Page() {
   return (

@@ -16,7 +16,7 @@ export function AdminTopBar({ title, breadcrumb = "Platform", searchRef, onOpenC
   const { dark, toggleDark } = useAdminTheme();
 
   return (
-    <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95">
+    <header className="z-10 shrink-0 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95">
       <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4">
         <div>
           <nav className="mb-1 flex items-center gap-1 text-xs text-slate-500" aria-label="Breadcrumb">

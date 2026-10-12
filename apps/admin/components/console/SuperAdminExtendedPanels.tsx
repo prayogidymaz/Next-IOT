@@ -14,7 +14,6 @@ import {
   fetchFeatureFlags,
   fetchHealthScores,
   fetchMqttStats,
-  fetchPlatformSettings,
   fetchPromoCodes,
   fetchRateLimits,
   fetchSystemLogs,
@@ -23,7 +22,6 @@ import {
   formatIdr,
   listAnnouncements,
   updateFeatureFlag,
-  updatePlatformSettings,
   type AnalyticsDeepDive,
   type AuditLogEntry,
   type FeatureFlag,
@@ -258,34 +256,6 @@ export function PromoCodesPanel() {
         { key: "disc", header: "Discount", render: (c) => `${c.discount_value}${c.discount_type === "percent" ? "%" : " IDR"}` },
         { key: "used", header: "Used", render: (c) => `${c.used_count}${c.max_uses ? ` / ${c.max_uses}` : ""}` },
       ]} />
-    </div>
-  );
-}
-
-export function PlatformSettingsPanel() {
-  const [sections, setSections] = useState<Record<string, Record<string, unknown>>>({});
-  const [name, setName] = useState("");
-  useEffect(() => {
-    void fetchPlatformSettings().then((s) => {
-      setSections(s.sections);
-      const general = s.sections.general;
-      if (general && typeof general.platform_name === "string") setName(general.platform_name);
-    });
-  }, []);
-  return (
-    <div className="space-y-4">
-      <div className="flex gap-2 border-b">
-        {["general", "email", "payment", "mqtt", "security", "notifications"].map((tab) => (
-          <span key={tab} className="px-3 py-2 text-xs uppercase text-slate-500">{tab}</span>
-        ))}
-      </div>
-      <AdminCard className="space-y-3 p-4">
-        <label className="block text-sm">Platform name</label>
-        <input className="w-full rounded border px-3 py-2 text-sm" value={name} onChange={(e) => setName(e.target.value)} />
-        <button type="button" className="rounded bg-blue-800 px-3 py-2 text-sm text-white" onClick={() => void updatePlatformSettings({ general: { ...(sections.general ?? {}), platform_name: name } }).then(() => fetchPlatformSettings().then((s) => setSections(s.sections)))}>
-          Save general
-        </button>
-      </AdminCard>
     </div>
   );
 }
