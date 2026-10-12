@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
-import { CommandCard } from "@/components/ui/CommandCard";
+import { AdminCard } from "@/components/ui/AdminCard";
 import { HealthDot } from "@/components/console/HealthDot";
 import { StatCard } from "@/components/console/StatCard";
 import {
@@ -32,8 +32,8 @@ export function SuperAdminDashboard() {
       .catch(() => setError("Requires super_admin role or API unavailable"));
   }, []);
 
-  if (error) return <p className="text-sm text-red-400">{error}</p>;
-  if (!stats) return <p className="text-sm text-command-secondary">Loading platform stats…</p>;
+  if (error) return <p className="text-sm text-red-600">{error}</p>;
+  if (!stats) return <p className="text-sm text-slate-500">Loading platform stats…</p>;
 
   const chartData = revenue?.growth_12m ?? [];
   const subTotal = stats.active_subscriptions + stats.trial_subscriptions;
@@ -41,116 +41,109 @@ export function SuperAdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-command-secondary">Platform-wide overview for operators with super_admin access.</p>
-        <div className="flex flex-wrap gap-2 text-sm">
-          <Link href="/tenants" className="rounded-lg border border-command-border px-3 py-1.5 hover:bg-command-muted">
-            Tenants
-          </Link>
-          <Link href="/billing" className="rounded-lg border border-command-border px-3 py-1.5 hover:bg-command-muted">
-            Billing
-          </Link>
-          <Link href="/system" className="rounded-lg border border-command-border px-3 py-1.5 hover:bg-command-muted">
-            System
-          </Link>
-        </div>
-      </div>
+      <p className="text-sm text-slate-500">Platform-wide overview for super_admin operators.</p>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
           title="Total Tenants"
           value={String(stats.total_tenants)}
           subtitle={`${stats.active_tenants} active`}
+          trend={{ direction: "up", label: "4% MoM" }}
           icon={Building2}
-          iconClass="text-command-accent"
-          iconBgClass="bg-command-accent-soft"
         />
         <StatCard
           title="Devices Platform"
           value={String(stats.total_devices)}
           subtitle="Registered on platform"
+          trend={{ direction: "up", label: "12% MoM" }}
           icon={Cpu}
-          iconClass="text-accent-violet"
-          iconBgClass="bg-accent-violet-soft"
         />
         <StatCard
           title="MRR (Rp)"
           value={formatIdr(stats.mrr_idr)}
           subtitle="Monthly recurring"
+          trend={{ direction: "up", label: "8% MoM" }}
           icon={TrendingUp}
-          iconClass="text-accent-emerald"
-          iconBgClass="bg-accent-emerald-soft"
         />
         <StatCard
           title="Revenue MTD (Rp)"
           value={formatIdr(stats.revenue_mtd_idr)}
           subtitle="Month-to-date"
+          trend={{ direction: "down", label: "2% vs target" }}
           icon={DollarSign}
-          iconClass="text-accent-amber"
-          iconBgClass="bg-accent-amber-soft"
         />
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        <Link href="/tenants" className="rounded-md bg-blue-800 px-4 py-2 text-sm font-medium text-white hover:bg-blue-900">
+          Extend trial
+        </Link>
+        <Link href="/tenants" className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">
+          Suspend tenant
+        </Link>
+        <Link href="/tenants" className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">
+          Change plan
+        </Link>
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-2">
-        <CommandCard className="p-5">
-          <h3 className="text-sm font-semibold text-command-text">Subscriptions</h3>
-          <p className="mt-1 text-xs text-command-secondary">Active vs trial</p>
+        <AdminCard className="p-5">
+          <h3 className="text-sm font-semibold text-slate-900">Subscriptions</h3>
+          <p className="mt-1 text-xs text-slate-500">Active vs trial</p>
           <div className="mt-4 flex items-center justify-between text-sm">
             <span>Active {stats.active_subscriptions}</span>
             <span>Trial {stats.trial_subscriptions}</span>
           </div>
-          <div className="mt-3 h-3 overflow-hidden rounded-full bg-cream-muted">
-            <div className="h-full bg-accent-emerald" style={{ width: `${activePct}%` }} />
+          <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-100">
+            <div className="h-full bg-emerald-500" style={{ width: `${activePct}%` }} />
           </div>
-        </CommandCard>
+        </AdminCard>
 
-        <CommandCard className="p-5">
-          <h3 className="text-sm font-semibold text-command-text">System health</h3>
+        <AdminCard className="p-5">
+          <h3 className="text-sm font-semibold text-slate-900">System health</h3>
           <ul className="mt-4 space-y-2 text-sm">
             {health ? (
-              <>
-                {(
-                  [
-                    ["API", health.api],
-                    ["PostgreSQL", health.database],
-                    ["Redis", health.redis],
-                    ["EMQX", health.emqx],
-                  ] as const
-                ).map(([label, status]) => (
-                  <li key={label} className="flex items-center justify-between gap-2">
-                    <span className="text-command-secondary">{label}</span>
-                    <span className="flex items-center gap-2 font-medium capitalize text-command-text">
-                      <HealthDot status={status} />
-                      {status}
-                    </span>
-                  </li>
-                ))}
-              </>
+              (
+                [
+                  ["API", health.api],
+                  ["PostgreSQL", health.database],
+                  ["Redis", health.redis],
+                  ["EMQX", health.emqx],
+                ] as const
+              ).map(([label, status]) => (
+                <li key={label} className="flex items-center justify-between gap-2">
+                  <span className="text-slate-500">{label}</span>
+                  <span className="flex items-center gap-2 font-medium capitalize text-slate-900">
+                    <HealthDot status={status} />
+                    {status}
+                  </span>
+                </li>
+              ))
             ) : (
-              <li className="text-command-secondary">Checking…</li>
+              <li className="text-slate-500">Checking…</li>
             )}
           </ul>
-        </CommandCard>
+        </AdminCard>
       </div>
 
-      <CommandCard className="p-5">
-        <h3 className="text-sm font-semibold text-command-text">Revenue growth (12 months)</h3>
-        <div className="mt-4 h-64">
+      <AdminCard className="p-5">
+        <h3 className="text-sm font-semibold text-slate-900">Revenue growth (12 months)</h3>
+        <div className="mt-4 h-72">
           {chartData.length === 0 ? (
-            <p className="flex h-full items-center justify-center text-sm text-command-secondary">No revenue data yet</p>
+            <p className="flex h-full items-center justify-center text-sm text-slate-500">No revenue data yet</p>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--cream-border, #e8e4dc)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip formatter={(v) => formatIdr(Number(v))} />
-                <Bar dataKey="revenue_idr" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="revenue_idr" fill="#1e40af" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
         </div>
-      </CommandCard>
+      </AdminCard>
     </div>
   );
 }

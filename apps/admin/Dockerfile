@@ -6,6 +6,7 @@ RUN apk add --no-cache libc6-compat
 ENV NEXT_TELEMETRY_DISABLED=1
 
 FROM base AS deps
+COPY packages/ui /packages/ui
 COPY apps/admin/package.json apps/admin/package-lock.json ./
 RUN npm ci
 
@@ -13,6 +14,7 @@ FROM base AS dev
 ENV NODE_ENV=development
 ENV NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV API_PROXY_TARGET=http://api:8000
+COPY packages/ui /packages/ui
 COPY --from=deps /app/node_modules ./node_modules
 COPY apps/admin .
 EXPOSE 3001
@@ -20,6 +22,7 @@ CMD ["npm", "run", "dev", "--", "-H", "0.0.0.0", "-p", "3001"]
 
 FROM base AS builder
 ENV NODE_ENV=production
+COPY packages/ui /packages/ui
 COPY --from=deps /app/node_modules ./node_modules
 COPY apps/admin .
 RUN npm run build

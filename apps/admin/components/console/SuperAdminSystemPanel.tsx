@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { CommandCard } from "@/components/ui/CommandCard";
+import { AdminCard } from "@/components/ui/AdminCard";
 import { HealthDot } from "@/components/console/HealthDot";
 import { fetchSuperAdminSystemHealth } from "@/lib/api/super-admin";
 import type { SystemHealth } from "@/lib/api/super-admin";
@@ -32,31 +32,31 @@ export function SuperAdminSystemPanel() {
         {SERVICES.map(({ key, label }) => {
           const status = health ? String(health[key]) : "unknown";
           return (
-            <CommandCard key={key} className="p-5">
+            <AdminCard key={key} className="p-5">
               <div className="flex items-center justify-between">
-                <h3 className="font-medium text-command-text">{label}</h3>
+                <h3 className="font-medium text-slate-900">{label}</h3>
                 <HealthDot status={status} />
               </div>
-              <p className="mt-2 text-sm capitalize text-command-secondary">{status}</p>
-            </CommandCard>
+              <p className="mt-2 text-sm capitalize text-slate-500">{status}</p>
+            </AdminCard>
           );
         })}
       </div>
 
-      <CommandCard className="grid gap-4 p-5 md:grid-cols-3">
+      <AdminCard className="grid gap-4 p-5 md:grid-cols-3">
         <div>
-          <p className="text-xs uppercase text-command-tertiary">Last check</p>
+          <p className="text-xs uppercase text-slate-400">Last check</p>
           <p className="text-sm font-medium">{health ? new Date(health.checked_at).toLocaleString() : "—"}</p>
         </div>
         <div>
-          <p className="text-xs uppercase text-command-tertiary">Platform uptime</p>
+          <p className="text-xs uppercase text-slate-400">Platform uptime</p>
           <p className="text-sm font-medium">API process healthy</p>
         </div>
         <div>
-          <p className="text-xs uppercase text-command-tertiary">Error rate</p>
-          <p className="text-sm font-medium text-command-secondary">Not instrumented in MVP</p>
+          <p className="text-xs uppercase text-slate-400">Error rate</p>
+          <p className="text-sm font-medium text-slate-500">Not instrumented in MVP</p>
         </div>
-      </CommandCard>
+      </AdminCard>
     </div>
   );
 }

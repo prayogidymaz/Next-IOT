@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
-import { CommandCard } from "@/components/ui/CommandCard";
+import { AdminCard } from "@/components/ui/AdminCard";
 import {
   fetchSuperAdminInvoices,
   fetchSuperAdminRevenue,
@@ -52,7 +52,7 @@ export function SuperAdminBillingPanel() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2 border-b border-command-border">
+      <div className="flex gap-2 border-b border-slate-200">
         {(
           [
             ["invoices", "Invoices"],
@@ -64,7 +64,7 @@ export function SuperAdminBillingPanel() {
             key={id}
             type="button"
             className={`border-b-2 px-4 py-2 text-sm font-medium ${
-              tab === id ? "border-accent-cobalt text-command-accent" : "border-transparent text-command-secondary"
+              tab === id ? "border-blue-800 text-blue-800" : "border-transparent text-slate-500"
             }`}
             onClick={() => setTab(id)}
           >
@@ -76,7 +76,7 @@ export function SuperAdminBillingPanel() {
       {tab === "invoices" ? (
         <>
           <select
-            className="rounded-lg border border-command-border px-3 py-2 text-sm"
+            className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
             value={invoiceStatus}
             onChange={(e) => setInvoiceStatus(e.target.value)}
           >
@@ -85,9 +85,9 @@ export function SuperAdminBillingPanel() {
             <option value="paid">Paid</option>
             <option value="overdue">Overdue</option>
           </select>
-          <div className="overflow-x-auto rounded-xl border border-command-border bg-white">
+          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
             <table className="min-w-full text-sm">
-              <thead className="bg-command-muted text-xs uppercase text-command-tertiary">
+              <thead className="bg-slate-100 text-xs uppercase text-slate-400">
                 <tr>
                   <th className="px-4 py-3 text-left">Invoice</th>
                   <th className="px-4 py-3 text-left">Total</th>
@@ -97,7 +97,7 @@ export function SuperAdminBillingPanel() {
               </thead>
               <tbody>
                 {invoices.map((inv) => (
-                  <tr key={inv.id} className="border-t border-command-border">
+                  <tr key={inv.id} className="border-t border-slate-200">
                     <td className="px-4 py-3">{inv.invoice_number}</td>
                     <td className="px-4 py-3">{formatIdr(inv.total_idr)}</td>
                     <td className="px-4 py-3">{inv.status}</td>
@@ -112,10 +112,10 @@ export function SuperAdminBillingPanel() {
 
       {tab === "revenue" && revenue ? (
         <div className="grid gap-4 lg:grid-cols-2">
-          <CommandCard className="p-5">
-            <p className="text-xs uppercase text-command-tertiary">MRR</p>
+          <AdminCard className="p-5">
+            <p className="text-xs uppercase text-slate-400">MRR</p>
             <p className="text-2xl font-semibold">{formatIdr(revenue.mrr_idr)}</p>
-            <p className="mt-2 text-sm text-command-secondary">ARR {formatIdr(revenue.arr_idr)}</p>
+            <p className="mt-2 text-sm text-slate-500">ARR {formatIdr(revenue.arr_idr)}</p>
             <ul className="mt-4 space-y-1 text-sm">
               {Object.entries(revenue.by_plan).map(([code, amount]) => (
                 <li key={code} className="flex justify-between">
@@ -124,8 +124,8 @@ export function SuperAdminBillingPanel() {
                 </li>
               ))}
             </ul>
-          </CommandCard>
-          <CommandCard className="h-72 p-5">
+          </AdminCard>
+          <AdminCard className="h-72 p-5">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={revenue.growth_12m}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -135,23 +135,23 @@ export function SuperAdminBillingPanel() {
                 <Bar dataKey="revenue_idr" fill="#059669" />
               </BarChart>
             </ResponsiveContainer>
-          </CommandCard>
+          </AdminCard>
         </div>
       ) : null}
 
       {tab === "cycle" ? (
-        <CommandCard className="space-y-4 p-5">
-          <p className="text-sm text-command-secondary">Manually run subscription billing cycle (invoices + past_due).</p>
+        <AdminCard className="space-y-4 p-5">
+          <p className="text-sm text-slate-500">Manually run subscription billing cycle (invoices + past_due).</p>
           <button
             type="button"
             disabled={busy}
-            className="rounded-lg bg-accent-cobalt px-4 py-2 text-sm text-white disabled:opacity-50"
+            className="rounded-lg bg-blue-800 px-4 py-2 text-sm text-white disabled:opacity-50"
             onClick={() => void onRunCycle()}
           >
             Run billing cycle
           </button>
-          {cycleLog ? <p className="text-sm text-command-text">{cycleLog}</p> : null}
-        </CommandCard>
+          {cycleLog ? <p className="text-sm text-slate-900">{cycleLog}</p> : null}
+        </AdminCard>
       ) : null}
     </div>
   );

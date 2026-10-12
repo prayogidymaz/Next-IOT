@@ -1,6 +1,6 @@
 "use client";
 
-import { Shield } from "lucide-react";
+import { Card, Logo } from "@next-iot/ui";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useState } from "react";
 
@@ -41,57 +41,50 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-command-bg px-4">
-      <div className="command-card w-full max-w-md p-8">
-        <div className="mb-6 flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-command-accent-soft text-command-accent">
-            <Shield className="h-6 w-6" />
-          </span>
-          <div>
-            <h1 className="text-lg font-semibold tracking-tight">Next-IoT Command Center</h1>
-            <p className="text-sm text-command-secondary">Super admin access only</p>
-          </div>
-        </div>
-        <form className="space-y-4" onSubmit={onSubmit}>
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+      <Card className="w-full max-w-md p-8" shadow="md">
+        <Logo />
+        <p className="mt-4 text-sm text-slate-500">Sign in to the platform admin console</p>
+        <form className="mt-6 space-y-4" onSubmit={onSubmit}>
           <label className="block text-sm">
-            <span className="text-command-secondary">Email</span>
+            <span className="text-slate-600">Email</span>
             <input
               type="email"
               required
               autoComplete="username"
-              className="command-input mt-1 w-full"
+              className="admin-input mt-1 w-full"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </label>
           <label className="block text-sm">
-            <span className="text-command-secondary">Password</span>
+            <span className="text-slate-600">Password</span>
             <input
               type="password"
               required
               autoComplete="current-password"
-              className="command-input mt-1 w-full"
+              className="admin-input mt-1 w-full"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
           </label>
-          {error ? <p className="text-sm text-red-400">{error}</p> : null}
+          {error ? <p className="text-sm text-red-600">{error}</p> : null}
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-md bg-command-accent py-2.5 text-sm font-semibold text-command-bg transition hover:brightness-110 disabled:opacity-60"
+            className="w-full rounded-md bg-blue-800 py-2.5 text-sm font-semibold text-white hover:bg-blue-900 disabled:opacity-60"
           >
-            {loading ? "Authenticating…" : "Enter command center"}
+            {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>
-      </div>
+      </Card>
     </div>
   );
 }
 
 export default function AdminLoginPage() {
   return (
-    <Suspense fallback={<p className="p-8 text-sm text-command-secondary">Loading…</p>}>
+    <Suspense fallback={<p className="p-8 text-sm text-slate-500">Loading…</p>}>
       <LoginForm />
     </Suspense>
   );

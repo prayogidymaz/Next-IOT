@@ -95,6 +95,12 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Step 9A — Landing page + admin white theme (2026-10-12)
+
+- **`apps/landing`:** Public pre-sales site on port 3002; pricing, features, use-case pages, OG metadata.
+- **`apps/admin`:** Redesign to white/navy enterprise console; `@next-iot/ui` shared package.
+- **`apps/web`:** Unchanged (Tactical Warm Cream tenant HQ).
+
 ### Step 8C — Admin console split + tenant dashboard (2026-10-12)
 
 - **`apps/admin`:** Standalone super-admin Next.js app (port 3001, dark command-center UI); docker service `admin`.

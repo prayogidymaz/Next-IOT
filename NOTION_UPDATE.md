@@ -2,6 +2,12 @@
 
 **Last updated:** 2026-10-12 (UTC+7)  
 
+### Step 9A — Landing + admin white redesign (DONE)
+
+- **`apps/landing`:** Public marketing site port **3002** (hero, features, use cases, pricing, SEO/sitemap).
+- **`apps/admin`:** White professional theme (Stripe/Vercel-style), optional dark mode, shared `@next-iot/ui`.
+- **`packages/ui`:** Logo, Button, Card, Badge, StatCard, EmptyState.
+
 ### Step 8C — Admin app split + tenant command dashboard (DONE)
 
 - **`apps/admin`:** Next.js super-admin console on port **3001** (dark mission-control theme); login gated to `super_admin`.

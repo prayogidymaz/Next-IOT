@@ -136,6 +136,7 @@ services:
       CHOKIDAR_USEPOLLING: "true"
     volumes:
       - ./apps/admin:/app
+      - ./packages/ui:/packages/ui
       - /app/node_modules
       - /app/.next
     depends_on:
@@ -144,6 +145,35 @@ services:
     command: >
       sh -c "if [ ! -d node_modules/next ] || [ ! -d node_modules/recharts ] || [ ! -d node_modules/zod ]; then npm ci; fi &&
              npm run dev -- -H 0.0.0.0 -p 3001"
+    networks:
+      - next-iot-net
+
+  landing:
+    build:
+      context: .
+      dockerfile: apps/landing/Dockerfile
+      target: dev
+    container_name: next-iot-landing
+    restart: always
+    ports:
+      - "${LANDING_PORT:-3002}:3002"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3002
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./apps/landing:/app
+      - ./packages/ui:/packages/ui
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      api:
+        condition: service_started
+    command: >
+      sh -c "if [ ! -d node_modules/next ]; then npm ci; fi &&
+             npm run dev -- -H 0.0.0.0 -p 3002"
     networks:
       - next-iot-net
 

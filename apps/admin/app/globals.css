@@ -2,29 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
-html,
 body {
-  min-height: 100%;
+  @apply bg-white font-sans text-slate-900 antialiased;
 }
 
-body {
-  @apply bg-command-bg font-sans text-command-text antialiased;
+html.dark body {
+  @apply bg-slate-950 text-slate-100;
 }
 
 @layer components {
-  .command-card {
-    @apply rounded-lg border border-command-border bg-command-panel shadow-panel;
+  .admin-input {
+    @apply rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800/20;
   }
 
-  .command-input {
-    @apply rounded-md border border-command-border bg-command-muted px-3 py-2 text-sm text-command-text outline-none focus:border-command-accent;
+  .admin-nav-link {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-600 transition hover:bg-slate-100 hover:text-slate-900;
   }
 
-  .command-nav-link {
-    @apply flex items-center gap-3 rounded-md border border-transparent px-3 py-2.5 text-sm text-command-secondary transition hover:border-command-border hover:bg-command-muted hover:text-command-text;
+  .admin-nav-link-active {
+    @apply bg-blue-50 font-medium text-blue-900;
   }
 
-  .command-nav-link-active {
-    @apply border-command-accent/40 bg-command-accent-soft font-semibold text-command-accent;
+  .admin-table-row {
+    @apply h-14 border-b border-slate-100 transition hover:bg-slate-50;
   }
 }

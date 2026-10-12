@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { AdminShell } from "@/components/AdminShell";
-import { CommandCard } from "@/components/ui/CommandCard";
+import { AdminCard } from "@/components/ui/AdminCard";
 import { fetchSuperAdminTenantDetail, type TenantDetail } from "@/lib/api/super-admin";
 
 export default function AdminTenantDetailPage() {
@@ -29,7 +29,7 @@ export default function AdminTenantDetailPage() {
       {error ? <p className="mt-4 text-sm text-red-400">{error}</p> : null}
       {!detail && !error ? <p className="mt-4 text-sm text-command-secondary">Loading…</p> : null}
       {detail ? (
-        <CommandCard className="mt-4 space-y-3 p-6 font-mono text-sm">
+        <AdminCard className="mt-4 space-y-3 p-6 font-mono text-sm">
           <p>
             <span className="text-command-tertiary">ID</span> {detail.id}
           </p>
@@ -54,7 +54,7 @@ export default function AdminTenantDetailPage() {
           <p>
             <span className="text-command-tertiary">Created</span> {detail.created_at}
           </p>
-        </CommandCard>
+        </AdminCard>
       ) : null}
     </AdminShell>
   );

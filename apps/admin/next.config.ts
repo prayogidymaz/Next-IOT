@@ -5,6 +5,7 @@ const apiProxyTarget = process.env.API_PROXY_TARGET ?? "http://localhost:8000";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: "standalone",
+  transpilePackages: ["@next-iot/ui"],
   async rewrites() {
     return [
       {
