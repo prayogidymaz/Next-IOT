@@ -18,8 +18,7 @@ from app.agriculture.models import (
     AgriSensorDevice,
 )
 from app.database import async_session
-from app.models.partner import Partner  # noqa: F401 — register partners for Tenant FK
-from app.models.tenant import Tenant
+from app.models import Tenant
 
 
 async def main() -> None:
