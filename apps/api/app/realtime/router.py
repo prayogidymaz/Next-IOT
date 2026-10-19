@@ -94,13 +94,13 @@ async def _sse_generator(
     redis = cast(RedisClient, state_redis)
 
     pubsub = redis.pubsub()
-    await pubsub.subscribe(telemetry_channel_for_tenant(tenant_id))
 
     window_start = time.monotonic()
     events_in_window = 0
 
     try:
         yield b"event: connected\ndata: {\"status\":\"ok\"}\n\n"
+        await pubsub.subscribe(telemetry_channel_for_tenant(tenant_id))
         while True:
             if await request.is_disconnected():
                 break
