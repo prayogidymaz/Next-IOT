@@ -8,7 +8,7 @@ from app.main import app
 from redis import Redis as SyncRedis
 from starlette.testclient import TestClient
 
-from tests.conftest import _override_get_redis
+from tests.conftest import _override_get_redis, seed_subscription_plans_sync, truncate_auth_tables
 
 PASSWORD = "SecurePass123!"
 
@@ -22,6 +22,8 @@ def _flush_test_redis_sync() -> None:
 
 @pytest.fixture
 def video_ws_client():
+    truncate_auth_tables()
+    seed_subscription_plans_sync()
     _flush_test_redis_sync()
     redis = aioredis.from_url(settings.redis_url_for_tests(), decode_responses=True)
     app.state.redis = redis
@@ -31,6 +33,7 @@ def video_ws_client():
     app.dependency_overrides.pop(get_redis, None)
     app.state.redis = None
     _flush_test_redis_sync()
+    truncate_auth_tables()
 
 
 def _register_device_sync(client: TestClient) -> dict:
