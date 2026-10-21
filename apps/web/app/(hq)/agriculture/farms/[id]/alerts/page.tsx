@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
@@ -26,7 +26,7 @@ export default function AlertsPage() {
   const [alerts, setAlerts] = useState<Awaited<ReturnType<typeof fetchDiseaseAlerts>>>([]);
   const [forecast, setForecast] = useState<{ day: string; score: number }[]>([]);
 
-  const reload = () => {
+  const reload = useCallback(() => {
     const token = readAccessTokenFromDocument();
     if (!token) return;
     void fetchDiseaseAlerts(token, farmId).then(setAlerts);
@@ -38,11 +38,11 @@ export default function AlertsPage() {
         })),
       ),
     );
-  };
+  }, [farmId]);
 
   useEffect(() => {
     reload();
-  }, [farmId]);
+  }, [reload]);
 
   const run = (fn: (token: string, id: string) => Promise<void>, alertId: string) => {
     const token = readAccessTokenFromDocument();

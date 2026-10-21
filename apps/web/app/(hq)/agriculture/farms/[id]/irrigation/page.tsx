@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
@@ -12,15 +12,15 @@ export default function IrrigationPage() {
   const farmId = String(useParams().id ?? "");
   const [valves, setValves] = useState<Awaited<ReturnType<typeof fetchFarmValves>>>([]);
 
-  const reload = () => {
+  const reload = useCallback(() => {
     const token = readAccessTokenFromDocument();
     if (!token) return;
     void fetchFarmValves(token, farmId).then(setValves);
-  };
+  }, [farmId]);
 
   useEffect(() => {
     reload();
-  }, [farmId]);
+  }, [reload]);
 
   const toggleValve = (valveId: string, state: string) => {
     const token = readAccessTokenFromDocument();

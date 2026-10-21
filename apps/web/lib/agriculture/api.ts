@@ -149,35 +149,40 @@ export async function fetchFarmValves(token: string, farmId: string) {
     .parse(await res.json());
 }
 
-export async function fetchNotificationSettings(token: string, farmId: string) {
+const notificationSettingsSchema = z.object({
+  disease_alerts: z.boolean(),
+  irrigation: z.boolean(),
+  battery: z.boolean(),
+  weather: z.boolean(),
+  harvest: z.boolean(),
+  whatsapp_number: z.string(),
+});
+
+export type AgriNotificationSettings = z.infer<typeof notificationSettingsSchema>;
+
+export async function fetchNotificationSettings(
+  token: string,
+  farmId: string,
+): Promise<AgriNotificationSettings> {
   const res = await fetch(`${apiBase()}/api/agriculture/farms/${farmId}/notification-settings`, {
     headers: authHeaders(token),
   });
   if (!res.ok) throw new Error(String(res.status));
-  return z
-    .object({
-      disease_alerts: z.boolean(),
-      irrigation: z.boolean(),
-      battery: z.boolean(),
-      weather: z.boolean(),
-      harvest: z.boolean(),
-      whatsapp_number: z.string(),
-    })
-    .parse(await res.json());
+  return notificationSettingsSchema.parse(await res.json());
 }
 
 export async function saveNotificationSettings(
   token: string,
   farmId: string,
   body: Record<string, boolean | string>,
-) {
+): Promise<AgriNotificationSettings> {
   const res = await fetch(`${apiBase()}/api/agriculture/farms/${farmId}/notification-settings`, {
     method: "PUT",
     headers: { ...authHeaders(token), "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(String(res.status));
-  return res.json();
+  return notificationSettingsSchema.parse(await res.json());
 }
 
 export async function testFarmNotification(token: string, farmId: string): Promise<{ sent: boolean }> {
