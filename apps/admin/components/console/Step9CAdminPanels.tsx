@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { AdminCard } from "@/components/ui/AdminCard";
 import { AdminDataTable } from "@/components/ui/AdminDataTable";
@@ -164,8 +164,12 @@ export function SupportTicketDetailPanel({ ticketId }: { ticketId: string }) {
   const [ticket, setTicket] = useState<Awaited<ReturnType<typeof fetchSupportTicket>> | null>(null);
   const [reply, setReply] = useState("");
   const [internal, setInternal] = useState(false);
-  const reload = () => void fetchSupportTicket(ticketId).then(setTicket).catch(() => setTicket(null));
-  useEffect(() => { reload(); }, [ticketId]);
+  const reload = useCallback(() => {
+    void fetchSupportTicket(ticketId).then(setTicket).catch(() => setTicket(null));
+  }, [ticketId]);
+  useEffect(() => {
+    reload();
+  }, [reload]);
   if (!ticket) return <p className="text-sm text-slate-500">Loading…</p>;
   return (
     <div className="grid gap-4 lg:grid-cols-3">
