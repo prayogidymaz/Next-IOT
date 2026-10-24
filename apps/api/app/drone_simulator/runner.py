@@ -17,6 +17,7 @@ from app.config import settings
 from app.database import async_session
 from app.drone_simulator.interpolation import GeoPoint, build_mission_path, heading_to, segment_speed_mps
 from app.drone_simulator.lora_mock import build_lora_json_payload, publish_encrypted_lora_mock
+from app.drone_simulator.mesh_events import publish_drone_mesh_event
 from app.drone_simulator.telemetry import ensure_device_online, publish_simulated_telemetry
 from app.models.device import Device
 from app.seed_telemetry import DEMO_DEVICE_NAME
@@ -29,7 +30,15 @@ from app.telemetry.weather_generator import weather_metrics_for_telemetry
 logger = logging.getLogger(__name__)
 
 SUPPORTED_COMMANDS = frozenset(
-    {"GO_TO_MISSION", "TAKEOFF", "RTL", "RETURN_TO_HOME", "EMERGENCY_LAND"}
+    {
+        "GO_TO_MISSION",
+        "GO_TO_WAYPOINT",
+        "TAKEOFF",
+        "RTL",
+        "RETURN_TO_HOME",
+        "EMERGENCY_LAND",
+        "SET_ACTUATOR",
+    }
 )
 
 
@@ -70,15 +79,18 @@ class DroneSimulator:
             return
 
         command_type = payload.get("command_type")
-        if command_type not in SUPPORTED_COMMANDS:
-            return
-
         device_id = payload.get("device_id")
         if not device_id:
             return
+        params_raw = payload.get("params") or {}
+        params = params_raw if isinstance(params_raw, dict) else {}
+        if command_type == "SET_ACTUATOR":
+            await self._handle_actuator(str(device_id), params)
+            return
+        if command_type not in SUPPORTED_COMMANDS:
+            return
 
-        params = payload.get("params") or {}
-        await self._start_flight(device_id, command_type, params)
+        await self._start_flight(str(device_id), str(command_type), params)
 
     async def _start_flight(self, device_id: str, command_type: str, params: dict[str, JsonValue]) -> None:
         existing = self._tasks.pop(device_id, None)
@@ -106,7 +118,19 @@ class DroneSimulator:
                 self._sessions[device_id] = session
 
                 await ensure_device_online(db, self.redis, device)
+                await publish_drone_mesh_event(device, "dispatch_requested", {"command": command_type})
+                await publish_drone_mesh_event(device, "flight_started", {"command": command_type})
                 await db.commit()
+
+                if command_type == "GO_TO_WAYPOINT":
+                    lat = params.get("lat")
+                    lon = params.get("lon") if "lon" in params else params.get("lng")
+                    if isinstance(lat, int | float) and isinstance(lon, int | float):
+                        waypoints = [(float(lat), float(lon))]
+                        command_type = "GO_TO_MISSION"
+                    else:
+                        logger.warning("GO_TO_WAYPOINT missing lat/lon for %s", device_id)
+                        return
 
                 if command_type in {"RTL", "RETURN_TO_HOME"}:
                     path = build_mission_path(
@@ -152,6 +176,7 @@ class DroneSimulator:
                     flight_mode = "mission"
 
                 prev = origin
+                waypoint_index = 0
                 for point in path:
                     async with async_session() as step_db:
                         step_device = await step_db.get(Device, uuid.UUID(device_id))
@@ -176,6 +201,13 @@ class DroneSimulator:
                         }
                         await publish_simulated_telemetry(step_db, self.redis, device=step_device, metrics=metrics)
                         await self._publish_mock_video_frame(device_id)
+                        if waypoint_index == 0 or waypoint_index == len(path) - 1:
+                            await publish_drone_mesh_event(
+                                step_device,
+                                "waypoint_reached",
+                                {"index": waypoint_index, "lat": point.latitude, "lng": point.longitude},
+                            )
+                        waypoint_index += 1
                         await self._maybe_publish_encrypted_lora_mock(
                             node_id=settings.lora_bridge_default_node_id,
                             latitude=point.latitude,
@@ -216,6 +248,7 @@ class DroneSimulator:
                         metrics=metrics,
                         flight_event="simulator.mission_complete",
                     )
+                    await publish_drone_mesh_event(final_device, "flight_completed", {"command": command_type})
 
                 logger.info("Simulator finished %s for device %s (%s)", command_type, device.name, device_id)
 
@@ -224,6 +257,16 @@ class DroneSimulator:
             raise
         except Exception:
             logger.exception("Simulator flight failed for device %s", device_id)
+
+    async def _handle_actuator(self, device_id: str, params: dict[str, JsonValue]) -> None:
+        value = str(params.get("value", ""))
+        async with async_session() as db:
+            device = await self._resolve_device(db, device_id)
+            if device is None:
+                return
+            if value in {"capture_ndvi", "capture_thermal", "capture_image"}:
+                await publish_drone_mesh_event(device, "waypoint_reached", {"capture": value})
+            await db.commit()
 
     async def _resolve_device(self, db, device_id: str) -> Device | None:
         device = await db.get(Device, uuid.UUID(device_id))

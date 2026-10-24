@@ -217,6 +217,115 @@ services:
     networks:
       - next-iot-net
 
+  cctv-simulator:
+    build:
+      context: .
+      dockerfile: infra/simulators/cctv-simulator/Dockerfile
+    profiles: ["simulators"]
+    environment:
+      MQTT_BROKER: emqx
+      MQTT_BROKER_PORT: "1883"
+      TENANT_SLUG: ${SIM_TENANT_SLUG:-kopi-toraja-mitra}
+      DEVICE_SLUG: ${CCTV_DEVICE_SLUG:-cctv-plot-a}
+      TENANT_ID: ${CCTV_TENANT_ID:-}
+      DEVICE_ID: ${CCTV_DEVICE_ID:-}
+      MQTT_USERNAME: ${CCTV_MQTT_USERNAME:-}
+      MQTT_PASSWORD: ${CCTV_MQTT_PASSWORD:-}
+      EMIT_INTERVAL: "30"
+      CCTV_PROBABILITY_MOTION: "0.05"
+    depends_on:
+      emqx:
+        condition: service_healthy
+    networks:
+      - next-iot-net
+
+  sprayer-simulator:
+    build:
+      context: .
+      dockerfile: infra/simulators/sprayer-simulator/Dockerfile
+    profiles: ["simulators"]
+    environment:
+      MQTT_BROKER: emqx
+      TENANT_ID: ${SPRAYER_TENANT_ID:-}
+      DEVICE_ID: ${SPRAYER_DEVICE_ID:-}
+      MQTT_USERNAME: ${SPRAYER_MQTT_USERNAME:-}
+      MQTT_PASSWORD: ${SPRAYER_MQTT_PASSWORD:-}
+      EMIT_INTERVAL: "60"
+    depends_on:
+      emqx:
+        condition: service_healthy
+    networks:
+      - next-iot-net
+
+  gate-simulator:
+    build:
+      context: .
+      dockerfile: infra/simulators/gate-simulator/Dockerfile
+    profiles: ["simulators"]
+    environment:
+      MQTT_BROKER: emqx
+      TENANT_ID: ${GATE_TENANT_ID:-}
+      DEVICE_ID: ${GATE_DEVICE_ID:-}
+      MQTT_USERNAME: ${GATE_MQTT_USERNAME:-}
+      MQTT_PASSWORD: ${GATE_MQTT_PASSWORD:-}
+    depends_on:
+      emqx:
+        condition: service_healthy
+    networks:
+      - next-iot-net
+
+  cyberdeck-simulator:
+    build:
+      context: .
+      dockerfile: infra/simulators/cyberdeck-simulator/Dockerfile
+    profiles: ["simulators"]
+    environment:
+      MQTT_BROKER: emqx
+      TENANT_ID: ${CYBERDECK_TENANT_ID:-}
+      DEVICE_ID: ${CYBERDECK_DEVICE_ID:-}
+      MQTT_USERNAME: ${CYBERDECK_MQTT_USERNAME:-}
+      MQTT_PASSWORD: ${CYBERDECK_MQTT_PASSWORD:-}
+    depends_on:
+      emqx:
+        condition: service_healthy
+    networks:
+      - next-iot-net
+
+  weather-simulator:
+    build:
+      context: .
+      dockerfile: infra/simulators/weather-simulator/Dockerfile
+    profiles: ["simulators"]
+    environment:
+      MQTT_BROKER: emqx
+      TENANT_ID: ${WEATHER_TENANT_ID:-}
+      DEVICE_ID: ${WEATHER_DEVICE_ID:-}
+      MQTT_USERNAME: ${WEATHER_MQTT_USERNAME:-}
+      MQTT_PASSWORD: ${WEATHER_MQTT_PASSWORD:-}
+      EMIT_INTERVAL: "300"
+    depends_on:
+      emqx:
+        condition: service_healthy
+    networks:
+      - next-iot-net
+
+  smartwatch-simulator:
+    build:
+      context: .
+      dockerfile: infra/simulators/smartwatch-simulator/Dockerfile
+    profiles: ["simulators"]
+    environment:
+      MQTT_BROKER: emqx
+      TENANT_ID: ${WATCH_TENANT_ID:-}
+      DEVICE_ID: ${WATCH_DEVICE_ID:-}
+      MQTT_USERNAME: ${WATCH_MQTT_USERNAME:-}
+      MQTT_PASSWORD: ${WATCH_MQTT_PASSWORD:-}
+    depends_on:
+      emqx:
+        condition: service_healthy
+    networks:
+      - next-iot-net
+
   drone-simulator:
     build:
       context: ./apps/api

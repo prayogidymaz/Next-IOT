@@ -2,6 +2,12 @@
 
 **Last updated:** 2026-10-24 (UTC+7)  
 
+### Universal Mesh Phase 1 — Week 7-8 (DONE, local)
+
+- Six mesh device simulators + drone mesh motion events; MQTT ingest bridge; compose `simulators` profile.
+- Guide: `docs/MESH_SIMULATOR_GUIDE.md`; bootstrap `scripts/bootstrap_mesh_simulator_devices.py`.
+- Tests: `tests/mesh/test_simulators.py` (8).
+
 ### Universal Mesh Phase 1 — Week 5-6 (DONE, local)
 
 - **Migration 037:** mesh workflows + execution log tables.

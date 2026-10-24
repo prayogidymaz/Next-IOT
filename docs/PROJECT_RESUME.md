@@ -95,6 +95,15 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Universal Mesh Phase 1 — Week 7-8 (2026-10-24)
+
+- **Simulators:** `app/mesh_simulators/` — CCTV, sprayer, gate, cyberdeck, weather, smartwatch + `cli` entrypoint.
+- **MQTT bridge:** `app/mesh/mqtt_ingest.py` ingests `tenants/+/mesh/events/#` into DB + Redis workflow fan-out.
+- **Drone:** `drone_simulator` publishes `motion/*` mesh events; `GO_TO_WAYPOINT` + `SET_ACTUATOR` capture commands.
+- **Compose:** `profiles: [simulators]` for six optional services under `infra/simulators/`.
+- **Bootstrap:** `scripts/bootstrap_mesh_simulator_devices.py`; guide `docs/MESH_SIMULATOR_GUIDE.md`.
+- **Tests:** `tests/mesh/test_simulators.py` (8).
+
 ### Universal Mesh Phase 1 — Week 5-6 (2026-10-24)
 
 - **Migration 037:** `mesh_workflows` + `mesh_workflow_executions` (DSL JSONB, action results, correlation).

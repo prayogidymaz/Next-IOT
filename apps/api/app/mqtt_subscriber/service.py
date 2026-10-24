@@ -27,6 +27,7 @@ from app.rules.attribute_event import AttributeChangeEvent
 from app.rules.executor import RuleExecutor
 from app.rules.hooks import apply_attribute_change_rules, apply_telemetry_rules
 from app.rules.telemetry_event import TelemetryRuleEvent
+from app.mesh.mqtt_ingest import ingest_mesh_event_from_mqtt
 from app.telemetry.mqtt_payload import parse_telemetry_payload_bytes
 from app.types.redis_client import RedisClient
 
@@ -35,6 +36,7 @@ logger = logging.getLogger(__name__)
 TELEMETRY_SUBSCRIBE_FILTER = "tenants/+/devices/+/telemetry"
 ATTRIBUTES_SUBSCRIBE_FILTER = "tenants/+/devices/+/attributes"
 RPC_RESPONSE_SUBSCRIBE_FILTER = "tenants/+/devices/+/commands/+/response"
+MESH_EVENTS_SUBSCRIBE_FILTER = "tenants/+/mesh/events/#"
 
 
 def _mqtt_client_identifier() -> str:
@@ -215,8 +217,36 @@ class MqttSubscriberService:
         if handled:
             logger.warning("MQTT Subscriber RPC completed: request=%s", parsed.request_id)
 
+    async def _handle_mesh_event(self, message: aiomqtt.Message, topic_str: str) -> None:
+        payload_bytes = _message_payload_bytes(message.payload)
+        if payload_bytes is None:
+            return
+        try:
+            payload_obj: dict[str, JsonValue] = parse_telemetry_payload_bytes(payload_bytes)
+        except Exception as exc:
+            logger.warning("MQTT Subscriber invalid mesh payload on %s: %s", topic_str, exc)
+            return
+        async with async_session() as db:
+            try:
+                handled = await ingest_mesh_event_from_mqtt(
+                    db,
+                    self._redis,
+                    topic=topic_str,
+                    payload_obj=payload_obj,
+                )
+                await db.commit()
+            except Exception:
+                await db.rollback()
+                logger.exception("MQTT Subscriber mesh ingest failed on %s", topic_str)
+                return
+        if handled:
+            logger.warning("MQTT Subscriber mesh event ingested: %s", topic_str)
+
     async def _handle(self, message: aiomqtt.Message) -> None:
         topic_str = str(message.topic)
+        if "/mesh/events/" in topic_str:
+            await self._handle_mesh_event(message, topic_str)
+            return
         if topic_str.endswith("/telemetry"):
             await self._handle_telemetry(message, topic_str)
             return
@@ -245,8 +275,9 @@ class MqttSubscriberService:
                     await client.subscribe(SUBSCRIBER_TELEMETRY_SHARE_FILTER, qos=1)
                     await client.subscribe(SUBSCRIBER_ATTRIBUTES_SHARE_FILTER, qos=1)
                     await client.subscribe(SUBSCRIBER_RPC_RESPONSE_SHARE_FILTER, qos=1)
+                    await client.subscribe(MESH_EVENTS_SUBSCRIBE_FILTER, qos=1)
                     logger.warning(
-                        "MQTT Subscriber connected; subscribed telemetry, attributes, rpc"
+                        "MQTT Subscriber connected; subscribed telemetry, attributes, rpc, mesh"
                     )
                     backoff = 1.0
                     async for message in client.messages:
