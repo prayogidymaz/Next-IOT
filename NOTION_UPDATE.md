@@ -2,6 +2,10 @@
 
 **Last updated:** 2026-10-24 (UTC+7)  
 
+### Universal Mesh Phase 1 — Week 11-12 (DONE, local) — Phase 1 COMPLETE
+
+- FCM tokens + workflow push; mesh cron scheduler; Wear SSE + pairing; E2E pest demo script + docs.
+
 ### Universal Mesh Phase 1 — Week 9-10 (DONE, local)
 
 - **Web:** `/mesh/graph` topology + terminal SSE feed + simulation playground; Automation Studio **Mesh Workflows** tab.

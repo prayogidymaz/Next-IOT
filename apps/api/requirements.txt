@@ -21,3 +21,4 @@ aiomqtt==2.3.0
 aiosmtplib==3.0.2
 Jinja2==3.1.5
 croniter==5.0.1
+firebase-admin==6.6.0

@@ -105,7 +105,7 @@ def _presets() -> list[MeshWorkflowDefinition]:
                     {
                         "id": "action_4",
                         "type": "notification",
-                        "channels": ["whatsapp"],
+                        "channels": ["whatsapp", "fcm"],
                         "template": (
                             "Pest detected plot {{trigger.context.physical_zone}}, "
                             "drone dispatched + NDVI captured."

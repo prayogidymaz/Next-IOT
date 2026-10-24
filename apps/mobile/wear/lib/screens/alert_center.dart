@@ -1,7 +1,9 @@
 import "package:flutter/material.dart";
+import "package:flutter/services.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 
 import "../providers/alert_provider.dart";
+import "../providers/sensor_provider.dart";
 import "../theme/tactical_warm_cream.dart";
 
 class AlertCenterScreen extends ConsumerWidget {
@@ -44,7 +46,36 @@ class AlertCenterScreen extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Text(isAck ? "Acknowledged" : "Swipe to acknowledge"),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            TextButton(
+                              onPressed: isAck
+                                  ? null
+                                  : () async {
+                                      final api = ref.read(meshApiProvider);
+                                      if (alert.id.contains("-")) {
+                                        await api.acknowledgeAlarm(alert.id);
+                                      }
+                                      await api.publishUserAcknowledged(
+                                        deviceId: "00000000-0000-0000-0000-000000000001",
+                                        alertId: alert.id,
+                                      );
+                                      ref.read(acknowledgedAlertsProvider.notifier).acknowledge(alert.id);
+                                      if (alert.severity == "critical") {
+                                        await HapticFeedback.heavyImpact();
+                                      } else {
+                                        await HapticFeedback.mediumImpact();
+                                      }
+                                    },
+                              child: const Text("ACK"),
+                            ),
+                            TextButton(
+                              onPressed: () {},
+                              child: const Text("DETAIL"),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),

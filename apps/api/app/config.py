@@ -91,6 +91,10 @@ class Settings(BaseModel):
     notification_fonnte_default_token: str = ""
     notification_telegram_enabled: bool = True
     notification_fcm_enabled: bool = False
+    fcm_project_id: str = ""
+    fcm_private_key_json_b64: str = ""
+    mesh_scheduler_enabled: bool = True
+    mesh_scheduler_tick_seconds: float = 30.0
     notification_email_smtp_host: str = ""
     notification_email_smtp_port: int = 587
     notification_email_smtp_user: str = ""

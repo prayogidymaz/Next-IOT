@@ -1,6 +1,5 @@
 import "package:dio/dio.dart";
 
-/// Week 9-10 skeleton — methods return mock JSON until Week 11-12 wiring.
 class MeshApi {
   MeshApi({Dio? client, String? baseUrl})
       : _client = client ?? Dio(),
@@ -17,8 +16,11 @@ class MeshApi {
     _jwt = token;
   }
 
-  Map<String, String> _headers() {
+  Map<String, String> _headers({bool json = false}) {
     final headers = <String, String>{"Accept": "application/json"};
+    if (json) {
+      headers["Content-Type"] = "application/json";
+    }
     if (_jwt != null) {
       headers["Authorization"] = "Bearer $_jwt";
     }
@@ -26,72 +28,77 @@ class MeshApi {
   }
 
   Future<List<Map<String, dynamic>>> getFarms() async {
-    try {
-      final res = await _client.get<List<dynamic>>(
-        "$_baseUrl/api/agriculture/farms",
-        options: Options(headers: _headers()),
-      );
-      final data = res.data;
-      if (data == null) return _mockFarms();
-      return data.cast<Map<String, dynamic>>();
-    } catch (_) {
-      return _mockFarms();
+    final res = await _client.get<List<dynamic>>(
+      "$_baseUrl/api/agriculture/farms",
+      options: Options(headers: _headers()),
+    );
+    final data = res.data;
+    if (data == null) {
+      return [];
     }
+    return data.cast<Map<String, dynamic>>();
   }
 
   Future<List<Map<String, dynamic>>> getSensors(String farmId) async {
-    try {
-      final res = await _client.get<Map<String, dynamic>>(
-        "$_baseUrl/api/agriculture/farms/$farmId/map-data",
-        options: Options(headers: _headers()),
-      );
-      final sensors = res.data?["sensors"];
-      if (sensors is List) {
-        return sensors.cast<Map<String, dynamic>>();
-      }
-    } catch (_) {
-      /* skeleton fallback */
+    final res = await _client.get<Map<String, dynamic>>(
+      "$_baseUrl/api/agriculture/farms/$farmId/map-data",
+      options: Options(headers: _headers()),
+    );
+    final sensors = res.data?["sensors"];
+    if (sensors is List) {
+      return sensors.cast<Map<String, dynamic>>();
     }
-    return _mockSensors();
+    return [];
   }
 
   Future<List<Map<String, dynamic>>> getAlerts() async {
-    return _mockAlerts();
+    final res = await _client.get<List<dynamic>>(
+      "$_baseUrl/api/v1/alarms",
+      options: Options(headers: _headers()),
+    );
+    final data = res.data;
+    if (data is List) {
+      return data.cast<Map<String, dynamic>>();
+    }
+    return [];
   }
 
   Future<void> postIrrigation(String valveId, String action) async {
-    try {
-      await _client.post<void>(
-        "$_baseUrl/api/agriculture/valves/$valveId/$action",
-        options: Options(headers: _headers()),
-      );
-    } catch (_) {
-      /* mock no-op */
-    }
+    await _client.post<void>(
+      "$_baseUrl/api/agriculture/valves/$valveId/$action",
+      options: Options(headers: _headers(json: true)),
+    );
   }
 
-  List<Map<String, dynamic>> _mockFarms() => [
-        {"id": "farm-1", "name": "Kopi Toraja Plot A"},
-      ];
+  Future<void> acknowledgeAlarm(String alarmId) async {
+    await _client.post<void>(
+      "$_baseUrl/api/v1/alarms/$alarmId/acknowledge",
+      data: {},
+      options: Options(headers: _headers(json: true)),
+    );
+  }
 
-  List<Map<String, dynamic>> _mockSensors() => [
-        {"name": "Soil moisture", "last_moisture": 42.5},
-        {"name": "Air temp", "last_moisture": 28.1},
-        {"name": "Humidity", "last_moisture": 76.0},
-      ];
+  Future<void> publishUserAcknowledged({
+    required String deviceId,
+    required String alertId,
+  }) async {
+    await _client.post<void>(
+      "$_baseUrl/api/v1/mesh/events",
+      data: {
+        "device_id": deviceId,
+        "domain": "ui",
+        "event_type": "user_acknowledged",
+        "payload": {"alert_id": alertId},
+      },
+      options: Options(headers: _headers(json: true)),
+    );
+  }
 
-  List<Map<String, dynamic>> _mockAlerts() => [
-        {
-          "id": "a1",
-          "title": "Intrusion plot A",
-          "severity": "critical",
-          "acknowledged": false,
-        },
-        {
-          "id": "a2",
-          "title": "Tank low sprayer-2",
-          "severity": "major",
-          "acknowledged": false,
-        },
-      ];
+  Future<void> registerFcmToken(String token) async {
+    await _client.post<void>(
+      "$_baseUrl/api/v1/notifications/fcm/register",
+      data: {"token": token, "device_type": "wear"},
+      options: Options(headers: _headers(json: true)),
+    );
+  }
 }

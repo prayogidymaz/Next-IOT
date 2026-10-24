@@ -48,6 +48,7 @@ from app.models.telemetry_anomaly import TelemetryAnomaly
 from app.models.telemetry_reading import TelemetryReading
 from app.models.tenant import Tenant
 from app.models.tenant_membership import TenantMembership
+from app.models.tenant_user_fcm_token import TenantUserFcmToken
 from app.models.tenant_subscription import TenantSubscription
 from app.models.tenant_usage_daily import TenantUsageDaily
 from app.models.user import User
@@ -73,6 +74,7 @@ __all__ = [
     "MeshWorkflowExecution",
     "User",
     "TenantMembership",
+    "TenantUserFcmToken",
     "DeviceProfile",
     "ProfileDomain",
     "ProfileStatus",

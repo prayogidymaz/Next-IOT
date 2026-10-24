@@ -34,6 +34,7 @@ from app.mavlink.router import router as mavlink_router
 from app.mesh.publisher import init_mesh_publisher
 from app.mesh.router import router as mesh_router
 from app.mesh.workflow_executor import init_mesh_workflow_executor
+from app.mesh.scheduler import mesh_schedule_loop
 from app.mesh.workflow_listener import mesh_workflow_listener_loop
 from app.mesh.workflow_router import router as mesh_workflow_router
 from app.mission.router import router as mission_router
@@ -46,6 +47,7 @@ from app.mqtt_publisher.noop import NoopMqttPublisher
 from app.mqtt_subscriber import MqttSubscriberService
 from app.notifications.gateway_router import channels_router, log_router
 from app.notifications.gateway_router import rules_router as notification_rules_router
+from app.notifications.fcm_router import router as fcm_router
 from app.notifications.router import router as notifications_router
 from app.notifications.worker import notification_dispatcher_loop
 from app.ota.router import router as ota_router
@@ -136,6 +138,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             asyncio.create_task(rule_schedule_loop(stop_event)),
             asyncio.create_task(agriculture_jobs_loop(redis, stop_event)),
             asyncio.create_task(mesh_workflow_listener_loop(redis, stop_event)),
+            asyncio.create_task(mesh_schedule_loop(redis, stop_event)),
         ]
     mqtt_publisher: MqttPublisherService | NoopMqttPublisher
     if settings.mqtt_publisher_enabled and settings.run_background_workers:
@@ -206,6 +209,7 @@ app.include_router(rules_router)
 app.include_router(alerts_router)
 app.include_router(alarms_router)
 app.include_router(notifications_router)
+app.include_router(fcm_router)
 app.include_router(channels_router)
 app.include_router(notification_rules_router)
 app.include_router(log_router)

@@ -42,3 +42,21 @@ curl -X POST http://localhost:8000/api/v1/mesh/events -H "Authorization: Bearer 
 ## Drone simulator
 
 Existing service `drone-simulator` now emits `motion/*` mesh events over MQTT when flights run. MAVLink/Redis command flow unchanged.
+
+## CCTV HTTP trigger (playground)
+
+With simulators profile, CCTV exposes `POST http://localhost:9100/simulate-motion` (`{"confidence":0.9}`).
+
+## FCM tokens (Wear / mobile)
+
+1. Enable API: `NOTIFICATION_FCM_ENABLED=true` (+ `FCM_PROJECT_ID`, `FCM_PRIVATE_KEY_JSON` base64)
+2. Wear registers: `POST /api/v1/notifications/fcm/register` with Bearer JWT
+3. Mesh workflow `notification` action with `"fcm"` in `channels` pushes to tenant tokens
+
+## E2E demo script
+
+```bash
+python scripts/demo_farm_pest_response.py --skip-compose
+```
+
+See `docs/MESH_PHASE1_COMPLETE.md` for full Phase 1 overview.

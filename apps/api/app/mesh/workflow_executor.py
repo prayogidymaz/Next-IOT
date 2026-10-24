@@ -390,8 +390,31 @@ class MeshWorkflowExecutor:
 
             dispatcher = AgriNotificationDispatcher(db, self._redis)
             sent = await dispatcher.send_custom_message(farm_id, "Mesh workflow", message)
+        fcm_sent = 0
+        if "fcm" in action.channels:
+            from app.notifications.fcm_push import get_fcm_push_client
+            from app.notifications.fcm_token_service import delete_fcm_token_by_value, list_tenant_fcm_tokens
+
+            client = get_fcm_push_client()
+            tokens = await list_tenant_fcm_tokens(db, tenant_id)
+            for row in tokens:
+                result = await client.send(
+                    row.token,
+                    title="Mesh workflow",
+                    body=message,
+                    data={"tenant_id": str(tenant_id), "severity": action.severity or "info"},
+                )
+                if result.unregistered:
+                    await delete_fcm_token_by_value(db, row.token)
+                elif result.success:
+                    fcm_sent += 1
         channel_list: list[JsonValue] = [str(channel) for channel in action.channels]
-        return {"message": message, "whatsapp_sent": sent, "channels": channel_list}
+        return {
+            "message": message,
+            "whatsapp_sent": sent,
+            "fcm_sent": fcm_sent,
+            "channels": channel_list,
+        }
 
     async def _run_set_attribute(
         self,

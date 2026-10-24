@@ -95,6 +95,13 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Universal Mesh Phase 1 — Week 11-12 (2026-10-24) — COMPLETE
+
+- **FCM:** `tenant_user_fcm_tokens` (038), push client, workflow `notification` channel `fcm`, register API.
+- **Scheduler:** `mesh_schedule_loop` for `schedule` triggers (croniter + hot reload).
+- **Wear live:** SSE stream, secure JWT pairing QR, alarm ACK + `ui/user_acknowledged` mesh event.
+- **E2E:** `scripts/demo_farm_pest_response.py`, `tests/mesh/test_e2e_demo.py`, `docs/MESH_PHASE1_COMPLETE.md`.
+
 ### Universal Mesh Phase 1 — Week 9-10 (2026-10-24)
 
 - **Web HQ:** `/mesh/graph` — React Flow topology, SSE terminal feed (fetch + Bearer), simulation playground, device drawer.
