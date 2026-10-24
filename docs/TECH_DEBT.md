@@ -55,6 +55,11 @@ Internal broker credentials: `MQTT_SUBSCRIBER_INTERNAL_USER` / `MQTT_SUBSCRIBER_
 
 **RPC sync wait:** `app/rpc/event_registry.py` is in-process only; multi-instance API needs Redis pub/sub (or similar) to resolve `request_id` across workers.
 
+## Universal Mesh (Phase 1 follow-up)
+
+- **Week 3+:** Mesh adjacency graph API, capability-based rule triggers, geo_zone on devices (not only profiles).
+- **`devices_with_capability`:** O(n) scan per tenant — add JSONB/GIN index or materialized capability view when fleet scale requires it.
+
 ## Next actions
 
 1. Port rows from `apps/dashboard/FROZEN.md` into `apps/web`.

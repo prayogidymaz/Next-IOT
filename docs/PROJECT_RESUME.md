@@ -95,6 +95,13 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Universal Mesh Phase 1 — Week 1-2 (2026-10-24)
+
+- **Migration 035:** `device_profiles` mesh fields — `capabilities`, `geo_location`, `physical_zone`, `network_adjacency` (all nullable).
+- **Capability registry:** `app/mesh/capabilities.py` — standardized keys, validation, legacy inference, `devices_with_capability` query.
+- **Seeds:** 7 Smart Farming mesh profiles (`agri_sensor_v2` … `agri_weather_station`) via `scripts/seed_mesh_agri_profiles.py`.
+- **Tests:** `tests/mesh/test_capabilities.py` (registry + seed + backward compat).
+
 ### Step 11 — Smart Agriculture vertical (2026-10-13)
 
 - **Migration 033:** LoRa agriculture schema (8 tables + irrigation logs + battery history); demo farms (kopi, sawit, padi).

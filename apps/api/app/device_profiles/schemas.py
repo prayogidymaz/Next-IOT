@@ -7,12 +7,21 @@ from app.device_profiles.spec import KEY_PATTERN, ThingModelSpec
 from app.models.device_profile import ProfileDomain, ProfileStatus
 
 
+class GeoLocation(BaseModel):
+    lat: float
+    lng: float
+
+
 class DeviceProfileCreateRequest(BaseModel):
     key: str = Field(min_length=1, max_length=64)
     name: str = Field(min_length=1, max_length=255)
     description: str = Field(default="", max_length=4000)
     domain: ProfileDomain
     spec: ThingModelSpec
+    capabilities: list[str] | None = None
+    geo_location: GeoLocation | None = None
+    physical_zone: str | None = Field(default=None, max_length=128)
+    network_adjacency: list[str] | None = None
 
     @field_validator("key")
     @classmethod
@@ -27,6 +36,10 @@ class DeviceProfileUpdateRequest(BaseModel):
     description: str | None = Field(default=None, max_length=4000)
     domain: ProfileDomain | None = None
     spec: ThingModelSpec | None = None
+    capabilities: list[str] | None = None
+    geo_location: GeoLocation | None = None
+    physical_zone: str | None = Field(default=None, max_length=128)
+    network_adjacency: list[str] | None = None
 
 
 class DeviceProfileResponse(BaseModel):
@@ -39,6 +52,10 @@ class DeviceProfileResponse(BaseModel):
     version: int
     status: ProfileStatus
     spec: ThingModelSpec
+    capabilities: list[str] | None = None
+    geo_location: GeoLocation | None = None
+    physical_zone: str | None = None
+    network_adjacency: list[str] | None = None
     created_at: datetime
     updated_at: datetime
 

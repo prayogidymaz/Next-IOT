@@ -13,10 +13,35 @@ from app.device_profiles.schemas import (
     DeviceProfileCreateRequest,
     DeviceProfileResponse,
     DeviceProfileUpdateRequest,
+    GeoLocation,
 )
 from app.device_profiles.spec import parse_thing_model_spec, spec_to_storage
+from app.mesh.capabilities import validate_capability
 from app.models.device import Device, DeviceStatus
 from app.models.device_profile import DeviceProfile, ProfileDomain, ProfileStatus
+
+
+def _parse_geo(raw: dict[str, object] | None) -> GeoLocation | None:
+    if raw is None:
+        return None
+    lat = raw.get("lat")
+    lng = raw.get("lng")
+    if isinstance(lat, int | float) and isinstance(lng, int | float):
+        return GeoLocation(lat=float(lat), lng=float(lng))
+    return None
+
+
+def _parse_capabilities(raw: list[str] | None) -> list[str] | None:
+    if raw is None:
+        return None
+    filtered = [key for key in raw if validate_capability(key)]
+    return filtered
+
+
+def _geo_to_storage(geo: GeoLocation | None) -> dict[str, object] | None:
+    if geo is None:
+        return None
+    return {"lat": geo.lat, "lng": geo.lng}
 
 
 def _to_response(profile: DeviceProfile) -> DeviceProfileResponse:
@@ -31,6 +56,10 @@ def _to_response(profile: DeviceProfile) -> DeviceProfileResponse:
         version=profile.version,
         status=ProfileStatus(profile.status),
         spec=spec,
+        capabilities=_parse_capabilities(profile.capabilities),
+        geo_location=_parse_geo(profile.geo_location),
+        physical_zone=profile.physical_zone,
+        network_adjacency=profile.network_adjacency,
         created_at=profile.created_at,
         updated_at=profile.updated_at,
     )
@@ -114,6 +143,10 @@ async def create_device_profile(
         version=1,
         status=ProfileStatus.DRAFT,
         spec=spec_to_storage(payload.spec),
+        capabilities=payload.capabilities,
+        geo_location=_geo_to_storage(payload.geo_location),
+        physical_zone=payload.physical_zone,
+        network_adjacency=payload.network_adjacency,
     )
     db.add(profile)
     await db.flush()
@@ -148,6 +181,14 @@ async def update_device_profile(
         profile.domain = payload.domain.value
     if payload.spec is not None:
         profile.spec = spec_to_storage(payload.spec)
+    if payload.capabilities is not None:
+        profile.capabilities = payload.capabilities
+    if payload.geo_location is not None:
+        profile.geo_location = _geo_to_storage(payload.geo_location)
+    if payload.physical_zone is not None:
+        profile.physical_zone = payload.physical_zone
+    if payload.network_adjacency is not None:
+        profile.network_adjacency = payload.network_adjacency
 
     await db.flush()
     await db.refresh(profile)
