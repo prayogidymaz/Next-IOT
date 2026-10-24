@@ -258,6 +258,12 @@ class AgriNotificationDispatcher:
             24 * 3600,
         )
 
+    async def send_custom_message(self, farm_id: uuid.UUID, title: str, body: str) -> bool:
+        farm = await self._db.scalar(select(AgriFarm).where(AgriFarm.id == farm_id))
+        if farm is None:
+            return False
+        return await self._send(farm, title, body, "info", None, 0)
+
     async def send_test(self, farm_id: uuid.UUID) -> bool:
         farm = await self._db.scalar(select(AgriFarm).where(AgriFarm.id == farm_id))
         if farm is None:

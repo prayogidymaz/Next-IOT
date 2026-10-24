@@ -42,11 +42,13 @@ _test_sync_url, _test_async_url = _bootstrap_test_database_env()
 import psycopg2
 import pytest
 from app.config import settings
-from app.database import engine
+from app.database import async_session, engine
 from app.deps import get_redis
 from app.main import app
 from app.mqtt_publisher.noop import NoopMqttPublisher
 from app.mesh.publisher import init_mesh_publisher
+from app.mesh.workflow_executor import init_mesh_workflow_executor
+from app.mesh.workflow_registry import reload_workflows
 from app.rules.executor import init_rule_executor
 from app.types.redis_client import RedisClient, close_redis, redis_from_url
 from fastapi import Request
@@ -189,10 +191,14 @@ async def client(test_redis: RedisClient) -> AsyncIterator[AsyncClient]:
     publisher = NoopMqttPublisher()
     app.state.redis = test_redis
     app.state.mqtt_publisher = publisher
-    init_mesh_publisher(test_redis, publisher)
+    mesh_publisher = init_mesh_publisher(test_redis, publisher)
+    init_mesh_workflow_executor(test_redis, mesh_publisher, publisher)
     rule_executor = init_rule_executor(test_redis, publisher)
     await rule_executor.startup()
     app.state.rule_executor = rule_executor
+    async with async_session() as session:
+        await reload_workflows(session)
+        await session.commit()
     app.state.startup_ready = True
     app.dependency_overrides[get_redis] = _override_get_redis(test_redis)
 

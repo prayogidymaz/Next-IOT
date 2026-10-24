@@ -2,6 +2,14 @@
 
 **Last updated:** 2026-10-24 (UTC+7)  
 
+### Universal Mesh Phase 1 — Week 5-6 (DONE, local)
+
+- **Migration 037:** mesh workflows + execution log tables.
+- **Engine:** DSL, device resolver (haversine), executor, Redis listener + dedup.
+- **API:** workflow CRUD, dry-run, manual execute, execution history.
+- **Presets:** `scripts/seed_mesh_preset_workflows.py` (4 demo flows).
+- **Tests:** `tests/mesh/test_workflow.py` (11).
+
 ### Universal Mesh Phase 1 — Week 3-4 (DONE, local)
 
 - **Migration 036:** `mesh_events` table + indexes (30d retention policy deferred to tiering).

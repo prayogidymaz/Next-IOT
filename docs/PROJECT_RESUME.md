@@ -95,6 +95,15 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Universal Mesh Phase 1 — Week 5-6 (2026-10-24)
+
+- **Migration 037:** `mesh_workflows` + `mesh_workflow_executions` (DSL JSONB, action results, correlation).
+- **Workflow DSL:** `workflow_schema.py` — mesh_event/schedule/manual triggers, conditions, cross-domain action chain + `{{template}}` vars.
+- **Device resolver:** capability/zone/geo nearest (haversine), explicit device id.
+- **Executor + listener:** Redis `mesh:tenant:*` hook, dedup, command/notification/wait/log/alarm actions; presets seed script.
+- **API:** `/api/v1/mesh/workflows` CRUD, test dry-run, execute, execution logs.
+- **Tests:** `tests/mesh/test_workflow.py` (11 cases).
+
 ### Universal Mesh Phase 1 — Week 3-4 (2026-10-24)
 
 - **Migration 036:** `mesh_events` audit log (domain/event_type indexes, correlation + parent chain, composite tenant query index).

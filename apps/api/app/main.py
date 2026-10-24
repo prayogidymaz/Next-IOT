@@ -33,6 +33,9 @@ from app.hardware.router import router as hardware_router
 from app.mavlink.router import router as mavlink_router
 from app.mesh.publisher import init_mesh_publisher
 from app.mesh.router import router as mesh_router
+from app.mesh.workflow_executor import init_mesh_workflow_executor
+from app.mesh.workflow_listener import mesh_workflow_listener_loop
+from app.mesh.workflow_router import router as mesh_workflow_router
 from app.mission.router import router as mission_router
 from app.mission.sar_emergency_router import router as sar_emergency_ws_router
 from app.models.user import User
@@ -132,6 +135,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             asyncio.create_task(alarm_maintenance_loop(stop_event)),
             asyncio.create_task(rule_schedule_loop(stop_event)),
             asyncio.create_task(agriculture_jobs_loop(redis, stop_event)),
+            asyncio.create_task(mesh_workflow_listener_loop(redis, stop_event)),
         ]
     mqtt_publisher: MqttPublisherService | NoopMqttPublisher
     if settings.mqtt_publisher_enabled and settings.run_background_workers:
@@ -140,7 +144,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     else:
         mqtt_publisher = NoopMqttPublisher()
     app.state.mqtt_publisher = mqtt_publisher
-    init_mesh_publisher(redis, mqtt_publisher)
+    mesh_event_publisher = init_mesh_publisher(redis, mqtt_publisher)
+    init_mesh_workflow_executor(redis, mesh_event_publisher, mqtt_publisher)
     rule_executor = init_rule_executor(redis, mqtt_publisher)
     await rule_executor.startup()
     app.state.rule_executor = rule_executor
@@ -222,6 +227,7 @@ app.include_router(super_admin_router)
 app.include_router(support_router)
 app.include_router(agriculture_router)
 app.include_router(mesh_router)
+app.include_router(mesh_workflow_router)
 app.include_router(tenants_router)
 app.include_router(users_router)
 app.include_router(audit_router)
