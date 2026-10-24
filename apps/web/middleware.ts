@@ -30,5 +30,7 @@ export const config = {
     "/alarms/:path*",
     "/notification-settings/:path*",
     "/claim-tokens/:path*",
+    "/mesh/:path*",
+    "/agriculture/:path*",
   ],
 };

@@ -222,6 +222,8 @@ services:
       context: .
       dockerfile: infra/simulators/cctv-simulator/Dockerfile
     profiles: ["simulators"]
+    ports:
+      - "9100:9100"
     environment:
       MQTT_BROKER: emqx
       MQTT_BROKER_PORT: "1883"
@@ -233,6 +235,7 @@ services:
       MQTT_PASSWORD: ${CCTV_MQTT_PASSWORD:-}
       EMIT_INTERVAL: "30"
       CCTV_PROBABILITY_MOTION: "0.05"
+      SIMULATOR_HTTP_PORT: "9100"
     depends_on:
       emqx:
         condition: service_healthy

@@ -87,6 +87,7 @@ async def test_weather_simulator_publishes_forecast() -> None:
     sim = WeatherSimulator()
     await sim.publish_forecast(pub, 0.82)
     assert pub.events[0]["domain"] == MeshDomain.SENSOR.value
+    assert pub.events[0]["event_type"] == "weather_forecast"
 
 
 @pytest.mark.asyncio

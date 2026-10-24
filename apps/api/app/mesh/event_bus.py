@@ -18,6 +18,7 @@ DOMAIN_EVENT_TYPES: dict[MeshDomain, frozenset[str]] = {
     MeshDomain.SENSOR: frozenset(
         {
             "reading_update",
+            "weather_forecast",
             "threshold_exceeded",
             "calibration_needed",
             "battery_low",

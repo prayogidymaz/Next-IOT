@@ -95,6 +95,14 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Universal Mesh Phase 1 — Week 9-10 (2026-10-24)
+
+- **Web HQ:** `/mesh/graph` — React Flow topology, SSE terminal feed (fetch + Bearer), simulation playground, device drawer.
+- **Automation Studio:** tab **Mesh Workflows** — cross-domain palette, deploy/test against `/api/v1/mesh/workflows`.
+- **Wear OS:** `apps/mobile/wear` — Riverpod skeleton, 4 tactical screens, mock `MeshApi` (live SSE Week 11-12).
+- **Simulators:** CCTV HTTP `POST :9100/simulate-motion`; weather `weather_forecast` event type.
+- **Tests:** `apps/web` vitest mesh smoke; `apps/mobile/wear` widget tests; mesh API pytest unchanged (33+).
+
 ### Universal Mesh Phase 1 — Week 7-8 (2026-10-24)
 
 - **Simulators:** `app/mesh_simulators/` — CCTV, sprayer, gate, cyberdeck, weather, smartwatch + `cli` entrypoint.

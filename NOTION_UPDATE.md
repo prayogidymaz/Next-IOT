@@ -2,6 +2,13 @@
 
 **Last updated:** 2026-10-24 (UTC+7)  
 
+### Universal Mesh Phase 1 — Week 9-10 (DONE, local)
+
+- **Web:** `/mesh/graph` topology + terminal SSE feed + simulation playground; Automation Studio **Mesh Workflows** tab.
+- **Wear:** `apps/mobile/wear` MVP skeleton (4 screens, mock API, `wear` plugin).
+- **Simulators:** CCTV `POST :9100/simulate-motion`; weather `weather_forecast` event type.
+- **Tests:** web vitest smoke; wear widget tests; mesh pytest 33 passed.
+
 ### Universal Mesh Phase 1 — Week 7-8 (DONE, local)
 
 - Six mesh device simulators + drone mesh motion events; MQTT ingest bridge; compose `simulators` profile.

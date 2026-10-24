@@ -23,6 +23,7 @@ async def run_mqtt_loop(
     *,
     on_tick: TickHandler,
     on_command: CommandHandler,
+    on_publisher_ready: Callable[[MqttMeshPublisher], Awaitable[None]] | None = None,
 ) -> None:
     async with aiomqtt.Client(
         hostname=env.mqtt_broker,
@@ -33,6 +34,8 @@ async def run_mqtt_loop(
         publisher = MqttMeshPublisher(env, client)
         cmd_topic = command_topic(env.tenant_id, env.device_id)
         await client.subscribe(cmd_topic)
+        if on_publisher_ready is not None:
+            await on_publisher_ready(publisher)
 
         async def _command_loop() -> None:
             async for message in client.messages:

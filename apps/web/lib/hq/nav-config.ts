@@ -16,6 +16,7 @@ import {
   Users,
   Sprout,
   Workflow,
+  Share2,
 } from "lucide-react";
 
 export type HqNavItem = {
@@ -143,6 +144,13 @@ export const HQ_NAV_SECTIONS: HqNavSection[] = [
         accentClass: "text-accent-amber",
         iconBgClass: "bg-accent-amber-soft",
       },
+      {
+        href: "/mesh/graph",
+        label: "Mesh Graph",
+        icon: Share2,
+        accentClass: "text-[#556B4A]",
+        iconBgClass: "bg-[#F5EFE0]",
+      },
     ],
   },
   {
@@ -230,6 +238,7 @@ export const HQ_PAGE_TITLES: Record<string, string> = {
   "/billing": "Billing",
   "/pricing": "Pricing",
   "/studio/automation": "Automations",
+  "/mesh/graph": "Mesh Graph",
   "/studio/missions": "Mission Studio",
   "/developer/api-keys": "API Keys",
   "/settings/tenant-branding": "Tenant Settings",

@@ -27,7 +27,7 @@ class WeatherSimulator:
     async def publish_forecast(self, publisher: MeshPublisher, rain_probability: float) -> None:
         await publisher.publish_mesh(
             MeshDomain.SENSOR,
-            "reading_update",
+            "weather_forecast",
             {
                 "forecast": "rain_likely",
                 "rain_probability": rain_probability,

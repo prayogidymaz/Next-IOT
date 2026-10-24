@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import sys
 
 from app.mesh.event_bus import MeshDomain
@@ -34,6 +35,8 @@ async def _sprayer_tick(publisher: MeshPublisher) -> None:
 
 async def run_cctv(env: SimulatorEnv) -> None:
     sim = CctvSimulator(env)
+    publisher_ref: list[MeshPublisher] = []
+    http_port = int(os.environ.get("SIMULATOR_HTTP_PORT", "0"))
 
     async def on_command(
         _publisher: MeshPublisher,
@@ -42,10 +45,31 @@ async def run_cctv(env: SimulatorEnv) -> None:
     ) -> CommandResult:
         return await sim.handle_command(command_type, params)
 
+    async def on_publisher_ready(publisher: MeshPublisher) -> None:
+        publisher_ref.clear()
+        publisher_ref.append(publisher)
+        if http_port <= 0:
+            return
+        from app.mesh_simulators.http_sidecar import build_cctv_http_app, run_http_sidecar
+
+        app = build_cctv_http_app(env, sim, publisher_ref)
+        env_with_port = SimulatorEnv(
+            tenant_id=env.tenant_id,
+            device_id=env.device_id,
+            mqtt_broker=env.mqtt_broker,
+            mqtt_port=env.mqtt_port,
+            mqtt_username=env.mqtt_username,
+            mqtt_password=env.mqtt_password,
+            emit_interval_seconds=env.emit_interval_seconds,
+            http_port=http_port,
+        )
+        asyncio.create_task(run_http_sidecar(env_with_port, app))
+
     await run_mqtt_loop(
         env,
         on_tick=lambda publisher: run_tick(publisher, sim),
         on_command=on_command,
+        on_publisher_ready=on_publisher_ready,
     )
 
 
