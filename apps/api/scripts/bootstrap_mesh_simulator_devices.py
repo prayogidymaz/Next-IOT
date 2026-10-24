@@ -5,19 +5,24 @@ Run:
   docker compose exec -T api python scripts/bootstrap_mesh_simulator_devices.py --tenant-slug kopi-toraja-mitra
 """
 
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import argparse
 import asyncio
 import uuid
 
 from app.database import async_session
-from app.devices.security import (
-    generate_access_token,
-    generate_client_secret,
-    generate_connection_client_id,
-    hash_device_secret,
-)
+from app.devices.security import generate_client_secret, hash_device_secret
 from app.models.device import Device, DeviceStatus
-from app.models.device_credential import CredentialType, DeviceCredential
+from app.models.device_credential import (
+    CredentialType,
+    DeviceCredential,
+    generate_access_token,
+    generate_connection_client_id,
+)
 from app.models.device_profile import DeviceProfile
 from app.models.tenant import Tenant
 from sqlalchemy import select

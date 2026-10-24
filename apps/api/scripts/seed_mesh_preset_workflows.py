@@ -4,6 +4,11 @@
 Run: docker compose exec -T api python scripts/seed_mesh_preset_workflows.py --tenant-slug kopi-toraja-mitra
 """
 
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import argparse
 import asyncio
 
