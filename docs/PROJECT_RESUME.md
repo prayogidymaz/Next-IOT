@@ -95,6 +95,16 @@ Permanent rules live in **`.cursorrules`** (root):
 
 ## Changelog
 
+### Universal Mesh Phase 1 — Week 3-4 (2026-10-24)
+
+- **Migration 036:** `mesh_events` audit log (domain/event_type indexes, correlation + parent chain, composite tenant query index).
+- **Event bus:** `app/mesh/event_bus.py` — topic `tenants/{tid}/mesh/events/{domain}/{event_type}`, six domains + validated event types.
+- **Protocol:** `MeshEvent` / `MeshContext` schemas; `context_resolver` (agri sensor + device profile, Redis TTL 60s, invalidate on profile patch).
+- **Publisher/subscriber:** MQTT + Redis fan-out; `init_mesh_publisher` in API lifespan + test client fixture.
+- **API:** `POST/GET /api/v1/mesh/events`, chain walk, SSE `/api/v1/mesh/events/stream`.
+- **Backward compat:** telemetry ingest → `sensor/reading_update`; new critical/major alarms → `security/intrusion_detected` (fire-and-forget).
+- **Tests:** `tests/mesh/test_event_bus.py` (9 cases) + existing capability tests.
+
 ### Universal Mesh Phase 1 — Week 1-2 (2026-10-24)
 
 - **Migration 035:** `device_profiles` mesh fields — `capabilities`, `geo_location`, `physical_zone`, `network_adjacency` (all nullable).

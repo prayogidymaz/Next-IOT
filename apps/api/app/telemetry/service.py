@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -6,6 +7,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import CurrentUser
+
+logger = logging.getLogger(__name__)
 from app.automation.events import publish_automation_event
 from app.automation.pipeline_interpreter import pipeline_interpreter_service
 from app.commands.fail_safe import fail_safe_protocol
@@ -200,6 +203,18 @@ async def ingest_telemetry(
             event_type="WEATHER_HAZARD",
             context=weather_context,
         )
+
+    try:
+        from app.mesh.integration import schedule_sensor_reading_mesh_event
+
+        schedule_sensor_reading_mesh_event(
+            device.tenant_id,
+            device.device_id,
+            metrics,
+            recorded_at.isoformat(),
+        )
+    except Exception:
+        logger.exception("Mesh telemetry auto-publish scheduling failed device_id=%s", device.device_id)
 
     return TelemetryIngestResponse(
         reading_id=reading.id,

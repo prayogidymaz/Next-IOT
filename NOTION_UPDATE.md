@@ -1,6 +1,14 @@
 # Next-IOT — Notion Update Log (Master Changelog)
 
-**Last updated:** 2026-10-13 (UTC+7)  
+**Last updated:** 2026-10-24 (UTC+7)  
+
+### Universal Mesh Phase 1 — Week 3-4 (DONE, local)
+
+- **Migration 036:** `mesh_events` table + indexes (30d retention policy deferred to tiering).
+- **Mesh layer:** event bus topics, `MeshEvent` + context protocol, publisher/subscriber, Redis cache for context.
+- **API:** `/api/v1/mesh/events` CRUD/query/chain + tenant SSE stream.
+- **Hooks:** telemetry + high-severity alarm auto-publish (non-blocking).
+- **Tests:** `tests/mesh/test_event_bus.py` (9).
 
 ### Step 11 — Smart Agriculture vertical (DONE)
 

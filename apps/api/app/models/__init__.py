@@ -28,6 +28,7 @@ from app.models.firmware_release import FirmwareRelease, OtaDeviceRollout
 from app.models.geofence_zone import GeofenceAction, GeofenceZone
 from app.models.impersonation_session import ImpersonationSession, ImpersonationSessionAction
 from app.models.invoice import Invoice
+from app.models.mesh_event import MeshEventRecord
 from app.models.notification_gateway import NotificationChannel, NotificationLog, NotificationRule
 from app.models.partner import Partner, PartnerCommission, PartnerReferral
 from app.models.payment_method import PaymentMethod
@@ -66,6 +67,7 @@ __all__ = [
     "TenantSubscription",
     "TenantUsageDaily",
     "Invoice",
+    "MeshEventRecord",
     "User",
     "TenantMembership",
     "DeviceProfile",

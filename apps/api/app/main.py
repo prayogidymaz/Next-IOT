@@ -31,6 +31,8 @@ from app.devices.worker import offline_checker_loop
 from app.firmware_studio.router import router as firmware_studio_router
 from app.hardware.router import router as hardware_router
 from app.mavlink.router import router as mavlink_router
+from app.mesh.publisher import init_mesh_publisher
+from app.mesh.router import router as mesh_router
 from app.mission.router import router as mission_router
 from app.mission.sar_emergency_router import router as sar_emergency_ws_router
 from app.models.user import User
@@ -138,6 +140,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     else:
         mqtt_publisher = NoopMqttPublisher()
     app.state.mqtt_publisher = mqtt_publisher
+    init_mesh_publisher(redis, mqtt_publisher)
     rule_executor = init_rule_executor(redis, mqtt_publisher)
     await rule_executor.startup()
     app.state.rule_executor = rule_executor
@@ -218,6 +221,7 @@ app.include_router(billing_router)
 app.include_router(super_admin_router)
 app.include_router(support_router)
 app.include_router(agriculture_router)
+app.include_router(mesh_router)
 app.include_router(tenants_router)
 app.include_router(users_router)
 app.include_router(audit_router)

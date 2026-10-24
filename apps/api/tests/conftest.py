@@ -46,6 +46,7 @@ from app.database import engine
 from app.deps import get_redis
 from app.main import app
 from app.mqtt_publisher.noop import NoopMqttPublisher
+from app.mesh.publisher import init_mesh_publisher
 from app.rules.executor import init_rule_executor
 from app.types.redis_client import RedisClient, close_redis, redis_from_url
 from fastapi import Request
@@ -188,6 +189,7 @@ async def client(test_redis: RedisClient) -> AsyncIterator[AsyncClient]:
     publisher = NoopMqttPublisher()
     app.state.redis = test_redis
     app.state.mqtt_publisher = publisher
+    init_mesh_publisher(test_redis, publisher)
     rule_executor = init_rule_executor(test_redis, publisher)
     await rule_executor.startup()
     app.state.rule_executor = rule_executor

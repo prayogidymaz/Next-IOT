@@ -146,6 +146,18 @@ async def upsert_alarm(
     await _append_history(db, row.id, AlarmHistoryAction.CREATED)
     if notify:
         _schedule_notifications(row.id)
+    try:
+        from app.mesh.integration import schedule_security_intrusion_mesh_event
+
+        schedule_security_intrusion_mesh_event(
+            row.tenant_id,
+            row.device_id,
+            row.id,
+            row.severity,
+            row.title,
+        )
+    except Exception:
+        logger.exception("Mesh alarm auto-publish scheduling failed alarm_id=%s", row.id)
     from app.rules.executor import get_rule_executor
 
     executor = get_rule_executor()

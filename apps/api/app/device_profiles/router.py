@@ -6,7 +6,8 @@ from fastapi import APIRouter, Depends, Query, Request, status
 from app.auth.context import CurrentUser
 from app.auth.dependencies import RequireTenantAdmin, require_roles
 from app.auth.rbac import UserRole
-from app.deps import DbSession
+from app.deps import DbSession, RedisDep
+from app.mesh.context_resolver import invalidate_context_for_profile
 from app.device_profiles import service
 from app.device_profiles.schemas import (
     DeviceProfileCreateRequest,
@@ -61,8 +62,11 @@ async def update_device_profile(
     payload: DeviceProfileUpdateRequest,
     user: RequireTenantAdmin,
     db: DbSession,
+    redis: RedisDep,
 ) -> DeviceProfileResponse:
-    return await service.update_device_profile(db, user, profile_id, payload)
+    response = await service.update_device_profile(db, user, profile_id, payload)
+    await invalidate_context_for_profile(redis, db, profile_id)
+    return response
 
 
 @router.post("/{profile_id}/publish", response_model=DeviceProfileResponse)
