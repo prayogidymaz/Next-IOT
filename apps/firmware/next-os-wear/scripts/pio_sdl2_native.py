@@ -83,7 +83,8 @@ def _append_sdl2_libs(link_env, lib_dir):
         return
 
     link_env.Append(LIBPATH=[lib_dir])
-    link_env.Append(LIBS=libs)
+    # Path penuh harus File() — string biasa jadi `-lC:\...` (invalid) di PlatformIO
+    link_env.Append(LIBS=[link_env.File(path) for path in libs])
 
 
 def _copy_sdl2_dll_for_runtime(link_env, sdl_root):
