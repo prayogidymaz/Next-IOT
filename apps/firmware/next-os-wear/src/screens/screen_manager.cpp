@@ -116,3 +116,15 @@ void next_os_screen_manager_prev(void) {
 void next_os_screen_manager_attach_input_gestures(void) {
     /* Gesture via next_os_common_attach_swipe_navigation per layar */
 }
+
+void next_os_screen_manager_tune_pointer_gesture(void) {
+    lv_indev_t *indev = lv_indev_get_next(nullptr);
+    while (indev != nullptr) {
+        if (lv_indev_get_type(indev) == LV_INDEV_TYPE_POINTER) {
+            lv_indev_set_scroll_limit(indev, 10);
+            lv_indev_set_gesture_min_distance(indev, 35);
+            lv_indev_set_gesture_min_velocity(indev, 2);
+        }
+        indev = lv_indev_get_next(indev);
+    }
+}

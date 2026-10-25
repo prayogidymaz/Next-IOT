@@ -4,6 +4,8 @@
 #include "touch.h"
 #include "wifi.h"
 
+#include "screens/screen_manager.h"
+
 #include <Arduino.h>
 
 void setup() {
@@ -17,6 +19,7 @@ void setup() {
     }
     next_os_touch_init();
     next_os_app_init();
+    next_os_screen_manager_tune_pointer_gesture();
 
     if (next_os_wifi_begin()) {
         Serial.println("WiFi terhubung");

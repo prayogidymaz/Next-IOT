@@ -28,4 +28,7 @@ void next_os_screen_manager_prev(void);
 /** Registrasi gesture — dipanggil otomatis saat switch_screen */
 void next_os_screen_manager_attach_input_gestures(void);
 
+/** Sensitivitas swipe pointer (simulator + hardware) */
+void next_os_screen_manager_tune_pointer_gesture(void);
+
 #endif /* NEXT_OS_SCREEN_MANAGER_H */
