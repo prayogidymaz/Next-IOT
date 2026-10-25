@@ -99,16 +99,14 @@ Permanent rules live in **`.cursorrules`** (root):
 
 - **FCM:** `tenant_user_fcm_tokens` (038), push client, workflow `notification` channel `fcm`, register API.
 - **Scheduler:** `mesh_schedule_loop` for `schedule` triggers (croniter + hot reload).
-- **Wear live:** SSE stream, secure JWT pairing QR, alarm ACK + `ui/user_acknowledged` mesh event.
 - **E2E:** `scripts/demo_farm_pest_response.py`, `tests/mesh/test_e2e_demo.py`, `docs/MESH_PHASE1_COMPLETE.md`.
 
 ### Universal Mesh Phase 1 — Week 9-10 (2026-10-24)
 
 - **Web HQ:** `/mesh/graph` — React Flow topology, SSE terminal feed (fetch + Bearer), simulation playground, device drawer.
 - **Automation Studio:** tab **Mesh Workflows** — cross-domain palette, deploy/test against `/api/v1/mesh/workflows`.
-- **Wear OS:** `apps/mobile/wear` — Riverpod skeleton, 4 tactical screens, mock `MeshApi` (live SSE Week 11-12).
 - **Simulators:** CCTV HTTP `POST :9100/simulate-motion`; weather `weather_forecast` event type.
-- **Tests:** `apps/web` vitest mesh smoke; `apps/mobile/wear` widget tests; mesh API pytest unchanged (33+).
+- **Tests:** `apps/web` vitest mesh smoke; mesh API pytest unchanged (33+).
 
 ### Universal Mesh Phase 1 — Week 7-8 (2026-10-24)
 

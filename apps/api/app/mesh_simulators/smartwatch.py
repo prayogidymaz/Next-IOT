@@ -1,4 +1,4 @@
-"""Smartwatch / wear UI companion simulator."""
+"""Smartwatch UI domain mesh simulator (MQTT; native firmware in Phase 2)."""
 
 from __future__ import annotations
 

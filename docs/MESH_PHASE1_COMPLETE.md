@@ -1,6 +1,6 @@
 # Smart Farming Universal Mesh — Phase 1 Complete
 
-Phase 1 spans Weeks 1–12: thing model, event bus, workflows, simulators, HQ mesh graph, Wear companion, FCM + scheduler + E2E demo.
+Phase 1 spans Weeks 1–12: thing model, event bus, workflows, simulators, HQ mesh graph, FCM + scheduler + E2E demo.
 
 ## Architecture (Mermaid)
 
@@ -14,7 +14,6 @@ flowchart LR
   WF --> FCM[FCM Push]
   WF --> Actuators[Device Commands]
   API --> Web[HQ Mesh Graph SSE]
-  API --> Wear[Wear OS SSE]
 ```
 
 ## Capability matrix (summary)
@@ -40,8 +39,8 @@ Seed: `python scripts/seed_mesh_preset_workflows.py --tenant-slug <slug>`
 ## FCM + SSE setup
 
 - API env: `NOTIFICATION_FCM_ENABLED`, `FCM_PROJECT_ID`, `FCM_PRIVATE_KEY_JSON` (base64 service account JSON)
-- Register token: `POST /api/v1/notifications/fcm/register`
-- Wear: pair JWT → SSE `/api/v1/mesh/events/stream` + FCM register on start
+- Register token: `POST /api/v1/notifications/fcm/register` (e.g. field app or future edge UI)
+- HQ mesh graph uses SSE `/api/v1/mesh/events/stream` with Bearer JWT
 
 ## E2E demo
 
@@ -54,6 +53,6 @@ Report: `/tmp/demo-pest-response-*.md`
 
 ## Phase 2 hardware roadmap
 
-- LILYGO T-Watch S3 + Next-OS Wear v1 firmware replacing smartwatch simulator
+- Native firmware on ESP32-S3 / LILYGO T-Watch S3 (Next-OS edge), replacing smartwatch simulator where applicable
 - Physical CCTV / sprayer MQTT devices on tenant bus
-- Production FCM project + Play Console Wear release
+- Production FCM project for operator push (field app / devices)

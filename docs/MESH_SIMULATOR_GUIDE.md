@@ -47,10 +47,10 @@ Existing service `drone-simulator` now emits `motion/*` mesh events over MQTT wh
 
 With simulators profile, CCTV exposes `POST http://localhost:9100/simulate-motion` (`{"confidence":0.9}`).
 
-## FCM tokens (Wear / mobile)
+## FCM tokens (mobile / edge clients)
 
 1. Enable API: `NOTIFICATION_FCM_ENABLED=true` (+ `FCM_PROJECT_ID`, `FCM_PRIVATE_KEY_JSON` base64)
-2. Wear registers: `POST /api/v1/notifications/fcm/register` with Bearer JWT
+2. Clients register: `POST /api/v1/notifications/fcm/register` with Bearer JWT
 3. Mesh workflow `notification` action with `"fcm"` in `channels` pushes to tenant tokens
 
 ## E2E demo script

@@ -1,4 +1,4 @@
-"""FCM token registration for wear / mobile clients."""
+"""FCM token registration for mobile and edge clients."""
 
 from __future__ import annotations
 

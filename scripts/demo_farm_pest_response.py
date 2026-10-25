@@ -66,7 +66,7 @@ def main() -> int:
         "## Notes",
         "- Verify workflow execution in HQ → Automations → Mesh Workflows → executions",
         "- Verify mesh events at `/mesh/graph` terminal feed",
-        "- Wear companion should show alert after FCM/SSE (Week 11-12 live wire)",
+        "- Verify HQ `/mesh/graph` terminal feed and optional FCM to registered clients",
     ]
     path = _write_report(report_lines)
     print(f"Report written: {path}")

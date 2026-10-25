@@ -4,14 +4,13 @@
 
 ### Universal Mesh Phase 1 — Week 11-12 (DONE, local) — Phase 1 COMPLETE
 
-- FCM tokens + workflow push; mesh cron scheduler; Wear SSE + pairing; E2E pest demo script + docs.
+- FCM tokens + workflow push; mesh cron scheduler; E2E pest demo script + docs.
 
 ### Universal Mesh Phase 1 — Week 9-10 (DONE, local)
 
 - **Web:** `/mesh/graph` topology + terminal SSE feed + simulation playground; Automation Studio **Mesh Workflows** tab.
-- **Wear:** `apps/mobile/wear` MVP skeleton (4 screens, mock API, `wear` plugin).
 - **Simulators:** CCTV `POST :9100/simulate-motion`; weather `weather_forecast` event type.
-- **Tests:** web vitest smoke; wear widget tests; mesh pytest 33 passed.
+- **Tests:** web vitest smoke; mesh pytest 33 passed.
 
 ### Universal Mesh Phase 1 — Week 7-8 (DONE, local)
 

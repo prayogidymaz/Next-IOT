@@ -1,4 +1,4 @@
-"""FCM device tokens registered by tenant users (wear / mobile)."""
+"""FCM device tokens registered by tenant users (field app / edge)."""
 
 from __future__ import annotations
 
@@ -30,6 +30,6 @@ class TenantUserFcmToken(Base):
         index=True,
     )
     token: Mapped[str] = mapped_column(String(512), nullable=False)
-    device_type: Mapped[str] = mapped_column(String(64), nullable=False, default="wear")
+    device_type: Mapped[str] = mapped_column(String(64), nullable=False, default="mobile")
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

@@ -43,10 +43,10 @@ async def test_fcm_register_endpoint(client: AsyncClient, unique_slug: str, uniq
     res = await client.post(
         "/api/v1/notifications/fcm/register",
         headers={"Authorization": f"Bearer {token}"},
-        json={"token": f"fcm-{uuid.uuid4().hex}", "device_type": "wear"},
+        json={"token": f"fcm-{uuid.uuid4().hex}", "device_type": "mobile"},
     )
     assert res.status_code == 201
-    assert res.json()["device_type"] == "wear"
+    assert res.json()["device_type"] == "mobile"
 
 
 @pytest.mark.asyncio
@@ -60,7 +60,7 @@ async def test_fcm_unregister_endpoint(client: AsyncClient, unique_slug: str, un
     await client.post(
         "/api/v1/notifications/fcm/register",
         headers={"Authorization": f"Bearer {access}"},
-        json={"token": fcm_token, "device_type": "wear"},
+        json={"token": fcm_token, "device_type": "mobile"},
     )
     del_res = await client.delete(
         f"/api/v1/notifications/fcm/unregister?token={fcm_token}",
