@@ -1,0 +1,122 @@
+#include "screens/mesh_graph.h"
+
+#include "mesh_state.h"
+#include "screens/common.h"
+#include "theme.h"
+
+#include <cstdio>
+
+static lv_obj_t *s_drn_pulse = nullptr;
+
+static void graph_on_delete(lv_event_t *event) {
+    if (lv_event_get_code(event) != LV_EVENT_DELETE) {
+        return;
+    }
+    s_drn_pulse = nullptr;
+}
+
+static lv_obj_t *graph_create_node(lv_obj_t *parent, int32_t x, int32_t y, int32_t r,
+                                   lv_color_t border, const char *label) {
+    lv_obj_t *n = lv_obj_create(parent);
+    lv_obj_set_size(n, static_cast<int32_t>(r * 2), static_cast<int32_t>(r * 2));
+    lv_obj_set_pos(n, x - r, y - r);
+    lv_obj_set_style_radius(n, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_color(n, next_os_color_dark(), 0);
+    lv_obj_set_style_border_color(n, border, 0);
+    lv_obj_set_style_border_width(n, 2, 0);
+    lv_obj_t *l = lv_label_create(n);
+    lv_label_set_text(l, label);
+    lv_obj_set_style_text_font(l, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_color(l, next_os_color_cream(), 0);
+    lv_obj_center(l);
+    return n;
+}
+
+static void graph_line(lv_obj_t *parent, int32_t x1, int32_t y1, int32_t x2, int32_t y2,
+                       lv_color_t color) {
+    static lv_point_precise_t pts[2];
+    pts[0].x = static_cast<lv_value_precise_t>(x1);
+    pts[0].y = static_cast<lv_value_precise_t>(y1);
+    pts[1].x = static_cast<lv_value_precise_t>(x2);
+    pts[1].y = static_cast<lv_value_precise_t>(y2);
+    lv_obj_t *line = lv_line_create(parent);
+    lv_line_set_points(line, pts, 2);
+    lv_obj_set_style_line_color(line, color, 0);
+    lv_obj_set_style_line_width(line, 2, 0);
+}
+
+void next_os_mesh_graph_refresh_from_mesh(void) {
+    const next_os_mesh_topology_t topo = next_os_mesh_state_topology();
+    if (s_drn_pulse != nullptr && lv_obj_is_in_widget_tree(s_drn_pulse)) {
+        lv_obj_set_style_border_color(
+            s_drn_pulse, topo.drn_dispatch_pulse ? next_os_color_clay() : next_os_color_olive(), 0);
+        lv_obj_set_style_border_opa(s_drn_pulse, topo.drn_dispatch_pulse ? LV_OPA_COVER : LV_OPA_50, 0);
+    }
+}
+
+void next_os_mesh_graph_create(lv_obj_t *root) {
+    next_os_apply_black_screen_style(root);
+    lv_obj_add_event_cb(root, graph_on_delete, LV_EVENT_DELETE, nullptr);
+
+    lv_obj_t *header = next_os_common_create_inset_header_row(root, 22);
+    lv_obj_t *icon = lv_label_create(header);
+    lv_label_set_text(icon, LV_SYMBOL_WIFI);
+    lv_obj_set_style_text_color(icon, next_os_color_olive(), 0);
+    lv_obj_align(icon, LV_ALIGN_LEFT_MID, 0, 0);
+    lv_obj_t *ht = lv_label_create(header);
+    lv_label_set_text(ht, "MESH • 7 NODES");
+    lv_obj_set_style_text_color(ht, next_os_color_olive(), 0);
+    lv_obj_align(ht, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_t *tm = lv_label_create(header);
+    lv_label_set_text(tm, "07:42");
+    lv_obj_set_style_text_color(tm, next_os_color_muted(), 0);
+    lv_obj_align(tm, LV_ALIGN_RIGHT_MID, 0, 0);
+
+    lv_obj_t *canvas_box = lv_obj_create(root);
+    lv_obj_set_size(canvas_box, 200, 140);
+    lv_obj_align(canvas_box, LV_ALIGN_CENTER, 0, -6);
+    lv_obj_set_style_bg_color(canvas_box, next_os_color_dark(), 0);
+    lv_obj_set_style_border_color(canvas_box, next_os_color_olive(), 0);
+    lv_obj_set_style_border_width(canvas_box, 1, 0);
+    lv_obj_set_style_radius(canvas_box, 8, 0);
+    next_os_common_disable_scroll(canvas_box);
+
+    const int32_t cx = 100;
+    const int32_t cy = 70;
+    const int32_t radius = 52;
+
+    graph_line(canvas_box, cx, cy, cx, cy - radius, next_os_color_olive());
+    graph_line(canvas_box, cx, cy, cx - radius, cy - 20, next_os_color_olive());
+    graph_line(canvas_box, cx, cy, cx + radius, cy - 10, next_os_color_clay());
+    graph_line(canvas_box, cx, cy, cx - 40, cy + 40, next_os_color_light_grey());
+    graph_line(canvas_box, cx, cy, cx + 36, cy + 44, next_os_color_olive());
+
+    graph_create_node(canvas_box, cx, cy, 18, next_os_color_olive(), "HUB");
+    graph_create_node(canvas_box, cx, cy - radius, 12, next_os_color_light_grey(), "S2");
+    graph_create_node(canvas_box, cx - 20, cy - radius + 8, 12, next_os_color_light_grey(), "S3");
+    graph_create_node(canvas_box, cx - radius, cy - 20, 12, next_os_color_olive(), "CAM");
+    s_drn_pulse = graph_create_node(canvas_box, cx + radius, cy - 10, 12, next_os_color_clay(), "DRN");
+    graph_create_node(canvas_box, cx - 40, cy + 40, 12, next_os_color_olive(), "SPR");
+    graph_create_node(canvas_box, cx + 36, cy + 44, 12, next_os_color_olive(), "GT");
+
+    for (uint8_t i = 0; i < 4; i++) {
+        lv_obj_t *pt = lv_obj_create(canvas_box);
+        lv_obj_set_size(pt, 3, 3);
+        lv_obj_set_style_radius(pt, LV_RADIUS_CIRCLE, 0);
+        lv_obj_set_style_bg_color(pt, next_os_color_cream(), 0);
+        lv_obj_set_pos(pt, static_cast<int32_t>(40 + i * 30), static_cast<int32_t>(20 + (i % 2) * 80));
+    }
+
+    const next_os_mesh_topology_t topo = next_os_mesh_state_topology();
+    char footer[48];
+    (void)std::snprintf(footer, sizeof(footer), "%u LIVE | %u DISPATCH | %u IDLE",
+                        static_cast<unsigned>(topo.live_nodes), static_cast<unsigned>(topo.dispatch_nodes),
+                        static_cast<unsigned>(topo.idle_nodes));
+    lv_obj_t *foot = lv_label_create(root);
+    lv_label_set_text(foot, footer);
+    lv_obj_set_style_text_font(foot, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_color(foot, next_os_color_cream(), 0);
+    lv_obj_align(foot, LV_ALIGN_BOTTOM_MID, 0, -12);
+
+    next_os_mesh_graph_refresh_from_mesh();
+}
