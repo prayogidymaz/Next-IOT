@@ -47,4 +47,7 @@ void next_os_screen_manager_show_qr_pair_modal(void);
 
 void next_os_screen_manager_dismiss_modal(void);
 
+/** Kontainer layar aktif (240×H) — untuk haptic flash overlay. */
+lv_obj_t *next_os_screen_manager_get_content_root(void);
+
 #endif /* NEXT_OS_SCREEN_MANAGER_H */

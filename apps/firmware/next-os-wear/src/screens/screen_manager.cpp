@@ -80,34 +80,41 @@ static bool is_nav_screen(next_os_screen_id_t screen_id) {
     return screen_id >= NEXT_OS_SCREEN_WATCH_FACE && screen_id <= NEXT_OS_SCREEN_TERMINAL_FEED;
 }
 
-static void switch_screen(next_os_screen_id_t screen_id, bool force_reload) {
-    if (!is_nav_screen(screen_id)) {
-        return;
-    }
-    if (!force_reload && s_nav_enabled && screen_id == s_current) {
-        return;
-    }
+static void screen_opa_exec(void *obj, int32_t value) {
+    lv_obj_set_style_opa(static_cast<lv_obj_t *>(obj), static_cast<lv_opa_t>(value), 0);
+}
 
-    dismiss_modal_internal();
+static next_os_screen_id_t s_pending_screen = NEXT_OS_SCREEN_BOOT;
+static bool s_pending_force = false;
 
+static lv_obj_t *ensure_shell_screen(void) {
     lv_obj_t *scr = lv_screen_active();
     if (scr == nullptr) {
         scr = lv_obj_create(nullptr);
         next_os_apply_screen_style(scr);
         lv_screen_load(scr);
     }
+    return scr;
+}
 
-    if (s_current_screen_obj != nullptr) {
-        lv_anim_delete(s_current_screen_obj, nullptr);
-        lv_obj_delete(s_current_screen_obj);
-        s_current_screen_obj = nullptr;
-    }
+static void screen_fade_in(lv_obj_t *obj) {
+    lv_anim_t anim {};
+    lv_anim_init(&anim);
+    lv_anim_set_var(&anim, obj);
+    lv_anim_set_exec_cb(&anim, screen_opa_exec);
+    lv_anim_set_values(&anim, LV_OPA_TRANSP, LV_OPA_COVER);
+    lv_anim_set_duration(&anim, 150);
+    lv_anim_set_path_cb(&anim, lv_anim_path_ease_in);
+    lv_anim_start(&anim);
+}
 
+static void mount_screen(next_os_screen_id_t screen_id, bool fade_in) {
+    lv_obj_t *scr = ensure_shell_screen();
     s_current_screen_obj = lv_obj_create(scr);
     lv_obj_set_size(s_current_screen_obj, NEXTOS_W, NEXTOS_H);
     lv_obj_center(s_current_screen_obj);
-    lv_obj_set_style_bg_color(s_current_screen_obj, next_os_color_cream(), 0);
-    lv_obj_set_style_bg_opa(s_current_screen_obj, LV_OPA_COVER, 0);
+    lv_obj_set_style_bg_color(s_current_screen_obj, NEXTOS_BG, 0);
+    lv_obj_set_style_bg_opa(s_current_screen_obj, fade_in ? LV_OPA_TRANSP : LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(s_current_screen_obj, 0, 0);
     lv_obj_set_style_pad_all(s_current_screen_obj, 0, 0);
     next_os_common_disable_scroll(s_current_screen_obj);
@@ -118,6 +125,55 @@ static void switch_screen(next_os_screen_id_t screen_id, bool force_reload) {
 
     s_current = screen_id;
     s_nav_enabled = true;
+    if (fade_in) {
+        screen_fade_in(s_current_screen_obj);
+    }
+}
+
+static void screen_fade_out_ready(lv_anim_t *anim) {
+    lv_obj_t *old = static_cast<lv_obj_t *>(anim->var);
+    if (old != nullptr) {
+        lv_obj_delete(old);
+    }
+    if (s_current_screen_obj == old) {
+        s_current_screen_obj = nullptr;
+    }
+    mount_screen(s_pending_screen, true);
+    s_pending_force = false;
+}
+
+static void switch_screen(next_os_screen_id_t screen_id, bool force_reload) {
+    if (!is_nav_screen(screen_id)) {
+        return;
+    }
+    if (!force_reload && s_nav_enabled && screen_id == s_current) {
+        return;
+    }
+
+    dismiss_modal_internal();
+    (void)ensure_shell_screen();
+
+    if (s_current_screen_obj == nullptr) {
+        mount_screen(screen_id, false);
+        return;
+    }
+
+    s_pending_screen = screen_id;
+    s_pending_force = force_reload;
+
+    lv_anim_t anim {};
+    lv_anim_init(&anim);
+    lv_anim_set_var(&anim, s_current_screen_obj);
+    lv_anim_set_exec_cb(&anim, screen_opa_exec);
+    lv_anim_set_values(&anim, LV_OPA_COVER, LV_OPA_TRANSP);
+    lv_anim_set_duration(&anim, 150);
+    lv_anim_set_path_cb(&anim, lv_anim_path_ease_out);
+    lv_anim_set_ready_cb(&anim, screen_fade_out_ready);
+    lv_anim_start(&anim);
+}
+
+lv_obj_t *next_os_screen_manager_get_content_root(void) {
+    return s_current_screen_obj;
 }
 
 static void enter_from_boot_async(void *user_data) {
