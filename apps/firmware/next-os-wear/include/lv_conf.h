@@ -28,6 +28,9 @@
 #define LV_FONT_MONTSERRAT_14 1
 #define LV_FONT_MONTSERRAT_16 1
 #define LV_FONT_MONTSERRAT_20 1
+#define LV_FONT_MONTSERRAT_24 1
+#define LV_FONT_MONTSERRAT_36 1
+#define LV_FONT_MONTSERRAT_48 1
 #define LV_FONT_DEFAULT &lv_font_montserrat_14
 
 #define LV_USE_OBJ 1
@@ -37,6 +40,8 @@
 #define LV_USE_IMG 1
 #define LV_USE_ANIM 1
 #define LV_USE_TIMER 1
+#define LV_USE_BUTTON 1
+#define LV_USE_FLEX 1
 
 #ifdef NEXT_OS_SIMULATOR
 #define LV_USE_SDL 1

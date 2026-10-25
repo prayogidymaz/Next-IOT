@@ -6,13 +6,21 @@
 
 #include <lvgl.h>
 
-/* Palette (RGB888) */
+/* Palette (RGB888) — alias preview Artifact */
 #define NEXT_OS_COLOR_CREAM 0xF5EFE0
 #define NEXT_OS_COLOR_OLIVE 0x556B4A
 #define NEXT_OS_COLOR_CLAY 0xD97757
 #define NEXT_OS_COLOR_CRITICAL 0xB23A3A
 #define NEXT_OS_COLOR_DARK 0x1F1F1F
 #define NEXT_OS_COLOR_MUTED 0x6B6B63
+#define NEXT_OS_COLOR_LIGHT_GREY 0xB8B2A6
+
+#define NEXT_OS_COLOR_CREAM_ALIAS NEXT_OS_COLOR_CREAM
+#define NEXT_OS_COLOR_OLIVE_ALIAS NEXT_OS_COLOR_OLIVE
+#define NEXT_OS_COLOR_CLAY_ALIAS NEXT_OS_COLOR_CLAY
+#define NEXT_OS_COLOR_CRITICAL_ALIAS NEXT_OS_COLOR_CRITICAL
+#define NEXT_OS_COLOR_DARK_ALIAS NEXT_OS_COLOR_DARK
+#define NEXT_OS_COLOR_LIGHT_GREY_ALIAS NEXT_OS_COLOR_LIGHT_GREY
 
 #define NEXT_OS_FONT_SIZE_TITLE 16
 #define NEXT_OS_FONT_SIZE_KPI 12
@@ -32,6 +40,18 @@ static inline lv_color_t next_os_color_dark(void) {
 
 static inline lv_color_t next_os_color_clay(void) {
     return lv_color_hex(NEXT_OS_COLOR_CLAY);
+}
+
+static inline lv_color_t next_os_color_critical(void) {
+    return lv_color_hex(NEXT_OS_COLOR_CRITICAL);
+}
+
+static inline lv_color_t next_os_color_light_grey(void) {
+    return lv_color_hex(NEXT_OS_COLOR_LIGHT_GREY);
+}
+
+static inline lv_color_t next_os_color_muted(void) {
+    return lv_color_hex(NEXT_OS_COLOR_MUTED);
 }
 
 static inline void next_os_apply_screen_style(lv_obj_t *screen) {

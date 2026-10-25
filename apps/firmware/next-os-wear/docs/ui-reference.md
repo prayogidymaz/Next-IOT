@@ -33,7 +33,7 @@ Setelah konversi, letakkan `.c` di `src/assets/fonts/` dan set `LV_FONT_CUSTOM_D
 ## Prioritas implementasi layar
 
 1. **Boot** — logo Next-IOT, animasi 2s (`screens/boot.cpp`) ✅ skeleton
-2. **Watch face** — jam analog + KPI farm/alert/irig (`screens/hello_world.cpp` placeholder) ✅ skeleton
+2. **Watch face** — jam digital + KPI farm/alert/irig (`screens/watch_face.cpp`) ✅ MVP
 3. **Sensor monitor** — daftar node + sparkline (belum)
 4. **Irrigation control** — toggle zone + countdown (belum)
 5. **Alert center** — daftar prioritas + acknowledge (belum)
