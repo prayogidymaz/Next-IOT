@@ -4,50 +4,51 @@
 
 #include <cstdint>
 
-static lv_point_t s_swipe_start;
-static bool s_swipe_tracking = false;
+/** Drag manual — SDL mouse tidak mengirim LV_EVENT_GESTURE */
+static int32_t s_drag_start_x = 0;
+static bool s_drag_active = false;
 
-static void swipe_nav_event_cb(lv_event_t *event) {
-    const lv_event_code_t code = lv_event_get_code(event);
-
-    if (code == LV_EVENT_PRESSED) {
-        lv_indev_t *indev = lv_indev_active();
-        if (indev != nullptr) {
-            lv_indev_get_point(indev, &s_swipe_start);
-            s_swipe_tracking = true;
+static void enable_swipe_event_bubble(lv_obj_t *obj) {
+    const uint32_t count = lv_obj_get_child_count(obj);
+    for (uint32_t i = 0; i < count; i++) {
+        lv_obj_t *child = lv_obj_get_child(obj, i);
+        if (!lv_obj_has_flag(child, LV_OBJ_FLAG_CLICKABLE)) {
+            lv_obj_add_flag(child, LV_OBJ_FLAG_EVENT_BUBBLE);
         }
+        enable_swipe_event_bubble(child);
+    }
+}
+
+static void swipe_pressed_cb(lv_event_t *event) {
+    lv_indev_t *indev = lv_event_get_indev(event);
+    if (indev == nullptr) {
         return;
     }
+    lv_point_t p;
+    lv_indev_get_point(indev, &p);
+    s_drag_start_x = p.x;
+    s_drag_active = true;
+}
 
-    if (code == LV_EVENT_GESTURE) {
-        lv_indev_t *indev = lv_indev_active();
-        if (indev == nullptr) {
-            return;
-        }
-        const lv_dir_t dir = lv_indev_get_gesture_dir(indev);
-        if (dir == LV_DIR_LEFT) {
-            next_os_screen_manager_next();
-        } else if (dir == LV_DIR_RIGHT) {
-            next_os_screen_manager_prev();
-        }
+static void swipe_released_cb(lv_event_t *event) {
+    if (!s_drag_active) {
         return;
     }
+    lv_indev_t *indev = lv_event_get_indev(event);
+    if (indev == nullptr) {
+        s_drag_active = false;
+        return;
+    }
+    lv_point_t p;
+    lv_indev_get_point(indev, &p);
+    const int32_t delta_x = p.x - s_drag_start_x;
+    s_drag_active = false;
 
-    if (code == LV_EVENT_RELEASED && s_swipe_tracking) {
-        s_swipe_tracking = false;
-        lv_point_t end_pt;
-        lv_indev_t *indev = lv_indev_active();
-        if (indev == nullptr) {
-            return;
-        }
-        lv_indev_get_point(indev, &end_pt);
-        const int32_t dx = end_pt.x - s_swipe_start.x;
-        constexpr int32_t k_swipe_threshold = 36;
-        if (dx < -k_swipe_threshold) {
-            next_os_screen_manager_next();
-        } else if (dx > k_swipe_threshold) {
-            next_os_screen_manager_prev();
-        }
+    constexpr int32_t k_swipe_threshold = 40;
+    if (delta_x < -k_swipe_threshold) {
+        next_os_screen_manager_next();
+    } else if (delta_x > k_swipe_threshold) {
+        next_os_screen_manager_prev();
     }
 }
 
@@ -57,8 +58,10 @@ void next_os_common_disable_scroll(lv_obj_t *obj) {
 }
 
 void next_os_common_attach_swipe_navigation(lv_obj_t *screen) {
+    enable_swipe_event_bubble(screen);
     lv_obj_set_clickable(screen, true);
-    lv_obj_add_event_cb(screen, swipe_nav_event_cb, LV_EVENT_ALL, nullptr);
+    lv_obj_add_event_cb(screen, swipe_pressed_cb, LV_EVENT_PRESSED, nullptr);
+    lv_obj_add_event_cb(screen, swipe_released_cb, LV_EVENT_RELEASED, nullptr);
 }
 
 lv_obj_t *next_os_common_create_header_label(lv_obj_t *parent, const char *text) {
