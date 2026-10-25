@@ -1,11 +1,11 @@
 """
 PlatformIO pre-script: tautkan SDL2 untuk env native/simulator (Windows/Linux).
-- Include: SDL2_PATH atau Scoop sdl2
-- Link: lib MinGW (libSDL2.dll.a) atau import lib Scoop (SDL2main.lib + SDL2.lib)
-  harus di akhir rantai link (setelah liblvgl.a) → pakai env LIBS, bukan LINKFLAGS -l.
+- Linux: pkg-config sdl2 (+ SDL2_mixer), fallback /usr/lib/<triplet>
+- Windows: SDL2_PATH / Scoop, MinGW .dll.a atau MSVC .lib di akhir LIBS
 """
 
 import os
+import subprocess
 import sys
 
 from SCons.Script import Copy
@@ -17,7 +17,135 @@ def _sdl2_header_path(root):
     return os.path.join(root, "include", "SDL2", "SDL.h")
 
 
-def _resolve_sdl2_root():
+def _split_pkg_output(text):
+    return [part for part in text.strip().split() if part]
+
+
+def _linux_lib_dir_from_prefix(root):
+    for rel in ("lib/x86_64-linux-gnu", "lib/aarch64-linux-gnu", "lib64", "lib"):
+        lib_dir = os.path.join(root, rel)
+        if os.path.isdir(lib_dir):
+            return lib_dir
+    return ""
+
+
+def _linux_sdl2_lib_candidates():
+    return [
+        "/usr/lib/x86_64-linux-gnu/libSDL2.so",
+        "/usr/lib/x86_64-linux-gnu/libSDL2.a",
+        "/usr/lib/aarch64-linux-gnu/libSDL2.so",
+        "/usr/lib/libSDL2.so",
+    ]
+
+
+def _linux_find_system_libpath():
+    for path in _linux_sdl2_lib_candidates():
+        if os.path.isfile(path):
+            return os.path.dirname(path)
+    return ""
+
+
+def _linux_header_dirs():
+    dirs = []
+    for path in ("/usr/include/SDL2/SDL.h", "/usr/local/include/SDL2/SDL.h"):
+        if os.path.isfile(path):
+            dirs.append(os.path.dirname(os.path.dirname(path)))
+    if not dirs:
+        dirs.append("/usr/include")
+    return dirs
+
+
+def _append_pkg_config(link_env, module, label):
+    cflags = _split_pkg_output(
+        subprocess.check_output(["pkg-config", "--cflags", module], text=True)
+    )
+    libs = _split_pkg_output(
+        subprocess.check_output(["pkg-config", "--libs", module], text=True)
+    )
+    if cflags:
+        link_env.Append(CCFLAGS=cflags)
+    if libs:
+        link_env.Append(LINKFLAGS=libs)
+    print(f"{label} (Linux pkg-config {module}): libs={' '.join(libs) or '(none)'}")
+
+
+def _configure_sdl2_linux(link_env):
+    from_env = os.environ.get("SDL2_PATH", "").strip()
+    if from_env:
+        root = os.path.abspath(from_env)
+        if os.path.isfile(_sdl2_header_path(root)):
+            include = os.path.join(root, "include")
+            lib_dir = _linux_lib_dir_from_prefix(root)
+            if lib_dir:
+                link_env.Append(CPPPATH=[include])
+                link_env.Append(LIBPATH=[lib_dir])
+                link_env.Append(LIBS=["SDL2"])
+                print(
+                    f"SDL2 native (Linux SDL2_PATH): CPPPATH+={include} "
+                    f"LIBPATH+={lib_dir} LIBS+=SDL2"
+                )
+                return include, lib_dir
+
+    try:
+        _append_pkg_config(link_env, "sdl2", "SDL2 native")
+        return _linux_header_dirs()[0], _linux_find_system_libpath() or "/usr/lib/x86_64-linux-gnu"
+    except (FileNotFoundError, subprocess.CalledProcessError) as err:
+        print(f"WARN: pkg-config sdl2 gagal ({err}), fallback path sistem")
+
+    lib_dir = _linux_find_system_libpath()
+    if not lib_dir:
+        print(
+            "ERROR: SDL2 tidak ditemukan di Linux.\n"
+            "  Pasang: sudo apt install libsdl2-dev\n"
+            "  Atau set SDL2_PATH ke prefix dengan include/SDL2/SDL.h\n"
+            "  Diharapkan mis.: /usr/lib/x86_64-linux-gnu/libSDL2.so",
+            file=sys.stderr,
+        )
+        link_env.Exit(1)
+
+    include_dirs = _linux_header_dirs()
+    link_env.Append(CPPPATH=include_dirs)
+    link_env.Append(LIBPATH=[lib_dir, "/usr/lib"])
+    link_env.Append(LIBS=["SDL2"])
+    print(
+        f"SDL2 native (Linux fallback): CPPPATH+={include_dirs} "
+        f"LIBPATH+={[lib_dir, '/usr/lib']} LIBS+=SDL2"
+    )
+    return include_dirs[0], lib_dir
+
+
+def _configure_mixer_linux(link_env):
+    from_env = os.environ.get("SDL2_MIXER_PATH", "").strip()
+    if from_env:
+        root = os.path.abspath(from_env)
+        inc = os.path.join(root, "include", "SDL2", "SDL_mixer.h")
+        if os.path.isfile(inc):
+            lib_dir = _linux_lib_dir_from_prefix(root)
+            if lib_dir:
+                link_env.Append(CPPDEFINES=[("NEXTOS_HAS_SDL_MIXER", "1")])
+                link_env.Append(CPPPATH=[os.path.join(root, "include", "SDL2")])
+                link_env.Append(LIBPATH=[lib_dir])
+                link_env.Append(LIBS=["SDL2_mixer"])
+                print(f"SDL2_mixer (Linux SDL2_MIXER_PATH): {root}")
+                return True
+
+    for module in ("SDL2_mixer", "sdl2_mixer"):
+        try:
+            link_env.Append(CPPDEFINES=[("NEXTOS_HAS_SDL_MIXER", "1")])
+            _append_pkg_config(link_env, module, "SDL2_mixer")
+            return True
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            continue
+
+    link_env.Append(CPPDEFINES=[("NEXTOS_HAS_SDL_MIXER", "0")])
+    print(
+        "WARN: SDL2_mixer tidak ditemukan — audio simulator disabled "
+        "(sudo apt install libsdl2-mixer-dev)"
+    )
+    return False
+
+
+def _resolve_sdl2_root_windows():
     candidates = []
     from_env = os.environ.get("SDL2_PATH", "").strip()
     if from_env:
@@ -43,7 +171,7 @@ def _resolve_sdl2_root():
     return ""
 
 
-def _resolve_lib_dir(root):
+def _resolve_lib_dir_windows(root):
     for rel in ("lib/x64", "lib"):
         lib_dir = os.path.join(root, rel)
         if os.path.isdir(lib_dir):
@@ -53,7 +181,7 @@ def _resolve_lib_dir(root):
     return ""
 
 
-def _append_sdl2_libs(link_env, lib_dir):
+def _append_sdl2_libs_windows(link_env, lib_dir):
     """Tambah library SDL2 ke akhir link (LIBS), bukan LINKFLAGS awal."""
     mingw_core = os.path.join(lib_dir, "libSDL2.dll.a")
     mingw_main = os.path.join(lib_dir, "libSDL2main.dll.a")
@@ -67,7 +195,6 @@ def _append_sdl2_libs(link_env, lib_dir):
         else:
             libs = [mingw_core]
     elif os.path.isfile(msvc_core) and os.path.isfile(msvc_main):
-        # Scoop SDL2 (MSVC import .lib) — MinGW ld64 menerima path penuh di akhir link
         libs = [msvc_main, msvc_core]
     else:
         print(
@@ -83,7 +210,6 @@ def _append_sdl2_libs(link_env, lib_dir):
         return
 
     link_env.Append(LIBPATH=[lib_dir])
-    # Path penuh harus File() — string biasa jadi `-lC:\...` (invalid) di PlatformIO
     link_env.Append(LIBS=[link_env.File(path) for path in libs])
 
 
@@ -100,22 +226,18 @@ def _copy_sdl2_dll_for_runtime(link_env, sdl_root):
             return
 
 
-sdl_root = _resolve_sdl2_root()
-sdl_include = os.path.join(sdl_root, "include")
-sdl_lib = _resolve_lib_dir(sdl_root)
+def _configure_sdl2_windows(link_env):
+    sdl_root = _resolve_sdl2_root_windows()
+    sdl_include = os.path.join(sdl_root, "include")
+    sdl_lib = _resolve_lib_dir_windows(sdl_root)
+    link_env.Append(CPPPATH=[sdl_include])
+    _append_sdl2_libs_windows(link_env, sdl_lib)
+    _copy_sdl2_dll_for_runtime(link_env, sdl_root)
+    print(f"SDL2 native: CPPPATH+={sdl_include} LIBPATH+={sdl_lib} LIBS+=SDL2 (akhir link)")
+    return sdl_include, sdl_lib
 
-env.Append(CPPPATH=[sdl_include])
-_append_sdl2_libs(env, sdl_lib)
-_copy_sdl2_dll_for_runtime(env, sdl_root)
 
-# Header publik LVGL: <lvgl/drivers/sdl/*.h> (relatif ke .../lvgl/include)
-libdeps_dir = env.subst("$PROJECT_LIBDEPS_DIR")
-pioenv = env["PIOENV"]
-lvgl_public_include = os.path.join(libdeps_dir, pioenv, "lvgl", "include")
-if os.path.isdir(lvgl_public_include):
-    env.Append(CPPPATH=[lvgl_public_include])
-
-def _resolve_mixer_root():
+def _resolve_mixer_root_windows():
     candidates = []
     from_env = os.environ.get("SDL2_MIXER_PATH", "").strip()
     if from_env:
@@ -131,7 +253,7 @@ def _resolve_mixer_root():
     return ""
 
 
-def _append_mixer_libs(link_env, mixer_root):
+def _append_mixer_libs_windows(link_env, mixer_root):
     lib_dir = os.path.join(mixer_root, "lib")
     if not os.path.isdir(lib_dir):
         lib_dir = os.path.join(mixer_root, "lib", "x64")
@@ -145,23 +267,42 @@ def _append_mixer_libs(link_env, mixer_root):
         link_env.Append(LIBS=[link_env.File(msvc)])
 
 
-mixer_root = _resolve_mixer_root()
-if mixer_root:
-    env.Append(CPPDEFINES=[("NEXTOS_HAS_SDL_MIXER", "1")])
-    env.Append(CPPPATH=[os.path.join(mixer_root, "include", "SDL2")])
-    _append_mixer_libs(env, mixer_root)
+def _configure_mixer_windows(link_env):
+    mixer_root = _resolve_mixer_root_windows()
+    if not mixer_root:
+        link_env.Append(CPPDEFINES=[("NEXTOS_HAS_SDL_MIXER", "0")])
+        print(
+            "WARN: SDL2_mixer tidak ditemukan — audio simulator disabled "
+            "(scoop install sdl2-mixer)"
+        )
+        return False
+
+    link_env.Append(CPPDEFINES=[("NEXTOS_HAS_SDL_MIXER", "1")])
+    link_env.Append(CPPPATH=[os.path.join(mixer_root, "include", "SDL2")])
+    _append_mixer_libs_windows(link_env, mixer_root)
     for rel in ("lib/x64/SDL2_mixer.dll", "lib/SDL2_mixer.dll"):
         dll_src = os.path.join(mixer_root, rel)
         if os.path.isfile(dll_src):
-            build_dir = env.subst("$BUILD_DIR")
+            build_dir = link_env.subst("$BUILD_DIR")
             dll_dst = os.path.join(build_dir, "SDL2_mixer.dll")
-            dll_node = env.Command(dll_dst, dll_src, Copy("$TARGET", "$SOURCE"))
+            dll_node = link_env.Command(dll_dst, dll_src, Copy("$TARGET", "$SOURCE"))
             program = os.path.join(build_dir, "program.exe")
-            env.Depends(program, dll_node)
+            link_env.Depends(program, dll_node)
             break
     print(f"SDL2_mixer: linked from {mixer_root}")
-else:
-    env.Append(CPPDEFINES=[("NEXTOS_HAS_SDL_MIXER", "0")])
-    print("WARN: SDL2_mixer tidak ditemukan — audio simulator disabled (scoop install sdl2-mixer)")
+    return True
 
-print(f"SDL2 native: CPPPATH+={sdl_include} LIBPATH+={sdl_lib} LIBS+=SDL2 (akhir link)")
+
+if sys.platform.startswith("linux"):
+    _configure_sdl2_linux(env)
+    _configure_mixer_linux(env)
+else:
+    _configure_sdl2_windows(env)
+    _configure_mixer_windows(env)
+
+# Header publik LVGL: <lvgl/drivers/sdl/*.h> (relatif ke .../lvgl/include)
+libdeps_dir = env.subst("$PROJECT_LIBDEPS_DIR")
+pioenv = env["PIOENV"]
+lvgl_public_include = os.path.join(libdeps_dir, pioenv, "lvgl", "include")
+if os.path.isdir(lvgl_public_include):
+    env.Append(CPPPATH=[lvgl_public_include])
