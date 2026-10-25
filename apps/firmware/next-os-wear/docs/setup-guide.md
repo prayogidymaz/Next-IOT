@@ -71,7 +71,11 @@ $env:SDL2_PATH = "C:\SDL2"
 ## 7. First run — simulator
 
 ```powershell
-cd apps/firmware/next-os-wear
+# Dari root monorepo Next-IOT:
+cd C:\Users\<anda>\Next-IOT\apps\firmware\next-os-wear
+# Jika prompt sudah di folder ini, jangan `cd apps\firmware\...` lagi (path jadi double).
+
+$env:SDL2_PATH = "$env:USERPROFILE\scoop\apps\sdl2\current"
 pio run -e simulator -t exec
 ```
 

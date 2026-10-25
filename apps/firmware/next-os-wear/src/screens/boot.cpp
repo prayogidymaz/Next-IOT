@@ -49,7 +49,7 @@ void next_os_boot_screen_create(lv_obj_t *root, void (*on_finished)(void)) {
     lv_obj_set_style_arc_width(s_logo_arc, 8, LV_PART_MAIN);
     lv_obj_set_style_arc_width(s_logo_arc, 8, LV_PART_INDICATOR);
     lv_obj_remove_style(s_logo_arc, nullptr, LV_PART_KNOB);
-    lv_obj_remove_flag(s_logo_arc, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_clickable(s_logo_arc, false);
 
     lv_obj_t *title = lv_label_create(root);
     lv_label_set_text(title, "NEXT-IOT");
