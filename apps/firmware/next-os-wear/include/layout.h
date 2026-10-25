@@ -53,6 +53,15 @@ constexpr int nextos_inset_header_y(void) {
     return NEXTOS_IS_ROUND ? 38 : 28;
 }
 
+/** Status row below nav button zone (~32px tall). */
+constexpr int nextos_status_header_y(void) {
+    return 36;
+}
+
+constexpr int nextos_settings_title_y(void) {
+    return 42;
+}
+
 constexpr int nextos_inset_header_width(void) {
     const int clear = 36;
     return nextos_content_width() - clear;

@@ -1,7 +1,9 @@
 #include "screens/common.h"
 
+#include "haptic.h"
 #include "layout.h"
 #include "screens/screen_manager.h"
+#include "theme.h"
 
 #include <cmath>
 #include <cstdint>
@@ -32,6 +34,7 @@ static void nav_btn_event_cb(lv_event_t *event) {
         return;
     }
     if (code == LV_EVENT_CLICKED) {
+        nextos_haptic_pulse(NEXTOS_HAPTIC_LIGHT);
         if (dir == 0) {
             next_os_screen_manager_prev();
         } else {
@@ -126,6 +129,28 @@ lv_obj_t *next_os_common_create_header_label(lv_obj_t *parent, const char *text)
     return label;
 }
 
+lv_obj_t *next_os_common_create_settings_title_row(lv_obj_t *parent) {
+    lv_obj_t *row = lv_obj_create(parent);
+    lv_obj_set_size(row, nextos_inset_header_width(), 22);
+    lv_obj_align(row, LV_ALIGN_TOP_MID, 0, nextos_settings_title_y());
+    lv_obj_set_style_bg_opa(row, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(row, 0, 0);
+    lv_obj_set_style_pad_all(row, 0, 0);
+    next_os_common_disable_scroll(row);
+
+    lv_obj_t *gear = lv_label_create(row);
+    lv_label_set_text(gear, LV_SYMBOL_SETTINGS);
+    lv_obj_set_style_text_color(gear, NEXTOS_ACCENT_PRIMARY, 0);
+    lv_obj_align(gear, LV_ALIGN_LEFT_MID, 0, 0);
+
+    lv_obj_t *title = lv_label_create(row);
+    lv_label_set_text(title, "SETTINGS");
+    lv_obj_set_style_text_font(title, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_color(title, NEXTOS_TEXT_PRIMARY, 0);
+    lv_obj_align(title, LV_ALIGN_CENTER, 0, 0);
+    return row;
+}
+
 lv_obj_t *next_os_common_create_inset_header_row(lv_obj_t *parent, int32_t height) {
     lv_obj_t *row = lv_obj_create(parent);
     lv_obj_set_size(row, nextos_inset_header_width(), height);
@@ -141,8 +166,8 @@ lv_obj_t *next_os_common_create_round_container(lv_obj_t *parent, int32_t size) 
     lv_obj_t *box = lv_obj_create(parent);
     lv_obj_set_size(box, size, size);
     lv_obj_set_style_radius(box, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_bg_color(box, next_os_color_cream(), 0);
-    lv_obj_set_style_border_color(box, next_os_color_olive(), 0);
+    lv_obj_set_style_bg_color(box, NEXTOS_SURFACE, 0);
+    lv_obj_set_style_border_color(box, NEXTOS_ACCENT_PRIMARY, 0);
     lv_obj_set_style_border_width(box, 2, 0);
     lv_obj_set_style_pad_all(box, 0, 0);
     next_os_common_disable_scroll(box);

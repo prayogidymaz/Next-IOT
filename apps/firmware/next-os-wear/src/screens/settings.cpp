@@ -1,6 +1,8 @@
 #include "screens/settings.h"
 
+#include "audio.h"
 #include "config.h"
+#include "haptic.h"
 #include "layout.h"
 #include "runtime_theme.h"
 #include "screens/common.h"
@@ -14,28 +16,41 @@ static lv_obj_t *s_theme_value = nullptr;
 static lv_obj_t *s_bright_value = nullptr;
 static lv_obj_t *s_notif_switch = nullptr;
 static lv_obj_t *s_notif_knob = nullptr;
+static lv_obj_t *s_haptic_switch = nullptr;
+static lv_obj_t *s_haptic_knob = nullptr;
+static lv_obj_t *s_audio_switch = nullptr;
+static lv_obj_t *s_audio_knob = nullptr;
 static lv_obj_t *s_brightness_modal = nullptr;
+
+static void settings_update_toggle_visual(lv_obj_t *sw, lv_obj_t *knob, bool on) {
+    if (sw == nullptr) {
+        return;
+    }
+    lv_obj_set_style_bg_color(sw, on ? NEXTOS_SUCCESS : NEXTOS_BORDER, 0);
+    if (knob != nullptr) {
+        lv_obj_set_style_bg_color(knob, NEXTOS_SURFACE, 0);
+        lv_obj_align(knob, on ? LV_ALIGN_RIGHT_MID : LV_ALIGN_LEFT_MID, on ? -2 : 2, 0);
+    }
+}
 
 static void settings_update_notif_visual(void) {
     const bool on = next_os_user_prefs_notif_enabled();
     if (s_notif_switch == nullptr) {
         return;
     }
-    lv_obj_set_style_bg_color(s_notif_switch, on ? next_os_color_live_green() : next_os_color_light_grey(), 0);
-    if (s_notif_knob != nullptr) {
-        lv_obj_align(s_notif_knob, on ? LV_ALIGN_RIGHT_MID : LV_ALIGN_LEFT_MID, on ? -2 : 2, 0);
-    }
+    settings_update_toggle_visual(s_notif_switch, s_notif_knob, on);
 }
 
 static void settings_theme_click_cb(lv_event_t *event) {
     if (lv_event_get_code(event) != LV_EVENT_CLICKED) {
         return;
     }
+    nextos_haptic_pulse(NEXTOS_HAPTIC_LIGHT);
     next_os_runtime_theme_cycle();
     next_os_runtime_theme_apply_global_refresh();
     if (s_theme_value != nullptr) {
         const char *label =
-            next_os_user_prefs_theme() == NEXT_OS_THEME_CREAM ? "CREAM ▸" : "DARK ▸";
+            next_os_user_prefs_theme() == NEXT_OS_THEME_LIGHT ? "LIGHT ▸" : "DARK ▸";
         lv_label_set_text(s_theme_value, label);
     }
     next_os_screen_manager_reload_current();
@@ -102,8 +117,27 @@ static void settings_notif_click_cb(lv_event_t *event) {
     if (lv_event_get_code(event) != LV_EVENT_CLICKED) {
         return;
     }
+    nextos_haptic_pulse(NEXTOS_HAPTIC_LIGHT);
     next_os_user_prefs_set_notif_enabled(!next_os_user_prefs_notif_enabled());
     settings_update_notif_visual();
+}
+
+static void settings_haptic_click_cb(lv_event_t *event) {
+    if (lv_event_get_code(event) != LV_EVENT_CLICKED) {
+        return;
+    }
+    next_os_user_prefs_set_haptic_enabled(!next_os_user_prefs_haptic_enabled());
+    settings_update_toggle_visual(s_haptic_switch, s_haptic_knob, next_os_user_prefs_haptic_enabled());
+    nextos_haptic_pulse(NEXTOS_HAPTIC_LIGHT);
+}
+
+static void settings_audio_click_cb(lv_event_t *event) {
+    if (lv_event_get_code(event) != LV_EVENT_CLICKED) {
+        return;
+    }
+    next_os_user_prefs_set_audio_enabled(!next_os_user_prefs_audio_enabled());
+    settings_update_toggle_visual(s_audio_switch, s_audio_knob, next_os_user_prefs_audio_enabled());
+    nextos_audio_beep(NEXTOS_BEEP_SUCCESS);
 }
 
 static void settings_pair_click_cb(lv_event_t *event) {
@@ -118,8 +152,8 @@ static lv_obj_t *settings_create_row(lv_obj_t *parent, const char *label, const 
     lv_obj_t *card = lv_button_create(parent);
     lv_obj_set_size(card, nextos_content_width(), 36);
     lv_obj_set_style_radius(card, 10, 0);
-    lv_obj_set_style_bg_color(card, next_os_color_cream(), 0);
-    lv_obj_set_style_border_color(card, next_os_color_separator(), 0);
+    lv_obj_set_style_bg_color(card, NEXTOS_SURFACE, 0);
+    lv_obj_set_style_border_color(card, NEXTOS_BORDER, 0);
     lv_obj_set_style_border_width(card, 1, 0);
     lv_obj_set_style_pad_hor(card, 10, 0);
     if (on_click != nullptr) {
@@ -143,22 +177,12 @@ static lv_obj_t *settings_create_row(lv_obj_t *parent, const char *label, const 
 void next_os_settings_create(lv_obj_t *root) {
     next_os_apply_screen_style(root);
 
-    lv_obj_t *header = next_os_common_create_inset_header_row(root, 24);
-    lv_obj_t *gear = lv_label_create(header);
-    lv_label_set_text(gear, LV_SYMBOL_SETTINGS);
-    lv_obj_set_style_text_color(gear, next_os_color_olive(), 0);
-    lv_obj_align(gear, LV_ALIGN_LEFT_MID, 0, 0);
-
-    lv_obj_t *title = lv_label_create(header);
-    lv_label_set_text(title, "SETTINGS");
-    lv_obj_set_style_text_font(title, &lv_font_montserrat_12, 0);
-    lv_obj_set_style_text_color(title, next_os_color_olive(), 0);
-    lv_obj_align(title, LV_ALIGN_CENTER, 0, 0);
+    next_os_common_create_settings_title_row(root);
 
     lv_obj_t *list = lv_obj_create(root);
-    const int32_t list_h = NEXTOS_IS_ROUND ? 150 : nextos_content_height() - 80;
+    const int32_t list_h = NEXTOS_IS_ROUND ? 168 : nextos_content_height() - 96;
     lv_obj_set_size(list, nextos_content_width(), list_h);
-    lv_obj_align(list, LV_ALIGN_CENTER, 0, 8);
+    lv_obj_align(list, LV_ALIGN_TOP_MID, 0, nextos_settings_title_y() + 30);
     lv_obj_set_style_bg_opa(list, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(list, 0, 0);
     lv_obj_set_style_pad_row(list, 8, 0);
@@ -167,7 +191,7 @@ void next_os_settings_create(lv_obj_t *root) {
     next_os_common_disable_scroll(list);
 
     const char *theme_label =
-        next_os_user_prefs_theme() == NEXT_OS_THEME_CREAM ? "CREAM ▸" : "DARK ▸";
+        next_os_user_prefs_theme() == NEXT_OS_THEME_LIGHT ? "LIGHT ▸" : "DARK ▸";
     lv_obj_t *theme_row = settings_create_row(list, "Theme", theme_label, next_os_color_clay(),
                                                settings_theme_click_cb);
     s_theme_value = lv_obj_get_child(theme_row, 1);
@@ -189,6 +213,26 @@ void next_os_settings_create(lv_obj_t *root) {
     lv_obj_set_style_bg_color(s_notif_knob, next_os_color_cream(), 0);
     lv_obj_set_style_radius(s_notif_knob, LV_RADIUS_CIRCLE, 0);
     settings_update_notif_visual();
+
+    lv_obj_t *haptic = settings_create_row(list, "Haptic", "", next_os_color_olive(), settings_haptic_click_cb);
+    s_haptic_switch = lv_obj_create(haptic);
+    lv_obj_set_size(s_haptic_switch, 32, 16);
+    lv_obj_align(s_haptic_switch, LV_ALIGN_RIGHT_MID, 0, 0);
+    lv_obj_set_style_radius(s_haptic_switch, 8, 0);
+    s_haptic_knob = lv_obj_create(s_haptic_switch);
+    lv_obj_set_size(s_haptic_knob, 12, 12);
+    lv_obj_set_style_radius(s_haptic_knob, LV_RADIUS_CIRCLE, 0);
+    settings_update_toggle_visual(s_haptic_switch, s_haptic_knob, next_os_user_prefs_haptic_enabled());
+
+    lv_obj_t *audio = settings_create_row(list, "Audio", "", next_os_color_olive(), settings_audio_click_cb);
+    s_audio_switch = lv_obj_create(audio);
+    lv_obj_set_size(s_audio_switch, 32, 16);
+    lv_obj_align(s_audio_switch, LV_ALIGN_RIGHT_MID, 0, 0);
+    lv_obj_set_style_radius(s_audio_switch, 8, 0);
+    s_audio_knob = lv_obj_create(s_audio_switch);
+    lv_obj_set_size(s_audio_knob, 12, 12);
+    lv_obj_set_style_radius(s_audio_knob, LV_RADIUS_CIRCLE, 0);
+    settings_update_toggle_visual(s_audio_switch, s_audio_knob, next_os_user_prefs_audio_enabled());
 
     settings_create_row(list, "Pair device", "QR ▸", next_os_color_clay(), settings_pair_click_cb);
 

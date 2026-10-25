@@ -154,7 +154,7 @@ void next_os_watch_face_create(lv_obj_t *root) {
     /* Bar atas: inset 36px kiri/kanan + di bawah nav 28×8 (y≤36) */
     lv_obj_t *top_row = lv_obj_create(root);
     lv_obj_set_size(top_row, nextos_inset_header_width(), 24);
-    lv_obj_align(top_row, LV_ALIGN_TOP_MID, 0, nextos_inset_header_y());
+    lv_obj_align(top_row, LV_ALIGN_TOP_MID, 0, nextos_status_header_y());
     lv_obj_set_style_bg_opa(top_row, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(top_row, 0, 0);
     lv_obj_set_style_pad_all(top_row, 0, 0);

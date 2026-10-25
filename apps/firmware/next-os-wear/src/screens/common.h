@@ -18,6 +18,9 @@ lv_obj_t *next_os_common_create_header_label(lv_obj_t *parent, const char *text)
 /** Bar header inset (168×h, y=38) — clear area nav ◀ ▶ */
 lv_obj_t *next_os_common_create_inset_header_row(lv_obj_t *parent, int32_t height);
 
+/** Judul SETTINGS terpusat di bawah zona nav. */
+lv_obj_t *next_os_common_create_settings_title_row(lv_obj_t *parent);
+
 /** Kontainer bulat / kartu dengan radius penuh */
 lv_obj_t *next_os_common_create_round_container(lv_obj_t *parent, int32_t size);
 
