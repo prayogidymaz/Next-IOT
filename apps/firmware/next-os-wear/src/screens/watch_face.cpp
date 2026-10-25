@@ -2,6 +2,8 @@
 
 #include "mesh_state.h"
 #include "mqtt.h"
+#include "layout.h"
+#include "runtime_theme.h"
 #include "screens/common.h"
 #include "theme.h"
 
@@ -151,8 +153,8 @@ void next_os_watch_face_create(lv_obj_t *root) {
 
     /* Bar atas: inset 36px kiri/kanan + di bawah nav 28×8 (y≤36) */
     lv_obj_t *top_row = lv_obj_create(root);
-    lv_obj_set_size(top_row, 168, 24);
-    lv_obj_align(top_row, LV_ALIGN_TOP_MID, 0, 38);
+    lv_obj_set_size(top_row, nextos_inset_header_width(), 24);
+    lv_obj_align(top_row, LV_ALIGN_TOP_MID, 0, nextos_inset_header_y());
     lv_obj_set_style_bg_opa(top_row, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(top_row, 0, 0);
     lv_obj_set_style_pad_all(top_row, 0, 0);
@@ -176,7 +178,7 @@ void next_os_watch_face_create(lv_obj_t *root) {
     lv_obj_align(bat, LV_ALIGN_RIGHT_MID, 0, 0);
 
     s_clock_label = lv_label_create(root);
-    lv_obj_set_style_text_font(s_clock_label, &lv_font_montserrat_48, 0);
+    lv_obj_set_style_text_font(s_clock_label, next_os_font_clock_large(), 0);
     lv_obj_set_style_text_color(s_clock_label, next_os_color_dark(), 0);
     lv_obj_align(s_clock_label, LV_ALIGN_CENTER, 0, -18);
 

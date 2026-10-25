@@ -1,7 +1,9 @@
 #include "screens/common.h"
 
+#include "layout.h"
 #include "screens/screen_manager.h"
 
+#include <cmath>
 #include <cstdint>
 
 static void nav_btn_apply_default(lv_obj_t *btn, lv_obj_t *icon) {
@@ -60,12 +62,31 @@ static lv_obj_t *nav_btn_create(lv_obj_t *screen, bool is_prev) {
     return btn;
 }
 
+static void nav_place_button(lv_obj_t *btn, bool is_prev) {
+    const int32_t size = nextos_nav_button_size();
+    if (NEXTOS_IS_ROUND) {
+        const float cx = static_cast<float>(NEXTOS_W) * 0.5F;
+        const float cy = static_cast<float>(NEXTOS_H) * 0.5F;
+        const float radius = static_cast<float>(NEXTOS_W) * 0.5F - 20.0F;
+        const float deg = is_prev ? 135.0F : 45.0F;
+        const float rad = deg * 3.14159265F / 180.0F;
+        const int32_t x = static_cast<int32_t>(cx + radius * std::cos(rad) - static_cast<float>(size) * 0.5F);
+        const int32_t y = static_cast<int32_t>(cy - radius * std::sin(rad) - static_cast<float>(size) * 0.5F);
+        lv_obj_set_pos(btn, x, y);
+        return;
+    }
+    if (is_prev) {
+        lv_obj_align(btn, LV_ALIGN_TOP_LEFT, nextos_safe_padding_side(), nextos_safe_padding_top());
+    } else {
+        lv_obj_align(btn, LV_ALIGN_TOP_RIGHT, -nextos_safe_padding_side(), nextos_safe_padding_top());
+    }
+}
+
 lv_obj_t *next_os_common_create_nav_buttons(lv_obj_t *screen) {
     lv_obj_t *prev_btn = nav_btn_create(screen, true);
-    lv_obj_align(prev_btn, LV_ALIGN_TOP_LEFT, 8, 8);
-
     lv_obj_t *next_btn = nav_btn_create(screen, false);
-    lv_obj_align(next_btn, LV_ALIGN_TOP_RIGHT, -8, 8);
+    nav_place_button(prev_btn, true);
+    nav_place_button(next_btn, false);
 
     lv_obj_move_foreground(prev_btn);
     lv_obj_move_foreground(next_btn);
@@ -107,8 +128,8 @@ lv_obj_t *next_os_common_create_header_label(lv_obj_t *parent, const char *text)
 
 lv_obj_t *next_os_common_create_inset_header_row(lv_obj_t *parent, int32_t height) {
     lv_obj_t *row = lv_obj_create(parent);
-    lv_obj_set_size(row, 168, height);
-    lv_obj_align(row, LV_ALIGN_TOP_MID, 0, 38);
+    lv_obj_set_size(row, nextos_inset_header_width(), height);
+    lv_obj_align(row, LV_ALIGN_TOP_MID, 0, nextos_inset_header_y());
     lv_obj_set_style_bg_opa(row, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(row, 0, 0);
     lv_obj_set_style_pad_all(row, 0, 0);

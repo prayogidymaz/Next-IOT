@@ -1,5 +1,6 @@
 #include "screens/alert_center.h"
 
+#include "layout.h"
 #include "mesh_state.h"
 #include "screens/common.h"
 #include "theme.h"
@@ -142,6 +143,27 @@ void next_os_alert_center_create(lv_obj_t *root) {
     lv_label_set_text(det_l, "DETAIL");
     lv_obj_set_style_text_color(det_l, next_os_color_cream(), 0);
     lv_obj_center(det_l);
+
+    if (!NEXTOS_IS_ROUND) {
+        lv_obj_t *card2 = lv_obj_create(root);
+        lv_obj_set_size(card2, nextos_content_width(), 72);
+        lv_obj_align(card2, LV_ALIGN_BOTTOM_MID, 0, -36);
+        lv_obj_set_style_bg_color(card2, next_os_color_cream(), 0);
+        lv_obj_set_style_border_color(card2, next_os_color_light_grey(), 0);
+        lv_obj_set_style_border_width(card2, 1, 0);
+        lv_obj_set_style_radius(card2, 12, 0);
+        lv_obj_set_style_pad_all(card2, 10, 0);
+        next_os_common_disable_scroll(card2);
+        lv_obj_t *t2 = lv_label_create(card2);
+        lv_label_set_text(t2, "Tank level low • Plot C");
+        lv_obj_set_style_text_font(t2, &lv_font_montserrat_12, 0);
+        lv_obj_set_style_text_color(t2, next_os_color_dark(), 0);
+        lv_obj_align(t2, LV_ALIGN_TOP_LEFT, 0, 0);
+        lv_obj_t *s2 = lv_label_create(card2);
+        lv_label_set_text(s2, "WARNING • 12m ago");
+        lv_obj_set_style_text_color(s2, next_os_color_clay(), 0);
+        lv_obj_align(s2, LV_ALIGN_TOP_LEFT, 0, 20);
+    }
 
     next_os_common_create_pagination_dots(root, 3, 2);
 }
