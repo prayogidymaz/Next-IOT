@@ -27,9 +27,12 @@ int SDL_main(int argc, char **argv) {
     next_os_app_init();
     s_last_tick = lv_tick_get();
 
-    /* Setelah SDL_QUIT, driver LVGL memanggil lv_deinit() — keluar saat LVGL tidak aktif lagi */
+    /* Setelah SDL_QUIT, driver LVGL memanggil lv_deinit() — jangan panggil handler setelah itu */
     while (lv_is_initialized()) {
         lv_timer_handler();
+        if (!lv_is_initialized()) {
+            break;
+        }
 
         const uint32_t now = lv_tick_get();
         if (now - s_last_tick >= 1000U) {
