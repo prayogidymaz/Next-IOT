@@ -2,6 +2,7 @@
  * Simulator PC — SDL2 + LVGL 9.6 (240×240)
  * Event pointer: timer internal LVGL; keyboard: PeepEvents (tidak mencuri mouse SDL).
  */
+#define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 
 #include <cstdio>
@@ -27,9 +28,10 @@ static void simulator_handle_keyboard(void) {
     }
 }
 
-int SDL_main(int argc, char **argv) {
+int main(int argc, char **argv) {
     (void)argc;
     (void)argv;
+    SDL_SetMainReady();
 
     (void)std::printf("[BOOT] Starting Next-OS Wear simulator\n");
     (void)std::fflush(stdout);
