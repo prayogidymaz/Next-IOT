@@ -59,7 +59,28 @@ typedef struct {
     char domain[16];
     char event_type[32];
     char payload[72];
+    char correlation_id[32];
 } next_os_mesh_log_entry_t;
+
+typedef struct {
+    char correlation_id[32];
+    char workflow_name[32];
+    uint8_t step;
+    uint8_t total;
+    bool active;
+    bool failed;
+} next_os_mesh_workflow_t;
+
+typedef enum {
+    NEXT_OS_MESH_NODE_HUB = 0,
+    NEXT_OS_MESH_NODE_S2,
+    NEXT_OS_MESH_NODE_S3,
+    NEXT_OS_MESH_NODE_CAM,
+    NEXT_OS_MESH_NODE_DRN,
+    NEXT_OS_MESH_NODE_SPR,
+    NEXT_OS_MESH_NODE_GT,
+    NEXT_OS_MESH_NODE_COUNT,
+} next_os_mesh_node_id_t;
 
 void next_os_mesh_state_init(void);
 
@@ -93,5 +114,13 @@ next_os_mesh_topology_t next_os_mesh_state_topology(void);
 void next_os_mesh_state_push_log(const next_os_mesh_log_entry_t *entry);
 uint8_t next_os_mesh_state_log_count(void);
 bool next_os_mesh_state_log_at(uint8_t reverse_index, next_os_mesh_log_entry_t *out);
+uint8_t next_os_mesh_state_log_revision(void);
+
+void next_os_mesh_state_touch_node_by_name(const char *node_name);
+uint32_t next_os_mesh_state_node_last_ms(next_os_mesh_node_id_t node);
+uint8_t next_os_mesh_state_recent_event_count(void);
+
+void next_os_mesh_state_update_workflow(const next_os_mesh_workflow_t *workflow);
+next_os_mesh_workflow_t next_os_mesh_state_workflow(void);
 
 #endif /* NEXT_OS_MESH_STATE_H */

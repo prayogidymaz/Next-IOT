@@ -18,6 +18,7 @@ static lv_timer_t *s_alert_timer = nullptr;
 static lv_timer_t *s_motion_timer = nullptr;
 static lv_timer_t *s_vision_timer = nullptr;
 static lv_timer_t *s_dispatch_timer = nullptr;
+static lv_timer_t *s_workflow_timer = nullptr;
 static uint8_t s_mock_tick = 0;
 
 static void mock_publish_json(const char *topic, JsonDocument &doc) {
@@ -93,6 +94,29 @@ static void mock_emit_vision_capture(lv_timer_t *timer) {
     (void)std::printf("[MOCK MQTT] publish vision/image_captured\n");
 }
 
+static void mock_publish_workflow_event(const char *event_type, int step, int total) {
+    JsonDocument doc;
+    doc["event_type"] = event_type;
+    doc["domain"] = "workflow";
+    JsonObject payload = doc["payload"].to<JsonObject>();
+    payload["workflow_name"] = "irrigate_plot_a";
+    payload["correlation_id"] = "corr-mock-1";
+    payload["step"] = step;
+    payload["total"] = total;
+    payload["summary"] = event_type;
+    mock_publish_json("tenants/tenant-dev/mesh/workflow_executions/corr-mock-1", doc);
+}
+
+static void mock_emit_workflow(lv_timer_t *timer) {
+    (void)timer;
+    mock_publish_workflow_event("execution_started", 0, 3);
+    mock_publish_workflow_event("execution_step", 1, 3);
+    mock_publish_workflow_event("execution_step", 2, 3);
+    mock_publish_workflow_event("execution_step", 3, 3);
+    mock_publish_workflow_event("execution_completed", 3, 3);
+    (void)std::printf("[MOCK MQTT] publish workflow execution chain\n");
+}
+
 static void mock_emit_dispatch(lv_timer_t *timer) {
     (void)timer;
 
@@ -131,6 +155,9 @@ bool next_os_mqtt_start(void) {
     }
     if (s_dispatch_timer == nullptr) {
         s_dispatch_timer = lv_timer_create(mock_emit_dispatch, 150000, nullptr);
+    }
+    if (s_workflow_timer == nullptr) {
+        s_workflow_timer = lv_timer_create(mock_emit_workflow, 60000, nullptr);
     }
     return true;
 }

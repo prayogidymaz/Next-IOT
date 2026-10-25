@@ -1,5 +1,6 @@
 #include "screens/terminal_feed.h"
 
+#include "layout.h"
 #include "mesh_state.h"
 #include "screens/common.h"
 #include "theme.h"
@@ -9,7 +10,10 @@
 
 static lv_obj_t *s_list = nullptr;
 static lv_obj_t *s_cursor = nullptr;
+static lv_obj_t *s_footer = nullptr;
 static lv_timer_t *s_blink_timer = nullptr;
+static lv_timer_t *s_poll_timer = nullptr;
+static uint8_t s_last_log_revision = 0;
 
 static lv_color_t terminal_domain_color(const char *domain) {
     if (domain == nullptr) {
@@ -50,8 +54,39 @@ static void terminal_on_delete(lv_event_t *event) {
         lv_timer_delete(s_blink_timer);
         s_blink_timer = nullptr;
     }
+    if (s_poll_timer != nullptr) {
+        lv_timer_delete(s_poll_timer);
+        s_poll_timer = nullptr;
+    }
     s_list = nullptr;
     s_cursor = nullptr;
+    s_footer = nullptr;
+}
+
+static void terminal_rebuild_lines(void);
+
+static void terminal_format_line(char *line, size_t len, const next_os_mesh_log_entry_t *entry) {
+    if (strcmp(entry->event_type, "execution_step") == 0) {
+        (void)std::snprintf(line, len, "%s %s", entry->time, entry->payload);
+        return;
+    }
+    (void)std::snprintf(line, len, "%s [%s] %s", entry->time, entry->domain, entry->payload);
+}
+
+static void terminal_poll_cb(lv_timer_t *timer) {
+    (void)timer;
+    const uint8_t rev = next_os_mesh_state_log_revision();
+    if (rev != s_last_log_revision) {
+        s_last_log_revision = rev;
+        terminal_rebuild_lines();
+        if (s_footer != nullptr && lv_obj_is_in_widget_tree(s_footer)) {
+            char foot[48];
+            (void)std::snprintf(foot, sizeof(foot), "%u events • last 2m",
+                                static_cast<unsigned>(next_os_mesh_state_log_count()));
+            lv_label_set_text(s_footer, foot);
+        }
+        lv_obj_scroll_to_y(s_list, LV_COORD_MAX, LV_ANIM_ON);
+    }
 }
 
 static void terminal_rebuild_lines(void) {
@@ -69,11 +104,11 @@ static void terminal_rebuild_lines(void) {
         }
         lv_obj_t *row = lv_label_create(s_list);
         char line[128];
-        (void)std::snprintf(line, sizeof(line), "%s [%s] %s", entry.time, entry.domain, entry.payload);
+        terminal_format_line(line, sizeof(line), &entry);
         lv_label_set_text(row, line);
         lv_obj_set_style_text_font(row, &lv_font_montserrat_12, 0);
         lv_obj_set_style_text_color(row, terminal_domain_color(entry.domain), 0);
-        lv_obj_set_width(row, 200);
+        lv_obj_set_width(row, nextos_content_width() - 8);
         lv_label_set_long_mode(row, LV_LABEL_LONG_CLIP);
     }
 
@@ -108,7 +143,8 @@ void next_os_terminal_feed_create(lv_obj_t *root) {
     lv_obj_align(sub, LV_ALIGN_LEFT_MID, 10, 8);
 
     s_list = lv_obj_create(root);
-    lv_obj_set_size(s_list, 210, 130);
+    const int32_t list_h = NEXTOS_IS_ROUND ? 130 : nextos_content_height() - 90;
+    lv_obj_set_size(s_list, nextos_content_width(), list_h);
     lv_obj_align(s_list, LV_ALIGN_CENTER, 0, 4);
     lv_obj_set_style_bg_color(s_list, next_os_color_dark(), 0);
     lv_obj_set_style_border_width(s_list, 0, 0);
@@ -120,13 +156,16 @@ void next_os_terminal_feed_create(lv_obj_t *root) {
 
     terminal_rebuild_lines();
 
-    lv_obj_t *footer = lv_label_create(root);
+    s_footer = lv_label_create(root);
     char foot[48];
     (void)std::snprintf(foot, sizeof(foot), "%u events • last 2m",
                         static_cast<unsigned>(next_os_mesh_state_log_count()));
-    lv_label_set_text(footer, foot);
-    lv_obj_set_style_text_color(footer, next_os_color_muted(), 0);
-    lv_obj_align(footer, LV_ALIGN_BOTTOM_LEFT, 18, -12);
+    lv_label_set_text(s_footer, foot);
+    lv_obj_set_style_text_color(s_footer, next_os_color_muted(), 0);
+    lv_obj_align(s_footer, LV_ALIGN_BOTTOM_LEFT, nextos_safe_padding_side(), -nextos_safe_padding_bottom());
+
+    s_last_log_revision = next_os_mesh_state_log_revision();
+    s_poll_timer = lv_timer_create(terminal_poll_cb, 500, nullptr);
 
     lv_obj_t *scroll = lv_label_create(root);
     lv_label_set_text(scroll, "AUTO-SCROLL ▼");

@@ -78,7 +78,43 @@ static void mesh_push_event_log(const char *domain, const char *event_type, Json
         (void)std::snprintf(payload, sizeof(payload), "%s", event_type != nullptr ? event_type : "event");
     }
     (void)strncpy(entry.payload, payload, sizeof(entry.payload) - 1U);
+    if (!body.isNull() && body["correlation_id"].is<const char *>()) {
+        copy_str_field(entry.correlation_id, sizeof(entry.correlation_id), body["correlation_id"]);
+    }
+    if (event_type != nullptr && strcmp(event_type, "execution_step") == 0) {
+        char wf_name[32] = "mesh";
+        copy_json_key(wf_name, sizeof(wf_name), body, "workflow_name", wf_name);
+        const int step = body["step"] | 0;
+        const int total = body["total"] | 0;
+        (void)std::snprintf(entry.payload, sizeof(entry.payload), "WF %s STEP %d/%d", wf_name, step, total);
+    }
     next_os_mesh_state_push_log(&entry);
+}
+
+static void mesh_route_node_activity(const char *domain, const char *event_type, JsonObjectConst body) {
+    if (domain != nullptr && strcmp(domain, "sensor") == 0) {
+        next_os_mesh_state_touch_node_by_name("S2");
+    }
+    if (domain != nullptr && strcmp(domain, "vision") == 0) {
+        next_os_mesh_state_touch_node_by_name("CAM");
+    }
+    if (strcmp(event_type, "dispatch_requested") == 0) {
+        next_os_mesh_state_touch_node_by_name("DRN");
+    }
+    if (strcmp(event_type, "flight_completed") == 0) {
+        next_os_mesh_topology_t topo = next_os_mesh_state_topology();
+        topo.drn_dispatch_pulse = false;
+        next_os_mesh_state_update_topology(&topo);
+    }
+    if (domain != nullptr && strcmp(domain, "actuator") == 0) {
+        next_os_mesh_state_touch_node_by_name("SPR");
+    }
+    if (!body.isNull() && body["node"].is<const char *>()) {
+        const char *node = body["node"].as<const char *>();
+        if (node != nullptr) {
+            next_os_mesh_state_touch_node_by_name(node);
+        }
+    }
 }
 
 void next_os_mesh_handler_init(void) {
@@ -103,7 +139,14 @@ void next_os_mesh_handler_on_message(const char *topic, const uint8_t *payload, 
         body = doc.as<JsonObjectConst>();
     }
 
-    (void)topic;
+    if (topic != nullptr && strstr(topic, "workflow_executions") != nullptr) {
+        if (doc["event_type"].is<const char *>()) {
+            event_type = doc["event_type"].as<const char *>();
+        }
+        if (doc["domain"].is<const char *>()) {
+            domain = doc["domain"].as<const char *>();
+        }
+    }
 
     if (strcmp(event_type, "sensor.reading_update") == 0 || strcmp(event_type, "sensor_update") == 0) {
         next_os_mesh_sensor_t reading = next_os_mesh_state_sensor();
@@ -173,8 +216,37 @@ void next_os_mesh_handler_on_message(const char *topic, const uint8_t *payload, 
         topo.live_nodes = 5;
         topo.idle_nodes = 2;
         next_os_mesh_state_update_topology(&topo);
+    } else if (strcmp(event_type, "execution_started") == 0) {
+        next_os_mesh_workflow_t wf {};
+        wf.active = true;
+        wf.failed = false;
+        wf.step = 0;
+        wf.total = body["total"] | 3;
+        copy_json_key(wf.workflow_name, sizeof(wf.workflow_name), body, "workflow_name", "irrigate");
+        copy_json_key(wf.correlation_id, sizeof(wf.correlation_id), body, "correlation_id", "wf-1");
+        next_os_mesh_state_update_workflow(&wf);
+        next_os_mesh_state_touch_node_by_name("HUB");
+    } else if (strcmp(event_type, "action_completed") == 0 || strcmp(event_type, "execution_step") == 0) {
+        next_os_mesh_workflow_t wf = next_os_mesh_state_workflow();
+        wf.active = true;
+        wf.step = static_cast<uint8_t>(body["step"] | static_cast<int>(wf.step + 1U));
+        wf.total = static_cast<uint8_t>(body["total"] | wf.total);
+        copy_json_key(wf.workflow_name, sizeof(wf.workflow_name), body, "workflow_name", wf.workflow_name);
+        next_os_mesh_state_update_workflow(&wf);
+    } else if (strcmp(event_type, "execution_completed") == 0) {
+        next_os_mesh_workflow_t wf = next_os_mesh_state_workflow();
+        wf.active = false;
+        wf.failed = false;
+        wf.step = wf.total;
+        next_os_mesh_state_update_workflow(&wf);
+    } else if (strcmp(event_type, "execution_failed") == 0) {
+        next_os_mesh_workflow_t wf = next_os_mesh_state_workflow();
+        wf.active = false;
+        wf.failed = true;
+        next_os_mesh_state_update_workflow(&wf);
     }
 
+    mesh_route_node_activity(domain, event_type, body);
     mesh_push_event_log(domain, event_type, body);
     next_os_mesh_ui_sync_refresh();
 }
