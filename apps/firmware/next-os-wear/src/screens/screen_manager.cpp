@@ -30,6 +30,8 @@
 #include "layout.h"
 #include "theme.h"
 
+#include <cstdio>
+
 static next_os_screen_id_t s_current = NEXT_OS_SCREEN_BOOT;
 static bool s_nav_enabled = false;
 static lv_obj_t *s_current_screen_obj = nullptr;
@@ -81,7 +83,12 @@ static bool screen_wants_back(next_os_screen_id_t screen_id) {
     return next_os_screen_manager_is_stackable(screen_id);
 }
 
-static void build_screen(next_os_screen_id_t screen_id, lv_obj_t *root) {
+static bool build_screen(next_os_screen_id_t screen_id, lv_obj_t *root) {
+    if (root == nullptr) {
+        (void)std::printf("[SCR] build_screen root=null id=%d\n", static_cast<int>(screen_id));
+        (void)std::fflush(stdout);
+        return false;
+    }
     switch (screen_id) {
     case NEXT_OS_SCREEN_WATCH_FACE:
         next_os_watch_face_create(root);
@@ -156,7 +163,13 @@ static void build_screen(next_os_screen_id_t screen_id, lv_obj_t *root) {
     case NEXT_OS_SCREEN_CONTROL_CENTER:
     case NEXT_OS_SCREEN_NOTIFICATION_CENTER:
         break;
+    default:
+        (void)std::printf("[SCR] unknown screen id=%d — fallback watch face\n", static_cast<int>(screen_id));
+        (void)std::fflush(stdout);
+        next_os_watch_face_create(root);
+        return false;
     }
+    return true;
 }
 
 static void apply_screen_chrome(next_os_screen_id_t screen_id, lv_obj_t *root) {
@@ -184,6 +197,11 @@ static lv_obj_t *ensure_shell_screen(void) {
     lv_obj_t *scr = lv_screen_active();
     if (scr == nullptr) {
         scr = lv_obj_create(nullptr);
+        if (scr == nullptr) {
+            (void)std::printf("[SCR] FATAL: cannot create shell screen\n");
+            (void)std::fflush(stdout);
+            return nullptr;
+        }
         next_os_apply_screen_style(scr);
         lv_screen_load(scr);
     }
@@ -203,7 +221,17 @@ static void screen_fade_in(lv_obj_t *obj) {
 
 static void mount_screen(next_os_screen_id_t screen_id, bool fade_in) {
     lv_obj_t *scr = ensure_shell_screen();
+    if (scr == nullptr) {
+        return;
+    }
+    (void)std::printf("[SCR] mount id=%d fade=%d\n", static_cast<int>(screen_id), fade_in ? 1 : 0);
+    (void)std::fflush(stdout);
     s_current_screen_obj = lv_obj_create(scr);
+    if (s_current_screen_obj == nullptr) {
+        (void)std::printf("[SCR] FATAL: content root alloc failed\n");
+        (void)std::fflush(stdout);
+        return;
+    }
     lv_obj_set_size(s_current_screen_obj, NEXTOS_W, NEXTOS_H);
     lv_obj_center(s_current_screen_obj);
     lv_obj_set_style_bg_color(s_current_screen_obj, NEXTOS_BG, 0);
@@ -212,11 +240,12 @@ static void mount_screen(next_os_screen_id_t screen_id, bool fade_in) {
     lv_obj_set_style_pad_all(s_current_screen_obj, 0, 0);
     next_os_common_disable_scroll(s_current_screen_obj);
 
-    build_screen(screen_id, s_current_screen_obj);
-    apply_screen_chrome(screen_id, s_current_screen_obj);
-
     s_current = screen_id;
     s_nav_enabled = true;
+    if (!build_screen(screen_id, s_current_screen_obj)) {
+        s_current = NEXT_OS_SCREEN_WATCH_FACE;
+    }
+    apply_screen_chrome(s_current, s_current_screen_obj);
     if (fade_in) {
         screen_fade_in(s_current_screen_obj);
     }
@@ -272,12 +301,19 @@ void next_os_screen_manager_present(next_os_screen_id_t screen_id, bool animate)
 }
 
 static void enter_from_boot_async(void *user_data) {
+    (void)std::printf("[BOOT] enter_from_boot_async\n");
+    (void)std::fflush(stdout);
     lv_obj_t *boot_screen = static_cast<lv_obj_t *>(user_data);
     if (boot_screen != nullptr) {
         lv_anim_delete(boot_screen, nullptr);
     }
 
     lv_obj_t *shell = lv_obj_create(nullptr);
+    if (shell == nullptr) {
+        (void)std::printf("[BOOT] FATAL: shell alloc failed\n");
+        (void)std::fflush(stdout);
+        return;
+    }
     next_os_apply_screen_style(shell);
     lv_screen_load(shell);
 
@@ -285,8 +321,12 @@ static void enter_from_boot_async(void *user_data) {
         lv_obj_delete(boot_screen);
     }
 
-    next_os_nav_stack_init();
+    if (!next_os_nav_stack_is_ready()) {
+        next_os_nav_stack_init();
+    }
     next_os_nav_stack_go_home();
+    (void)std::printf("[BOOT] watch face mounted after boot\n");
+    (void)std::fflush(stdout);
 }
 
 void next_os_screen_manager_enter_from_boot(lv_obj_t *boot_screen) {

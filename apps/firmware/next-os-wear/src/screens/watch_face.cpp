@@ -5,6 +5,8 @@
 #include "mqtt.h"
 #include "layout.h"
 #include "navigation/nav_stack.h"
+
+#include <cstdint>
 #include "runtime_theme.h"
 #include "screens/common.h"
 #include "screens/screen_manager.h"
@@ -96,6 +98,10 @@ static void watch_face_on_delete(lv_event_t *event) {
     if (s_clock_timer != nullptr) {
         lv_timer_delete(s_clock_timer);
         s_clock_timer = nullptr;
+    }
+    if (s_long_press_timer != nullptr) {
+        lv_timer_delete(s_long_press_timer);
+        s_long_press_timer = nullptr;
     }
     s_clock_label = nullptr;
     s_date_label = nullptr;
@@ -220,17 +226,17 @@ void next_os_watch_face_create(lv_obj_t *root) {
 
     lv_obj_t *kpi0 = watch_face_create_kpi_tile(kpi_row, farm_buf, "FARM", next_os_color_olive(),
                                                 &s_kpi_value_labels[0]);
-    lv_obj_add_flag(kpi0, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_clickable(kpi0, true);
     lv_obj_add_event_cb(kpi0, watch_face_kpi_shortcut_cb, LV_EVENT_CLICKED, reinterpret_cast<void *>(0));
     next_os_common_create_v_separator(kpi_row);
     lv_obj_t *kpi1 = watch_face_create_kpi_tile(kpi_row, alert_buf, "ALERT", next_os_color_critical(),
                                                 &s_kpi_value_labels[1]);
-    lv_obj_add_flag(kpi1, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_clickable(kpi1, true);
     lv_obj_add_event_cb(kpi1, watch_face_kpi_shortcut_cb, LV_EVENT_CLICKED, reinterpret_cast<void *>(1));
     next_os_common_create_v_separator(kpi_row);
     lv_obj_t *kpi2 = watch_face_create_kpi_tile(kpi_row, irig_buf, "IRIG", next_os_color_clay(),
                                                 &s_kpi_value_labels[2]);
-    lv_obj_add_flag(kpi2, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_clickable(kpi2, true);
     lv_obj_add_event_cb(kpi2, watch_face_kpi_shortcut_cb, LV_EVENT_CLICKED, reinterpret_cast<void *>(2));
 
     s_variant_hint = lv_label_create(root);
@@ -247,6 +253,9 @@ void next_os_watch_face_create(lv_obj_t *root) {
 static void watch_face_long_press_cb(lv_timer_t *timer) {
     (void)timer;
     s_long_press_timer = nullptr;
+    if (!next_os_nav_stack_is_ready()) {
+        return;
+    }
     nextos_haptic_pulse(NEXTOS_HAPTIC_MEDIUM);
     next_os_nav_stack_push(NEXT_OS_SCREEN_APP_LAUNCHER, true);
 }
@@ -255,12 +264,15 @@ static void watch_face_kpi_shortcut_cb(lv_event_t *event) {
     if (lv_event_get_code(event) != LV_EVENT_CLICKED) {
         return;
     }
+    if (!next_os_nav_stack_is_ready()) {
+        return;
+    }
     const auto slot = static_cast<int>(reinterpret_cast<intptr_t>(lv_event_get_user_data(event)));
     if (slot == 0) {
         next_os_nav_stack_push(NEXT_OS_SCREEN_FARMING_HUB, true);
     } else if (slot == 1) {
         next_os_screen_manager_show_notification_center();
-    } else {
+    } else if (slot == 2) {
         next_os_nav_stack_push(NEXT_OS_SCREEN_FARMING_IRRIGATION, true);
     }
 }

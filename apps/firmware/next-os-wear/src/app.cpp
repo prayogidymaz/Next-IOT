@@ -8,9 +8,13 @@
 #include "screens/screen_manager.h"
 #include "user_prefs.h"
 
+#include <cstdio>
+
 static lv_obj_t *s_boot_screen = nullptr;
 
 static void on_boot_finished(void) {
+    (void)std::printf("[BOOT] on_boot_finished\n");
+    (void)std::fflush(stdout);
     next_os_mqtt_init();
     (void)next_os_mqtt_start();
     next_os_screen_manager_enter_from_boot(s_boot_screen);

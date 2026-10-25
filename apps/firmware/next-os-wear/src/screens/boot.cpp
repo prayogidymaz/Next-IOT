@@ -6,8 +6,11 @@ static void (*s_on_finished)(void) = nullptr;
 static lv_obj_t *s_logo_arc = nullptr;
 
 static void boot_rotate_exec(void *obj, int32_t v) {
-    /* Rotasi arc native — aman vs transform style saat layar dihapus */
-    lv_arc_set_rotation(static_cast<lv_obj_t *>(obj), static_cast<lv_value_precise_t>(v));
+    lv_obj_t *arc = static_cast<lv_obj_t *>(obj);
+    if (arc == nullptr || s_logo_arc == nullptr || arc != s_logo_arc) {
+        return;
+    }
+    lv_arc_set_rotation(arc, static_cast<lv_value_precise_t>(v));
 }
 
 static void boot_fade_exec(void *obj, int32_t v) {
@@ -16,6 +19,7 @@ static void boot_fade_exec(void *obj, int32_t v) {
 
 static void boot_finish_async(void *user_data) {
     (void)user_data;
+    s_logo_arc = nullptr;
     if (s_on_finished != nullptr) {
         s_on_finished();
     }
@@ -27,6 +31,10 @@ static void boot_anim_ready(lv_anim_t *anim) {
 }
 
 static void boot_timer_cb(lv_timer_t *timer) {
+    if (s_logo_arc == nullptr) {
+        lv_timer_del(timer);
+        return;
+    }
     lv_anim_t a;
     lv_anim_init(&a);
     lv_anim_set_var(&a, s_logo_arc);

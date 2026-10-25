@@ -61,13 +61,13 @@ static void launcher_rebuild_page(void) {
                             reinterpret_cast<void *>(static_cast<intptr_t>(i)));
 
         lv_obj_t *icon = lv_label_create(cell);
-        lv_label_set_text(icon, entry->symbol);
+        lv_label_set_text(icon, entry->symbol != nullptr ? entry->symbol : LV_SYMBOL_FILE);
         lv_obj_set_style_text_font(icon, &lv_font_montserrat_24, 0);
         lv_obj_set_style_text_color(icon, NEXTOS_ACCENT_PRIMARY, 0);
         lv_obj_align(icon, LV_ALIGN_TOP_MID, 0, 8);
 
         lv_obj_t *label = lv_label_create(cell);
-        lv_label_set_text(label, entry->label);
+        lv_label_set_text(label, entry->label != nullptr ? entry->label : "App");
         lv_obj_set_style_text_font(label, &lv_font_montserrat_12, 0);
         lv_obj_set_width(label, 56);
         lv_label_set_long_mode(label, LV_LABEL_LONG_DOT);
