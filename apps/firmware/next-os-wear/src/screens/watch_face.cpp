@@ -149,10 +149,10 @@ void next_os_watch_face_create(lv_obj_t *root) {
     next_os_apply_screen_style(root);
     lv_obj_add_event_cb(root, watch_face_on_delete, LV_EVENT_DELETE, nullptr);
 
-    /* Bar atas: KEBUN KOPI + wifi stub + baterai */
+    /* Bar atas: inset 36px kiri/kanan + di bawah nav 28×8 (y≤36) */
     lv_obj_t *top_row = lv_obj_create(root);
-    lv_obj_set_size(top_row, 216, 24);
-    lv_obj_align(top_row, LV_ALIGN_TOP_MID, 0, 10);
+    lv_obj_set_size(top_row, 168, 24);
+    lv_obj_align(top_row, LV_ALIGN_TOP_MID, 0, 38);
     lv_obj_set_style_bg_opa(top_row, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(top_row, 0, 0);
     lv_obj_set_style_pad_all(top_row, 0, 0);
