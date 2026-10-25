@@ -10,6 +10,7 @@
 
 #include "app.h"
 #include "config.h"
+#include "mqtt.h"
 #include "screens/screen_manager.h"
 
 static void simulator_handle_keyboard(void) {
@@ -40,6 +41,7 @@ int SDL_main(int argc, char **argv) {
     while (lv_is_initialized() && lv_display_get_default() != nullptr) {
         simulator_handle_keyboard();
         lv_timer_handler();
+        next_os_app_tick();
         lv_delay_ms(5);
     }
 

@@ -1,11 +1,14 @@
 #include "app.h"
 
+#include "mqtt.h"
 #include "screens/boot.h"
 #include "screens/screen_manager.h"
 
 static lv_obj_t *s_boot_screen = nullptr;
 
 static void on_boot_finished(void) {
+    next_os_mqtt_init();
+    (void)next_os_mqtt_start();
     next_os_screen_manager_enter_from_boot(s_boot_screen);
     s_boot_screen = nullptr;
 }
@@ -17,5 +20,5 @@ void next_os_app_init(void) {
 }
 
 void next_os_app_tick(void) {
-    /* Tick per layar lewat lv_timer internal (watch face, dll.) */
+    next_os_mqtt_loop();
 }
