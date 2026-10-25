@@ -60,7 +60,7 @@ void next_os_user_prefs_set_brightness(uint8_t pct) {
 #if defined(NEXT_OS_HARDWARE)
     s_prefs.putUChar("bright", pct);
 #else
-    (void)std::printf("[PREFS] brightness=%u (simulator — no backlight)\n", static_cast<unsigned>(pct));
+    (void)std::printf("[PREFS] brightness=%u (simulator - no backlight)\n", static_cast<unsigned>(pct));
 #endif
 }
 

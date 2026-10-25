@@ -28,7 +28,7 @@ bool next_os_nav_stack_is_ready(void) {
 
 void next_os_nav_stack_push(next_os_screen_id_t screen_id, bool animate) {
     if (!s_ready) {
-        (void)std::printf("[NAV] push ignored — stack not ready id=%d\n", static_cast<int>(screen_id));
+        (void)std::printf("[NAV] push ignored - stack not ready id=%d\n", static_cast<int>(screen_id));
         (void)std::fflush(stdout);
         return;
     }
@@ -38,7 +38,7 @@ void next_os_nav_stack_push(next_os_screen_id_t screen_id, bool animate) {
         return;
     }
     if (s_depth >= 10U) {
-        (void)std::printf("[NAV] push rejected — stack full\n");
+        (void)std::printf("[NAV] push rejected - stack full\n");
         (void)std::fflush(stdout);
         return;
     }
@@ -52,7 +52,7 @@ void next_os_nav_stack_push(next_os_screen_id_t screen_id, bool animate) {
 
 void next_os_nav_stack_pop(void) {
     if (!s_ready) {
-        (void)std::printf("[NAV] pop ignored — stack not ready\n");
+        (void)std::printf("[NAV] pop ignored - stack not ready\n");
         (void)std::fflush(stdout);
         return;
     }
@@ -77,12 +77,12 @@ void next_os_nav_stack_pop(void) {
 
 void next_os_nav_stack_go_home(void) {
     if (!s_ready) {
-        (void)std::printf("[NAV] go_home ignored — stack not ready\n");
+        (void)std::printf("[NAV] go_home ignored - stack not ready\n");
         (void)std::fflush(stdout);
         return;
     }
     s_depth = 0;
-    (void)std::printf("[NAV] go_home → watch face\n");
+    (void)std::printf("[NAV] go_home -> watch face\n");
     (void)std::fflush(stdout);
     next_os_screen_manager_present(NEXT_OS_SCREEN_WATCH_FACE, true);
 }

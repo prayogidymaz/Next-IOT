@@ -164,7 +164,7 @@ static bool build_screen(next_os_screen_id_t screen_id, lv_obj_t *root) {
     case NEXT_OS_SCREEN_NOTIFICATION_CENTER:
         break;
     default:
-        (void)std::printf("[SCR] unknown screen id=%d — fallback watch face\n", static_cast<int>(screen_id));
+        (void)std::printf("[SCR] unknown screen id=%d - fallback watch face\n", static_cast<int>(screen_id));
         (void)std::fflush(stdout);
         next_os_watch_face_create(root);
         return false;
