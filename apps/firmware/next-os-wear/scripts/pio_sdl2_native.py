@@ -115,4 +115,53 @@ lvgl_public_include = os.path.join(libdeps_dir, pioenv, "lvgl", "include")
 if os.path.isdir(lvgl_public_include):
     env.Append(CPPPATH=[lvgl_public_include])
 
+def _resolve_mixer_root():
+    candidates = []
+    from_env = os.environ.get("SDL2_MIXER_PATH", "").strip()
+    if from_env:
+        candidates.append(from_env)
+    user_profile = os.environ.get("USERPROFILE", "")
+    if user_profile:
+        candidates.append(os.path.join(user_profile, "scoop", "apps", "sdl2-mixer", "current"))
+    for raw in candidates:
+        root = os.path.abspath(raw)
+        inc = os.path.join(root, "include", "SDL2", "SDL_mixer.h")
+        if os.path.isfile(inc):
+            return root
+    return ""
+
+
+def _append_mixer_libs(link_env, mixer_root):
+    lib_dir = os.path.join(mixer_root, "lib")
+    if not os.path.isdir(lib_dir):
+        lib_dir = os.path.join(mixer_root, "lib", "x64")
+    mingw = os.path.join(lib_dir, "libSDL2_mixer.dll.a")
+    msvc = os.path.join(lib_dir, "SDL2_mixer.lib")
+    if os.path.isfile(mingw):
+        link_env.Append(LIBPATH=[lib_dir])
+        link_env.Append(LIBS=[link_env.File(mingw)])
+    elif os.path.isfile(msvc):
+        link_env.Append(LIBPATH=[lib_dir])
+        link_env.Append(LIBS=[link_env.File(msvc)])
+
+
+mixer_root = _resolve_mixer_root()
+if mixer_root:
+    env.Append(CPPDEFINES=[("NEXTOS_HAS_SDL_MIXER", "1")])
+    env.Append(CPPPATH=[os.path.join(mixer_root, "include", "SDL2")])
+    _append_mixer_libs(env, mixer_root)
+    for rel in ("lib/x64/SDL2_mixer.dll", "lib/SDL2_mixer.dll"):
+        dll_src = os.path.join(mixer_root, rel)
+        if os.path.isfile(dll_src):
+            build_dir = env.subst("$BUILD_DIR")
+            dll_dst = os.path.join(build_dir, "SDL2_mixer.dll")
+            dll_node = env.Command(dll_dst, dll_src, Copy("$TARGET", "$SOURCE"))
+            program = os.path.join(build_dir, "program.exe")
+            env.Depends(program, dll_node)
+            break
+    print(f"SDL2_mixer: linked from {mixer_root}")
+else:
+    env.Append(CPPDEFINES=[("NEXTOS_HAS_SDL_MIXER", "0")])
+    print("WARN: SDL2_mixer tidak ditemukan — audio simulator disabled (scoop install sdl2-mixer)")
+
 print(f"SDL2 native: CPPPATH+={sdl_include} LIBPATH+={sdl_lib} LIBS+=SDL2 (akhir link)")

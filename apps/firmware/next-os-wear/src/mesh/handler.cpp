@@ -1,7 +1,10 @@
 #include "mesh/handler.h"
 
+#include "audio.h"
+#include "haptic.h"
 #include "mesh_state.h"
 #include "screens/mesh_ui_sync.h"
+#include "user_prefs.h"
 
 #include <ArduinoJson.h>
 
@@ -248,5 +251,18 @@ void next_os_mesh_handler_on_message(const char *topic, const uint8_t *payload, 
 
     mesh_route_node_activity(domain, event_type, body);
     mesh_push_event_log(domain, event_type, body);
+
+    if (next_os_user_prefs_notif_enabled()) {
+        if (strcmp(event_type, "alarm.created") == 0 || strcmp(event_type, "intrusion_detected") == 0) {
+            nextos_haptic_pulse(NEXTOS_HAPTIC_STRONG);
+            nextos_audio_beep(NEXTOS_BEEP_ALERT);
+        } else if (strcmp(event_type, "execution_completed") == 0) {
+            nextos_haptic_pulse(NEXTOS_HAPTIC_LIGHT);
+            nextos_audio_beep(NEXTOS_BEEP_SUCCESS);
+        } else if (strcmp(event_type, "motion_detected") == 0) {
+            nextos_haptic_pulse(NEXTOS_HAPTIC_MEDIUM);
+        }
+    }
+
     next_os_mesh_ui_sync_refresh();
 }

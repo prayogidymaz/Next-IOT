@@ -6,9 +6,11 @@
 #include <Preferences.h>
 #endif
 
-static next_os_theme_pref_t s_theme = NEXT_OS_THEME_CREAM;
+static next_os_theme_pref_t s_theme = NEXT_OS_THEME_LIGHT;
 static uint8_t s_brightness = 70;
 static bool s_notif = true;
+static bool s_haptic = true;
+static bool s_audio = true;
 
 #if defined(NEXT_OS_HARDWARE)
 static Preferences s_prefs;
@@ -17,13 +19,17 @@ static Preferences s_prefs;
 void next_os_user_prefs_init(void) {
 #if defined(NEXT_OS_HARDWARE)
     s_prefs.begin("nextos_wear", false);
-    s_theme = static_cast<next_os_theme_pref_t>(s_prefs.getUChar("theme", NEXT_OS_THEME_CREAM));
+    s_theme = static_cast<next_os_theme_pref_t>(s_prefs.getUChar("theme", NEXT_OS_THEME_LIGHT));
     s_brightness = s_prefs.getUChar("bright", 70);
     s_notif = s_prefs.getBool("notif", true);
+    s_haptic = s_prefs.getBool("haptic", true);
+    s_audio = s_prefs.getBool("audio", true);
 #else
-    s_theme = NEXT_OS_THEME_CREAM;
+    s_theme = NEXT_OS_THEME_LIGHT;
     s_brightness = 70;
     s_notif = true;
+    s_haptic = true;
+    s_audio = true;
 #endif
 }
 
@@ -65,5 +71,27 @@ void next_os_user_prefs_set_notif_enabled(bool enabled) {
     s_notif = enabled;
 #if defined(NEXT_OS_HARDWARE)
     s_prefs.putBool("notif", enabled);
+#endif
+}
+
+bool next_os_user_prefs_haptic_enabled(void) {
+    return s_haptic;
+}
+
+void next_os_user_prefs_set_haptic_enabled(bool enabled) {
+    s_haptic = enabled;
+#if defined(NEXT_OS_HARDWARE)
+    s_prefs.putBool("haptic", enabled);
+#endif
+}
+
+bool next_os_user_prefs_audio_enabled(void) {
+    return s_audio;
+}
+
+void next_os_user_prefs_set_audio_enabled(bool enabled) {
+    s_audio = enabled;
+#if defined(NEXT_OS_HARDWARE)
+    s_prefs.putBool("audio", enabled);
 #endif
 }

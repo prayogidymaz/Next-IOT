@@ -1,6 +1,8 @@
 #include "screens/qr_pair.h"
 
+#include "audio.h"
 #include "config.h"
+#include "haptic.h"
 #include "layout.h"
 #include "theme.h"
 
@@ -44,9 +46,17 @@ static void qr_pair_tick_cb(lv_timer_t *timer) {
     }
 }
 
+static void qr_pair_second_pulse_cb(lv_timer_t *timer) {
+    (void)timer;
+    nextos_haptic_pulse(NEXTOS_HAPTIC_MEDIUM);
+}
+
 static void qr_pair_sim_success_cb(lv_timer_t *timer) {
     (void)timer;
     (void)std::printf("[QR PAIR] simulator auto-success token stored (mock)\n");
+    nextos_haptic_pulse(NEXTOS_HAPTIC_MEDIUM);
+    lv_timer_create(qr_pair_second_pulse_cb, 150, nullptr);
+    nextos_audio_beep(NEXTOS_BEEP_SUCCESS);
     qr_pair_finish();
 }
 
