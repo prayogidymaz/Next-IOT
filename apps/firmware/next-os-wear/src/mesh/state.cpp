@@ -123,12 +123,20 @@ void next_os_mesh_state_push_alert(const next_os_mesh_alert_t *alert) {
 }
 
 bool next_os_mesh_state_top_alert(next_os_mesh_alert_t *out) {
-    if (out == nullptr || s_alert_size == 0) {
+    return next_os_mesh_state_alert_at(0, out);
+}
+
+uint8_t next_os_mesh_state_alert_buffer_size(void) {
+    return s_alert_size;
+}
+
+bool next_os_mesh_state_alert_at(uint8_t reverse_index, next_os_mesh_alert_t *out) {
+    if (out == nullptr || reverse_index >= s_alert_size) {
         return false;
     }
-    const uint8_t latest =
-        static_cast<uint8_t>((s_alert_head + s_alert_size - 1U) % NEXT_OS_MESH_ALERT_BUFFER_SIZE);
-    *out = s_alerts[latest];
+    const uint8_t idx =
+        static_cast<uint8_t>((s_alert_head + s_alert_size - 1U - reverse_index) % NEXT_OS_MESH_ALERT_BUFFER_SIZE);
+    *out = s_alerts[idx];
     return true;
 }
 

@@ -22,7 +22,7 @@ static void haptic_flash_end(lv_timer_t *timer) {
 void nextos_haptic_init(void) {}
 
 void nextos_haptic_pulse(nextos_haptic_intensity_t intensity) {
-    if (!next_os_user_prefs_haptic_enabled()) {
+    if (!next_os_user_prefs_haptic_enabled() || next_os_user_prefs_dnd_enabled()) {
         return;
     }
 

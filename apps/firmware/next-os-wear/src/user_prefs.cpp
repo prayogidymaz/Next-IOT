@@ -11,6 +11,7 @@ static uint8_t s_brightness = 70;
 static bool s_notif = true;
 static bool s_haptic = true;
 static bool s_audio = true;
+static bool s_dnd = false;
 
 #if defined(NEXT_OS_HARDWARE)
 static Preferences s_prefs;
@@ -94,4 +95,12 @@ void next_os_user_prefs_set_audio_enabled(bool enabled) {
 #if defined(NEXT_OS_HARDWARE)
     s_prefs.putBool("audio", enabled);
 #endif
+}
+
+bool next_os_user_prefs_dnd_enabled(void) {
+    return s_dnd;
+}
+
+void next_os_user_prefs_set_dnd_enabled(bool enabled) {
+    s_dnd = enabled;
 }

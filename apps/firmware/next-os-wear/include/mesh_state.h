@@ -100,6 +100,8 @@ next_os_mesh_irrig_t next_os_mesh_state_irrig(void);
 
 void next_os_mesh_state_push_alert(const next_os_mesh_alert_t *alert);
 bool next_os_mesh_state_top_alert(next_os_mesh_alert_t *out);
+uint8_t next_os_mesh_state_alert_buffer_size(void);
+bool next_os_mesh_state_alert_at(uint8_t reverse_index, next_os_mesh_alert_t *out);
 
 void next_os_mesh_state_update_cctv(const next_os_mesh_cctv_t *cctv);
 next_os_mesh_cctv_t next_os_mesh_state_cctv(void);

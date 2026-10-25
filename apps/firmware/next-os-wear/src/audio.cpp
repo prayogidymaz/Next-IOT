@@ -65,7 +65,7 @@ void nextos_audio_init(void) {
 }
 
 void nextos_audio_beep(nextos_beep_pattern_t pattern) {
-    if (!next_os_user_prefs_audio_enabled()) {
+    if (!next_os_user_prefs_audio_enabled() || next_os_user_prefs_dnd_enabled()) {
         return;
     }
 #if NEXTOS_HAS_SDL_MIXER

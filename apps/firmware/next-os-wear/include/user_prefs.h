@@ -26,4 +26,7 @@ void next_os_user_prefs_set_haptic_enabled(bool enabled);
 bool next_os_user_prefs_audio_enabled(void);
 void next_os_user_prefs_set_audio_enabled(bool enabled);
 
+bool next_os_user_prefs_dnd_enabled(void);
+void next_os_user_prefs_set_dnd_enabled(bool enabled);
+
 #endif /* NEXT_OS_USER_PREFS_H */
