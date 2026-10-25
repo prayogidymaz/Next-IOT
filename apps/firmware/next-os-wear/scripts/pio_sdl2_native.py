@@ -1,10 +1,14 @@
 """
 PlatformIO pre-script: tautkan SDL2 untuk env native/simulator (Windows/Linux).
-${sysenv.SDL2_PATH} di platformio.ini sering tidak ter-expand di Windows — path di-set di sini.
+- Include: SDL2_PATH atau Scoop sdl2
+- Link: lib MinGW (libSDL2.dll.a) atau import lib Scoop (SDL2main.lib + SDL2.lib)
+  harus di akhir rantai link (setelah liblvgl.a) → pakai env LIBS, bukan LINKFLAGS -l.
 """
 
 import os
 import sys
+
+from SCons.Script import Copy
 
 Import("env")
 
@@ -49,13 +53,59 @@ def _resolve_lib_dir(root):
     return ""
 
 
+def _append_sdl2_libs(link_env, lib_dir):
+    """Tambah library SDL2 ke akhir link (LIBS), bukan LINKFLAGS awal."""
+    mingw_core = os.path.join(lib_dir, "libSDL2.dll.a")
+    mingw_main = os.path.join(lib_dir, "libSDL2main.dll.a")
+    msvc_core = os.path.join(lib_dir, "SDL2.lib")
+    msvc_main = os.path.join(lib_dir, "SDL2main.lib")
+
+    libs = []
+    if os.path.isfile(mingw_core):
+        if os.path.isfile(mingw_main):
+            libs = [mingw_main, mingw_core]
+        else:
+            libs = [mingw_core]
+    elif os.path.isfile(msvc_core) and os.path.isfile(msvc_main):
+        # Scoop SDL2 (MSVC import .lib) — MinGW ld64 menerima path penuh di akhir link
+        libs = [msvc_main, msvc_core]
+    else:
+        print(
+            "ERROR: tidak ada lib SDL2 yang dikenali di "
+            f"{lib_dir}\n"
+            "  MinGW: libSDL2.dll.a (+ libSDL2main.dll.a)\n"
+            "  Scoop/VC: SDL2main.lib + SDL2.lib\n"
+            "  Alternatif MinGW: MSYS2 pacman -S mingw-w64-x86_64-SDL2, "
+            "SDL2_PATH=C:\\msys64\\mingw64",
+            file=sys.stderr,
+        )
+        link_env.Exit(1)
+        return
+
+    link_env.Append(LIBPATH=[lib_dir])
+    link_env.Append(LIBS=libs)
+
+
+def _copy_sdl2_dll_for_runtime(link_env, sdl_root):
+    """Salin SDL2.dll ke folder build agar `pio run -t exec` jalan tanpa PATH panjang."""
+    for rel in ("lib/x64/SDL2.dll", "lib/SDL2.dll"):
+        dll_src = os.path.join(sdl_root, rel)
+        if os.path.isfile(dll_src):
+            build_dir = link_env.subst("$BUILD_DIR")
+            dll_dst = os.path.join(build_dir, "SDL2.dll")
+            dll_node = link_env.Command(dll_dst, dll_src, Copy("$TARGET", "$SOURCE"))
+            program = os.path.join(build_dir, "program.exe")
+            link_env.Depends(program, dll_node)
+            return
+
+
 sdl_root = _resolve_sdl2_root()
 sdl_include = os.path.join(sdl_root, "include")
 sdl_lib = _resolve_lib_dir(sdl_root)
 
 env.Append(CPPPATH=[sdl_include])
-env.Append(LIBPATH=[sdl_lib])
-env.Append(LINKFLAGS=["-lSDL2main", "-lSDL2"])
+_append_sdl2_libs(env, sdl_lib)
+_copy_sdl2_dll_for_runtime(env, sdl_root)
 
 # Header publik LVGL: <lvgl/drivers/sdl/*.h> (relatif ke .../lvgl/include)
 libdeps_dir = env.subst("$PROJECT_LIBDEPS_DIR")
@@ -64,4 +114,4 @@ lvgl_public_include = os.path.join(libdeps_dir, pioenv, "lvgl", "include")
 if os.path.isdir(lvgl_public_include):
     env.Append(CPPPATH=[lvgl_public_include])
 
-print(f"SDL2 native: CPPPATH+={sdl_include} LIBPATH+={sdl_lib}")
+print(f"SDL2 native: CPPPATH+={sdl_include} LIBPATH+={sdl_lib} LIBS+=SDL2 (akhir link)")

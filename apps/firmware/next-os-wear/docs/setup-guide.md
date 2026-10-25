@@ -135,6 +135,7 @@ Jangan commit password produksi.
 | Gejala | Kemungkinan | Solusi |
 |--------|-------------|--------|
 | `SDL2.h not found` | `SDL2_PATH` salah | Perbaiki path, pastikan `include/SDL2/SDL.h` ada |
+| Link error `undefined reference to SDL_*` | MinGW cari `libSDL2.dll.a`, Scoop cuma `SDL2.lib` | Script `pio_sdl2_native.py` link `.lib` penuh di akhir; kalau masih gagal, pasang MSYS2 `mingw-w64-x86_64-SDL2` dan set `SDL2_PATH=C:\msys64\mingw64` |
 | Link error `SDL2.lib` | Lib 32 vs 64 bit | Pakai lib x64 untuk toolchain native PlatformIO |
 | Upload `Failed to connect` | Port / driver | BOOT mode, ganti kabel, pilih port `pio device list` |
 | Layar putih di hardware | Pinout / rev board | Cek pin di `src/display.cpp`, dokumentasi LILYGO |
