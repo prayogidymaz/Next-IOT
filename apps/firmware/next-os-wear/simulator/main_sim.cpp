@@ -1,14 +1,13 @@
 /**
  * Simulator PC — SDL2 + LVGL 9.6 (240×240)
  * Event SDL ditangani timer internal driver LVGL (lv_sdl_window); loop utama cukup lv_timer_handler().
+ * Header SDL driver sudah di-pull lewat <lvgl.h> (include/lvgl/drivers/sdl/*).
  */
 #include <SDL2/SDL.h>
 
 #include <cstdint>
 
 #include <lvgl.h>
-#include <lvgl/drivers/sdl/lv_sdl_mouse.h>
-#include <lvgl/drivers/sdl/lv_sdl_window.h>
 
 #include "app.h"
 #include "config.h"
@@ -37,6 +36,7 @@ int SDL_main(int argc, char **argv) {
             s_last_tick = now;
             next_os_app_tick();
         }
+        lv_delay_ms(5);
     }
 
     return 0;

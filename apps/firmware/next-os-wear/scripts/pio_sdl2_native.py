@@ -57,4 +57,11 @@ env.Append(CPPPATH=[sdl_include])
 env.Append(LIBPATH=[sdl_lib])
 env.Append(LINKFLAGS=["-lSDL2main", "-lSDL2"])
 
+# Header publik LVGL: <lvgl/drivers/sdl/*.h> (relatif ke .../lvgl/include)
+libdeps_dir = env.subst("$PROJECT_LIBDEPS_DIR")
+pioenv = env["PIOENV"]
+lvgl_public_include = os.path.join(libdeps_dir, pioenv, "lvgl", "include")
+if os.path.isdir(lvgl_public_include):
+    env.Append(CPPPATH=[lvgl_public_include])
+
 print(f"SDL2 native: CPPPATH+={sdl_include} LIBPATH+={sdl_lib}")
