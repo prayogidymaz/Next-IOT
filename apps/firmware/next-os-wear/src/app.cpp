@@ -11,7 +11,7 @@ static void show_hello_async(void *user_data) {
     (void)user_data;
 
     if (s_boot_screen != nullptr) {
-        lv_anim_delete_all(s_boot_screen);
+        lv_anim_delete(s_boot_screen, nullptr);
     }
 
     lv_obj_t *hello = lv_obj_create(nullptr);
