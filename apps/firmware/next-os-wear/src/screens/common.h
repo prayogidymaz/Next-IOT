@@ -27,4 +27,7 @@ void next_os_common_create_pagination_dots(lv_obj_t *parent, uint8_t dot_count, 
 /** Pasang deteksi swipe kiri/kanan pada layar (mouse drag di simulator) */
 void next_os_common_attach_swipe_navigation(lv_obj_t *screen);
 
+/** Nonaktifkan scroll pada kontainer statis (ganti remove_flag SCROLLABLE) */
+void next_os_common_disable_scroll(lv_obj_t *obj);
+
 #endif /* NEXT_OS_SCREENS_COMMON_H */

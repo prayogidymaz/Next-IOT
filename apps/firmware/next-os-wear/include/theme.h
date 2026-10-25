@@ -14,6 +14,7 @@
 #define NEXT_OS_COLOR_DARK 0x1F1F1F
 #define NEXT_OS_COLOR_MUTED 0x6B6B63
 #define NEXT_OS_COLOR_LIGHT_GREY 0xB8B2A6
+#define NEXT_OS_COLOR_SEPARATOR 0xD0C7B0
 
 #define NEXT_OS_COLOR_CREAM_ALIAS NEXT_OS_COLOR_CREAM
 #define NEXT_OS_COLOR_OLIVE_ALIAS NEXT_OS_COLOR_OLIVE
@@ -52,6 +53,10 @@ static inline lv_color_t next_os_color_light_grey(void) {
 
 static inline lv_color_t next_os_color_muted(void) {
     return lv_color_hex(NEXT_OS_COLOR_MUTED);
+}
+
+static inline lv_color_t next_os_color_separator(void) {
+    return lv_color_hex(NEXT_OS_COLOR_SEPARATOR);
 }
 
 static inline void next_os_apply_screen_style(lv_obj_t *screen) {

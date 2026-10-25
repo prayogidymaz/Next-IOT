@@ -51,8 +51,13 @@ static void swipe_nav_event_cb(lv_event_t *event) {
     }
 }
 
+void next_os_common_disable_scroll(lv_obj_t *obj) {
+    lv_obj_set_scrollbar_mode(obj, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_set_scrollable(obj, false);
+}
+
 void next_os_common_attach_swipe_navigation(lv_obj_t *screen) {
-    lv_obj_add_flag(screen, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_clickable(screen, true);
     lv_obj_add_event_cb(screen, swipe_nav_event_cb, LV_EVENT_ALL, nullptr);
 }
 
@@ -73,17 +78,17 @@ lv_obj_t *next_os_common_create_round_container(lv_obj_t *parent, int32_t size) 
     lv_obj_set_style_border_color(box, next_os_color_olive(), 0);
     lv_obj_set_style_border_width(box, 2, 0);
     lv_obj_set_style_pad_all(box, 0, 0);
-    lv_obj_remove_flag(box, LV_OBJ_FLAG_SCROLLABLE);
+    next_os_common_disable_scroll(box);
     return box;
 }
 
 lv_obj_t *next_os_common_create_v_separator(lv_obj_t *parent) {
     lv_obj_t *sep = lv_obj_create(parent);
     lv_obj_set_size(sep, 1, 28);
-    lv_obj_set_style_bg_color(sep, next_os_color_light_grey(), 0);
+    lv_obj_set_style_bg_color(sep, next_os_color_separator(), 0);
     lv_obj_set_style_border_width(sep, 0, 0);
     lv_obj_set_style_radius(sep, 0, 0);
-    lv_obj_remove_flag(sep, LV_OBJ_FLAG_SCROLLABLE);
+    next_os_common_disable_scroll(sep);
     return sep;
 }
 
@@ -96,13 +101,13 @@ void next_os_common_create_pagination_dots(lv_obj_t *parent, uint8_t dot_count, 
     lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(row, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_align(row, LV_ALIGN_BOTTOM_MID, 0, -10);
-    lv_obj_remove_flag(row, LV_OBJ_FLAG_SCROLLABLE);
+    next_os_common_disable_scroll(row);
 
     for (uint8_t i = 0; i < dot_count; i++) {
         lv_obj_t *dot = lv_obj_create(row);
         lv_obj_set_size(dot, 8, 8);
         lv_obj_set_style_radius(dot, LV_RADIUS_CIRCLE, 0);
-        lv_obj_remove_flag(dot, LV_OBJ_FLAG_SCROLLABLE);
+        next_os_common_disable_scroll(dot);
         if (i == active_index) {
             lv_obj_set_style_bg_color(dot, next_os_color_olive(), 0);
         } else {

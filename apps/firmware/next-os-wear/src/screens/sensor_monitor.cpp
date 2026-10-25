@@ -17,7 +17,7 @@ static lv_obj_t *sensor_create_metric_tile(lv_obj_t *parent, const char *value, 
     lv_obj_set_style_bg_opa(col, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(col, 0, 0);
     lv_obj_set_style_pad_all(col, 0, 0);
-    lv_obj_remove_flag(col, LV_OBJ_FLAG_SCROLLABLE);
+    next_os_common_disable_scroll(col);
 
     lv_obj_t *val = lv_label_create(col);
     lv_label_set_text(val, value);
@@ -72,7 +72,7 @@ void next_os_sensor_monitor_create(lv_obj_t *root) {
     lv_obj_set_style_border_width(tiles, 0, 0);
     lv_obj_set_flex_flow(tiles, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(tiles, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_remove_flag(tiles, LV_OBJ_FLAG_SCROLLABLE);
+    next_os_common_disable_scroll(tiles);
 
     char ph_buf[8];
     char temp_buf[8];

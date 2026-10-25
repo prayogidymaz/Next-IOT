@@ -92,23 +92,25 @@ static void watch_face_on_delete(lv_event_t *event) {
 static lv_obj_t *watch_face_create_kpi_tile(lv_obj_t *parent, const char *value, const char *unit,
                                             lv_color_t value_color) {
     lv_obj_t *col = lv_obj_create(parent);
-    lv_obj_set_size(col, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_size(col, 56, LV_SIZE_CONTENT);
     lv_obj_set_style_bg_opa(col, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(col, 0, 0);
     lv_obj_set_style_pad_all(col, 0, 0);
-    lv_obj_remove_flag(col, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_pad_row(col, 3, 0);
+    lv_obj_set_flex_flow(col, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(col, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    next_os_common_disable_scroll(col);
 
     lv_obj_t *val = lv_label_create(col);
     lv_label_set_text(val, value);
-    lv_obj_set_style_text_font(val, &lv_font_montserrat_16, 0);
+    lv_obj_set_style_text_font(val, &lv_font_montserrat_24, 0);
     lv_obj_set_style_text_color(val, value_color, 0);
-    lv_obj_align(val, LV_ALIGN_TOP_MID, 0, 0);
 
     lv_obj_t *lbl = lv_label_create(col);
     lv_label_set_text(lbl, unit);
     lv_obj_set_style_text_font(lbl, &lv_font_montserrat_12, 0);
     lv_obj_set_style_text_color(lbl, next_os_color_muted(), 0);
-    lv_obj_align(lbl, LV_ALIGN_BOTTOM_MID, 0, 0);
+    lv_obj_set_style_text_letter_space(lbl, 1, 0);
 
     return col;
 }
@@ -124,7 +126,7 @@ void next_os_watch_face_create(lv_obj_t *root) {
     lv_obj_set_style_bg_opa(top_row, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(top_row, 0, 0);
     lv_obj_set_style_pad_all(top_row, 0, 0);
-    lv_obj_remove_flag(top_row, LV_OBJ_FLAG_SCROLLABLE);
+    next_os_common_disable_scroll(top_row);
 
     lv_obj_t *farm = lv_label_create(top_row);
     lv_label_set_text(farm, "KEBUN KOPI");
@@ -155,13 +157,13 @@ void next_os_watch_face_create(lv_obj_t *root) {
 
     /* KPI bawah */
     lv_obj_t *kpi_row = lv_obj_create(root);
-    lv_obj_set_size(kpi_row, 210, 44);
+    lv_obj_set_size(kpi_row, 210, 52);
     lv_obj_align(kpi_row, LV_ALIGN_BOTTOM_MID, 0, -14);
     lv_obj_set_style_bg_opa(kpi_row, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(kpi_row, 0, 0);
     lv_obj_set_flex_flow(kpi_row, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(kpi_row, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_remove_flag(kpi_row, LV_OBJ_FLAG_SCROLLABLE);
+    next_os_common_disable_scroll(kpi_row);
 
     char farm_buf[4];
     char alert_buf[4];
@@ -170,11 +172,11 @@ void next_os_watch_face_create(lv_obj_t *root) {
     (void)std::snprintf(alert_buf, sizeof(alert_buf), "%u", static_cast<unsigned>(k_mock_alert));
     (void)std::snprintf(irig_buf, sizeof(irig_buf), "%u", static_cast<unsigned>(k_mock_irig));
 
-    watch_face_create_kpi_tile(kpi_row, farm_buf, "FARM", next_os_color_dark());
+    watch_face_create_kpi_tile(kpi_row, farm_buf, "FARM", next_os_color_olive());
     next_os_common_create_v_separator(kpi_row);
     watch_face_create_kpi_tile(kpi_row, alert_buf, "ALERT", next_os_color_critical());
     next_os_common_create_v_separator(kpi_row);
-    watch_face_create_kpi_tile(kpi_row, irig_buf, "IRIG", next_os_color_olive());
+    watch_face_create_kpi_tile(kpi_row, irig_buf, "IRIG", next_os_color_clay());
 
     watch_face_refresh_clock();
     s_clock_timer = lv_timer_create(watch_face_timer_cb, 1000, nullptr);

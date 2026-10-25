@@ -11,7 +11,7 @@ void next_os_alert_center_create(lv_obj_t *root) {
     lv_obj_align(top, LV_ALIGN_TOP_MID, 0, 12);
     lv_obj_set_style_bg_opa(top, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(top, 0, 0);
-    lv_obj_remove_flag(top, LV_OBJ_FLAG_SCROLLABLE);
+    next_os_common_disable_scroll(top);
 
     lv_obj_t *alert_icon = lv_label_create(top);
     lv_label_set_text(alert_icon, LV_SYMBOL_WARNING);
@@ -32,7 +32,7 @@ void next_os_alert_center_create(lv_obj_t *root) {
     lv_obj_set_style_border_width(card, 2, 0);
     lv_obj_set_style_radius(card, 12, 0);
     lv_obj_set_style_pad_all(card, 10, 0);
-    lv_obj_remove_flag(card, LV_OBJ_FLAG_SCROLLABLE);
+    next_os_common_disable_scroll(card);
 
     lv_obj_t *badge = lv_label_create(card);
     lv_label_set_text(badge, "CRITICAL");
@@ -65,7 +65,7 @@ void next_os_alert_center_create(lv_obj_t *root) {
     lv_obj_set_style_border_width(btn_row, 0, 0);
     lv_obj_set_flex_flow(btn_row, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(btn_row, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_remove_flag(btn_row, LV_OBJ_FLAG_SCROLLABLE);
+    next_os_common_disable_scroll(btn_row);
 
     lv_obj_t *ack = lv_button_create(btn_row);
     lv_obj_set_size(ack, 72, 28);
