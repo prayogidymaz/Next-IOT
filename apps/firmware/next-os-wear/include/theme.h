@@ -1,27 +1,56 @@
 /**
- * Tactical Warm Cream — kontrak warna UI Next-OS Wear v1 (runtime palette).
+ * Modern UI palette — Light (clean white) + Dark (OLED).
  */
 #ifndef NEXT_OS_THEME_H
 #define NEXT_OS_THEME_H
 
 #include <lvgl.h>
 
-#include "runtime_theme.h"
+#define NEXTOS_LIGHT_BG_HEX 0xFAFBFC
+#define NEXTOS_LIGHT_SURFACE_HEX 0xFFFFFF
+#define NEXTOS_LIGHT_SURFACE_DIM_HEX 0xF1F3F5
+#define NEXTOS_LIGHT_BORDER_HEX 0xE2E8F0
+#define NEXTOS_LIGHT_TEXT_PRIMARY_HEX 0x0F172A
+#define NEXTOS_LIGHT_TEXT_SECONDARY_HEX 0x475569
+#define NEXTOS_LIGHT_TEXT_MUTED_HEX 0x94A3B8
+#define NEXTOS_LIGHT_ACCENT_PRIMARY_HEX 0x10B981
+#define NEXTOS_LIGHT_ACCENT_SECONDARY_HEX 0xF97316
+#define NEXTOS_LIGHT_CRITICAL_HEX 0xEF4444
+#define NEXTOS_LIGHT_SUCCESS_HEX 0x10B981
 
-#define NEXT_OS_COLOR_CREAM 0xF5EFE0
-#define NEXT_OS_COLOR_OLIVE 0x556B4A
-#define NEXT_OS_COLOR_CLAY 0xD97757
-#define NEXT_OS_COLOR_CRITICAL 0xB23A3A
-#define NEXT_OS_COLOR_DARK 0x1F1F1F
-#define NEXT_OS_COLOR_DARK_TACTICAL 0x1C1F18
-#define NEXT_OS_COLOR_BLACK 0x0A0A0A
-#define NEXT_OS_COLOR_DARK_SEPARATOR 0x2E3328
-#define NEXT_OS_COLOR_BLUE 0x4A7FB8
-#define NEXT_OS_COLOR_AMBER 0xD4A017
-#define NEXT_OS_COLOR_LIVE_GREEN 0x3DAA63
-#define NEXT_OS_COLOR_MUTED 0x6B6B63
-#define NEXT_OS_COLOR_LIGHT_GREY 0xB8B2A6
-#define NEXT_OS_COLOR_SEPARATOR 0xD0C7B0
+#define NEXTOS_DARK_BG_HEX 0x0A0A0B
+#define NEXTOS_DARK_SURFACE_HEX 0x18181B
+#define NEXTOS_DARK_SURFACE_DIM_HEX 0x27272A
+#define NEXTOS_DARK_BORDER_HEX 0x3F3F46
+#define NEXTOS_DARK_TEXT_PRIMARY_HEX 0xF8FAFC
+#define NEXTOS_DARK_TEXT_SECONDARY_HEX 0xCBD5E1
+#define NEXTOS_DARK_TEXT_MUTED_HEX 0x64748B
+#define NEXTOS_DARK_ACCENT_PRIMARY_HEX 0x34D399
+#define NEXTOS_DARK_ACCENT_SECONDARY_HEX 0xFB923C
+#define NEXTOS_DARK_CRITICAL_HEX 0xF87171
+#define NEXTOS_DARK_SUCCESS_HEX 0x4ADE80
+
+typedef enum {
+    NEXTOS_THEME_MODE_LIGHT = 0,
+    NEXTOS_THEME_MODE_DARK = 1,
+} nextos_theme_mode_t;
+
+extern lv_color_t NEXTOS_BG;
+extern lv_color_t NEXTOS_SURFACE;
+extern lv_color_t NEXTOS_SURFACE_DIM;
+extern lv_color_t NEXTOS_BORDER;
+extern lv_color_t NEXTOS_TEXT_PRIMARY;
+extern lv_color_t NEXTOS_TEXT_SECONDARY;
+extern lv_color_t NEXTOS_TEXT_MUTED;
+extern lv_color_t NEXTOS_ACCENT_PRIMARY;
+extern lv_color_t NEXTOS_ACCENT_SECONDARY;
+extern lv_color_t NEXTOS_CRITICAL;
+extern lv_color_t NEXTOS_SUCCESS;
+
+void nextos_theme_apply(nextos_theme_mode_t mode);
+nextos_theme_mode_t nextos_theme_mode(void);
+
+#include "runtime_theme.h"
 
 static inline lv_color_t next_os_color_cream(void) {
     return next_os_runtime_color_cream();
