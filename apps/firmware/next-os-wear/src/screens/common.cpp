@@ -105,6 +105,17 @@ lv_obj_t *next_os_common_create_header_label(lv_obj_t *parent, const char *text)
     return label;
 }
 
+lv_obj_t *next_os_common_create_inset_header_row(lv_obj_t *parent, int32_t height) {
+    lv_obj_t *row = lv_obj_create(parent);
+    lv_obj_set_size(row, 168, height);
+    lv_obj_align(row, LV_ALIGN_TOP_MID, 0, 38);
+    lv_obj_set_style_bg_opa(row, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(row, 0, 0);
+    lv_obj_set_style_pad_all(row, 0, 0);
+    next_os_common_disable_scroll(row);
+    return row;
+}
+
 lv_obj_t *next_os_common_create_round_container(lv_obj_t *parent, int32_t size) {
     lv_obj_t *box = lv_obj_create(parent);
     lv_obj_set_size(box, size, size);
