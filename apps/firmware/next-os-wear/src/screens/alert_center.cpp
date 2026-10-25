@@ -132,4 +132,5 @@ void next_os_alert_center_create(lv_obj_t *root) {
     lv_obj_center(det_l);
 
     next_os_common_create_pagination_dots(root, 3, 2);
+    next_os_common_create_nav_buttons(root);
 }

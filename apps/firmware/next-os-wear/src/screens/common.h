@@ -24,6 +24,9 @@ lv_obj_t *next_os_common_create_v_separator(lv_obj_t *parent);
 /** Indikator pagination (3 dot) — active_index 0..dot_count-1 */
 void next_os_common_create_pagination_dots(lv_obj_t *parent, uint8_t dot_count, uint8_t active_index);
 
+/** Tombol ◀ / ▶ di pojok atas (nav utama di simulator + touch) */
+lv_obj_t *next_os_common_create_nav_buttons(lv_obj_t *screen);
+
 /** Pasang deteksi swipe kiri/kanan pada layar (mouse drag di simulator) */
 void next_os_common_attach_swipe_navigation(lv_obj_t *screen);
 

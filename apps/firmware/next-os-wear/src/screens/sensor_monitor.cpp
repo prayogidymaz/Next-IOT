@@ -114,4 +114,5 @@ void next_os_sensor_monitor_create(lv_obj_t *root) {
     sensor_create_metric_tile(tiles, hum_buf, "HUM", &s_hum_value);
 
     next_os_common_create_pagination_dots(root, 3, 0);
+    next_os_common_create_nav_buttons(root);
 }

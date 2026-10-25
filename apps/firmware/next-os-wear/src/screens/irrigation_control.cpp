@@ -69,4 +69,5 @@ void next_os_irrigation_control_create(lv_obj_t *root) {
     lv_obj_set_style_text_font(actions, &lv_font_montserrat_12, 0);
     lv_obj_set_style_text_color(actions, next_os_color_olive(), 0);
     lv_obj_align(actions, LV_ALIGN_BOTTOM_MID, 0, -14);
+    next_os_common_create_nav_buttons(root);
 }

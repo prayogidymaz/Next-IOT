@@ -211,4 +211,5 @@ void next_os_watch_face_create(lv_obj_t *root) {
     watch_face_refresh_clock();
     next_os_watch_face_refresh_from_mesh();
     s_clock_timer = lv_timer_create(watch_face_timer_cb, 1000, nullptr);
+    next_os_common_create_nav_buttons(root);
 }
