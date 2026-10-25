@@ -68,6 +68,38 @@ static void overlay_dismiss_cb(void) {
     dismiss_sheet_internal();
 }
 
+static void screen_dispose_before_delete(next_os_screen_id_t screen_id) {
+    switch (screen_id) {
+    case NEXT_OS_SCREEN_WATCH_FACE:
+        next_os_watch_face_dispose();
+        break;
+    case NEXT_OS_SCREEN_MESH_GRAPH:
+        next_os_mesh_graph_dispose();
+        break;
+    case NEXT_OS_SCREEN_MESH_TERMINAL:
+        next_os_terminal_feed_dispose();
+        break;
+    case NEXT_OS_SCREEN_APP_TIMER:
+        next_os_timer_app_dispose();
+        break;
+    case NEXT_OS_SCREEN_APP_COMPASS:
+        next_os_compass_app_dispose();
+        break;
+    default:
+        break;
+    }
+}
+
+static void delete_current_content(void) {
+    if (s_current_screen_obj == nullptr) {
+        return;
+    }
+    screen_dispose_before_delete(s_current);
+    lv_anim_delete(s_current_screen_obj, nullptr);
+    lv_obj_delete(s_current_screen_obj);
+    s_current_screen_obj = nullptr;
+}
+
 bool next_os_screen_manager_is_stackable(next_os_screen_id_t screen_id) {
     if (screen_id == NEXT_OS_SCREEN_BOOT || screen_id == NEXT_OS_SCREEN_CONTROL_CENTER ||
         screen_id == NEXT_OS_SCREEN_NOTIFICATION_CENTER) {
@@ -254,6 +286,7 @@ static void mount_screen(next_os_screen_id_t screen_id, bool fade_in) {
 static void screen_fade_out_ready(lv_anim_t *anim) {
     lv_obj_t *old = static_cast<lv_obj_t *>(anim->var);
     if (old != nullptr) {
+        screen_dispose_before_delete(s_current);
         lv_obj_delete(old);
     }
     if (s_current_screen_obj == old) {
@@ -275,11 +308,7 @@ static void present_internal(next_os_screen_id_t screen_id, bool animate, bool f
     (void)ensure_shell_screen();
 
     if (s_current_screen_obj == nullptr || !animate) {
-        if (s_current_screen_obj != nullptr) {
-            lv_anim_delete(s_current_screen_obj, nullptr);
-            lv_obj_delete(s_current_screen_obj);
-            s_current_screen_obj = nullptr;
-        }
+        delete_current_content();
         mount_screen(screen_id, false);
         return;
     }

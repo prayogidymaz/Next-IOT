@@ -13,19 +13,40 @@ static lv_timer_t *s_spin = nullptr;
 
 static void compass_tick(lv_timer_t *timer) {
     (void)timer;
+    if (!nextos_ui_obj_alive(s_needle) && !nextos_ui_obj_alive(s_heading_label)) {
+        return;
+    }
     s_heading = (s_heading + 2) % 360;
-    if (s_needle != nullptr) {
+    if (nextos_ui_obj_alive(s_needle)) {
         lv_obj_set_style_transform_angle(s_needle, static_cast<int32_t>(s_heading * 10), 0);
     }
-    if (s_heading_label != nullptr) {
+    if (nextos_ui_obj_alive(s_heading_label)) {
         char buf[16];
         (void)std::snprintf(buf, sizeof(buf), "%ld°", static_cast<long>(s_heading));
         lv_label_set_text(s_heading_label, buf);
     }
 }
 
+void next_os_compass_app_dispose(void) {
+    if (s_spin != nullptr) {
+        lv_timer_delete(s_spin);
+        s_spin = nullptr;
+    }
+    s_heading_label = nullptr;
+    s_needle = nullptr;
+}
+
+static void compass_on_delete(lv_event_t *event) {
+    if (lv_event_get_code(event) != LV_EVENT_DELETE) {
+        return;
+    }
+    next_os_compass_app_dispose();
+}
+
 void next_os_compass_app_create(lv_obj_t *root) {
+    next_os_compass_app_dispose();
     next_os_apply_screen_style(root);
+    lv_obj_add_event_cb(root, compass_on_delete, LV_EVENT_DELETE, nullptr);
     next_os_common_create_header_label(root, "Compass");
 
     lv_obj_t *dial = next_os_common_create_round_container(root, 140);

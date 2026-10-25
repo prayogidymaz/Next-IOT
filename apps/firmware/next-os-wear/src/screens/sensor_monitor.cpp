@@ -51,19 +51,19 @@ static lv_obj_t *sensor_create_metric_tile(lv_obj_t *parent, const char *value, 
 void next_os_sensor_monitor_refresh_from_mesh(void) {
     const next_os_mesh_sensor_t s = next_os_mesh_state_sensor();
     char buf[12];
-    if (s_moisture_label != nullptr && lv_obj_is_in_widget_tree(s_moisture_label)) {
+    if (nextos_ui_obj_alive(s_moisture_label)) {
         (void)std::snprintf(buf, sizeof(buf), "%ld", static_cast<long>(s.moisture));
         lv_label_set_text(s_moisture_label, buf);
     }
-    if (s_ph_value != nullptr && lv_obj_is_in_widget_tree(s_ph_value)) {
+    if (nextos_ui_obj_alive(s_ph_value)) {
         (void)std::snprintf(buf, sizeof(buf), "%.1f", static_cast<double>(s.ph));
         lv_label_set_text(s_ph_value, buf);
     }
-    if (s_temp_value != nullptr && lv_obj_is_in_widget_tree(s_temp_value)) {
+    if (nextos_ui_obj_alive(s_temp_value)) {
         (void)std::snprintf(buf, sizeof(buf), "%ldC", static_cast<long>(s.temp_c));
         lv_label_set_text(s_temp_value, buf);
     }
-    if (s_hum_value != nullptr && lv_obj_is_in_widget_tree(s_hum_value)) {
+    if (nextos_ui_obj_alive(s_hum_value)) {
         (void)std::snprintf(buf, sizeof(buf), "%ld%%", static_cast<long>(s.humidity));
         lv_label_set_text(s_hum_value, buf);
     }

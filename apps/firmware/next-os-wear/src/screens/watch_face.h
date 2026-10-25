@@ -10,4 +10,7 @@ void next_os_watch_face_install_input(lv_obj_t *root);
 void next_os_watch_face_variant_next(void);
 void next_os_watch_face_variant_prev(void);
 
+/** Stop timers and clear static label pointers (safe before lv_obj_delete / remount). */
+void next_os_watch_face_dispose(void);
+
 #endif

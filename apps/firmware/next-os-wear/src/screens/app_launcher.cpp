@@ -110,8 +110,21 @@ void next_os_app_launcher_page_next(void) {
     launcher_rebuild_page();
 }
 
+static void launcher_on_delete(lv_event_t *event) {
+    if (lv_event_get_code(event) != LV_EVENT_DELETE) {
+        return;
+    }
+    s_grid = nullptr;
+    s_root = nullptr;
+    s_dots_row = nullptr;
+}
+
 void next_os_app_launcher_create(lv_obj_t *root) {
+    s_grid = nullptr;
+    s_root = nullptr;
+    s_dots_row = nullptr;
     s_root = root;
+    lv_obj_add_event_cb(root, launcher_on_delete, LV_EVENT_DELETE, nullptr);
     s_page = 0;
     next_os_apply_screen_style(root);
 

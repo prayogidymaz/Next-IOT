@@ -172,6 +172,13 @@ void next_os_common_disable_scroll(lv_obj_t *obj) {
     lv_obj_set_scrollable(obj, false);
 }
 
+bool nextos_ui_obj_alive(lv_obj_t *obj) {
+    if (obj == nullptr) {
+        return false;
+    }
+    return lv_obj_is_in_widget_tree(obj);
+}
+
 lv_obj_t *next_os_common_create_header_label(lv_obj_t *parent, const char *text) {
     lv_obj_t *label = lv_label_create(parent);
     lv_label_set_text(label, text);

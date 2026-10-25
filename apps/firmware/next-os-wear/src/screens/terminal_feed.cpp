@@ -39,17 +39,14 @@ static lv_color_t terminal_domain_color(const char *domain) {
 
 static void terminal_blink_cb(lv_timer_t *timer) {
     (void)timer;
-    if (s_cursor == nullptr || !lv_obj_is_in_widget_tree(s_cursor)) {
+    if (!nextos_ui_obj_alive(s_cursor)) {
         return;
     }
     const lv_opa_t opa = lv_obj_get_style_opa(s_cursor, LV_PART_MAIN);
     lv_obj_set_style_opa(s_cursor, opa > LV_OPA_50 ? LV_OPA_TRANSP : LV_OPA_COVER, LV_PART_MAIN);
 }
 
-static void terminal_on_delete(lv_event_t *event) {
-    if (lv_event_get_code(event) != LV_EVENT_DELETE) {
-        return;
-    }
+void next_os_terminal_feed_dispose(void) {
     if (s_blink_timer != nullptr) {
         lv_timer_delete(s_blink_timer);
         s_blink_timer = nullptr;
@@ -61,6 +58,13 @@ static void terminal_on_delete(lv_event_t *event) {
     s_list = nullptr;
     s_cursor = nullptr;
     s_footer = nullptr;
+}
+
+static void terminal_on_delete(lv_event_t *event) {
+    if (lv_event_get_code(event) != LV_EVENT_DELETE) {
+        return;
+    }
+    next_os_terminal_feed_dispose();
 }
 
 static void terminal_rebuild_lines(void);
@@ -79,18 +83,20 @@ static void terminal_poll_cb(lv_timer_t *timer) {
     if (rev != s_last_log_revision) {
         s_last_log_revision = rev;
         terminal_rebuild_lines();
-        if (s_footer != nullptr && lv_obj_is_in_widget_tree(s_footer)) {
+        if (nextos_ui_obj_alive(s_footer)) {
             char foot[48];
             (void)std::snprintf(foot, sizeof(foot), "%u events • last 2m",
                                 static_cast<unsigned>(next_os_mesh_state_log_count()));
             lv_label_set_text(s_footer, foot);
         }
-        lv_obj_scroll_to_y(s_list, LV_COORD_MAX, LV_ANIM_ON);
+        if (nextos_ui_obj_alive(s_list)) {
+            lv_obj_scroll_to_y(s_list, LV_COORD_MAX, LV_ANIM_ON);
+        }
     }
 }
 
 static void terminal_rebuild_lines(void) {
-    if (s_list == nullptr || !lv_obj_is_in_widget_tree(s_list)) {
+    if (!nextos_ui_obj_alive(s_list)) {
         return;
     }
     lv_obj_clean(s_list);
@@ -123,6 +129,7 @@ void next_os_terminal_feed_refresh_from_mesh(void) {
 }
 
 void next_os_terminal_feed_create(lv_obj_t *root) {
+    next_os_terminal_feed_dispose();
     next_os_apply_black_screen_style(root);
     lv_obj_add_event_cb(root, terminal_on_delete, LV_EVENT_DELETE, nullptr);
 

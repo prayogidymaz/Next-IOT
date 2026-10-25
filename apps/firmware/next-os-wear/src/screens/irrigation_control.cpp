@@ -20,10 +20,10 @@ static void irrigation_on_delete(lv_event_t *event) {
 
 void next_os_irrigation_control_refresh_from_mesh(void) {
     const next_os_mesh_irrig_t ir = next_os_mesh_state_irrig();
-    if (s_countdown_label != nullptr && lv_obj_is_in_widget_tree(s_countdown_label)) {
+    if (nextos_ui_obj_alive(s_countdown_label)) {
         lv_label_set_text(s_countdown_label, ir.countdown);
     }
-    if (s_flow_value_label != nullptr && lv_obj_is_in_widget_tree(s_flow_value_label)) {
+    if (nextos_ui_obj_alive(s_flow_value_label)) {
         lv_label_set_text(s_flow_value_label, ir.flow_label);
     }
 }

@@ -4,5 +4,6 @@
 #include <lvgl.h>
 
 void next_os_timer_app_create(lv_obj_t *root);
+void next_os_timer_app_dispose(void);
 
 #endif

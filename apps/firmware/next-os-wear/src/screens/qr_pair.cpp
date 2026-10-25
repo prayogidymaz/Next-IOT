@@ -4,6 +4,7 @@
 #include "config.h"
 #include "haptic.h"
 #include "layout.h"
+#include "screens/common.h"
 #include "theme.h"
 
 #include <cstdio>
@@ -24,6 +25,7 @@ static void qr_pair_cleanup_timers(void) {
         lv_timer_delete(s_sim_pair_timer);
         s_sim_pair_timer = nullptr;
     }
+    s_countdown_label = nullptr;
 }
 
 static void qr_pair_finish(void) {
@@ -36,7 +38,7 @@ static void qr_pair_finish(void) {
 static void qr_pair_tick_cb(lv_timer_t *timer) {
     (void)timer;
     s_seconds_left--;
-    if (s_countdown_label != nullptr && lv_obj_is_in_widget_tree(s_countdown_label)) {
+    if (nextos_ui_obj_alive(s_countdown_label)) {
         char buf[16];
         (void)std::snprintf(buf, sizeof(buf), "%lds", static_cast<long>(s_seconds_left));
         lv_label_set_text(s_countdown_label, buf);
@@ -58,6 +60,13 @@ static void qr_pair_sim_success_cb(lv_timer_t *timer) {
     lv_timer_create(qr_pair_second_pulse_cb, 150, nullptr);
     nextos_audio_beep(NEXTOS_BEEP_SUCCESS);
     qr_pair_finish();
+}
+
+static void qr_pair_overlay_delete_cb(lv_event_t *event) {
+    if (lv_event_get_code(event) != LV_EVENT_DELETE) {
+        return;
+    }
+    qr_pair_cleanup_timers();
 }
 
 static void qr_pair_cancel_cb(lv_event_t *event) {
@@ -92,9 +101,9 @@ void next_os_qr_pair_show(lv_obj_t *overlay, next_os_qr_pair_dismiss_fn on_dismi
     s_on_dismiss = on_dismiss;
     s_seconds_left = 120;
     qr_pair_cleanup_timers();
-
     next_os_apply_screen_style(overlay);
     lv_obj_set_size(overlay, NEXTOS_W, NEXTOS_H);
+    lv_obj_add_event_cb(overlay, qr_pair_overlay_delete_cb, LV_EVENT_DELETE, nullptr);
     lv_obj_center(overlay);
     lv_obj_set_style_bg_opa(overlay, LV_OPA_90, 0);
 

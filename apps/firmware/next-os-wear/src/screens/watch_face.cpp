@@ -62,7 +62,7 @@ static void watch_face_format_date(char *buf, size_t len) {
 }
 
 static void watch_face_refresh_clock(void) {
-    if (s_clock_label == nullptr || !lv_obj_is_in_widget_tree(s_clock_label)) {
+    if (!nextos_ui_obj_alive(s_clock_label)) {
         return;
     }
 
@@ -79,7 +79,7 @@ static void watch_face_refresh_clock(void) {
     watch_face_format_time(tbuf, sizeof(tbuf), hour, minute);
     lv_label_set_text(s_clock_label, tbuf);
 
-    if (s_date_label != nullptr) {
+    if (nextos_ui_obj_alive(s_date_label)) {
         char dbuf[20];
         watch_face_format_date(dbuf, sizeof(dbuf));
         lv_label_set_text(s_date_label, dbuf);
@@ -91,10 +91,7 @@ static void watch_face_timer_cb(lv_timer_t *timer) {
     watch_face_refresh_clock();
 }
 
-static void watch_face_on_delete(lv_event_t *event) {
-    if (lv_event_get_code(event) != LV_EVENT_DELETE) {
-        return;
-    }
+void next_os_watch_face_dispose(void) {
     if (s_clock_timer != nullptr) {
         lv_timer_delete(s_clock_timer);
         s_clock_timer = nullptr;
@@ -106,9 +103,19 @@ static void watch_face_on_delete(lv_event_t *event) {
     s_clock_label = nullptr;
     s_date_label = nullptr;
     s_wifi_label = nullptr;
+    s_variant_hint = nullptr;
     s_kpi_value_labels[0] = nullptr;
     s_kpi_value_labels[1] = nullptr;
     s_kpi_value_labels[2] = nullptr;
+}
+
+static void watch_face_on_delete(lv_event_t *event) {
+    if (lv_event_get_code(event) != LV_EVENT_DELETE) {
+        return;
+    }
+    next_os_watch_face_dispose();
+    (void)std::printf("[SCR] watch_face pointers nullified on delete\n");
+    (void)std::fflush(stdout);
 }
 
 static lv_obj_t *watch_face_create_kpi_tile(lv_obj_t *parent, const char *value, const char *unit,
@@ -142,22 +149,22 @@ static lv_obj_t *watch_face_create_kpi_tile(lv_obj_t *parent, const char *value,
 
 void next_os_watch_face_refresh_from_mesh(void) {
     char buf[8];
-    if (s_kpi_value_labels[0] != nullptr && lv_obj_is_in_widget_tree(s_kpi_value_labels[0])) {
+    if (nextos_ui_obj_alive(s_kpi_value_labels[0])) {
         (void)std::snprintf(buf, sizeof(buf), "%u",
                             static_cast<unsigned>(next_os_mesh_state_farm_count()));
         lv_label_set_text(s_kpi_value_labels[0], buf);
     }
-    if (s_kpi_value_labels[1] != nullptr && lv_obj_is_in_widget_tree(s_kpi_value_labels[1])) {
+    if (nextos_ui_obj_alive(s_kpi_value_labels[1])) {
         (void)std::snprintf(buf, sizeof(buf), "%u",
                             static_cast<unsigned>(next_os_mesh_state_alert_count()));
         lv_label_set_text(s_kpi_value_labels[1], buf);
     }
-    if (s_kpi_value_labels[2] != nullptr && lv_obj_is_in_widget_tree(s_kpi_value_labels[2])) {
+    if (nextos_ui_obj_alive(s_kpi_value_labels[2])) {
         (void)std::snprintf(buf, sizeof(buf), "%u",
                             static_cast<unsigned>(next_os_mesh_state_irig_count()));
         lv_label_set_text(s_kpi_value_labels[2], buf);
     }
-    if (s_wifi_label != nullptr && lv_obj_is_in_widget_tree(s_wifi_label)) {
+    if (nextos_ui_obj_alive(s_wifi_label)) {
         lv_obj_set_style_text_color(
             s_wifi_label,
             next_os_mqtt_is_connected() ? next_os_color_olive() : next_os_color_light_grey(), 0);
@@ -165,6 +172,7 @@ void next_os_watch_face_refresh_from_mesh(void) {
 }
 
 void next_os_watch_face_create(lv_obj_t *root) {
+    next_os_watch_face_dispose();
     next_os_apply_screen_style(root);
     lv_obj_add_event_cb(root, watch_face_on_delete, LV_EVENT_DELETE, nullptr);
 
@@ -318,10 +326,14 @@ void next_os_watch_face_install_input(lv_obj_t *root) {
 
 void next_os_watch_face_variant_next(void) {
     s_variant = static_cast<uint8_t>((s_variant + 1U) % 2U);
+    (void)std::printf("[WF] switch variant %u\n", static_cast<unsigned>(s_variant));
+    (void)std::fflush(stdout);
     next_os_screen_manager_reload_current();
 }
 
 void next_os_watch_face_variant_prev(void) {
     s_variant = static_cast<uint8_t>((s_variant + 1U) % 2U);
+    (void)std::printf("[WF] switch variant %u\n", static_cast<unsigned>(s_variant));
+    (void)std::fflush(stdout);
     next_os_screen_manager_reload_current();
 }

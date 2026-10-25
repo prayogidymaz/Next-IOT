@@ -5,6 +5,7 @@
 #define NEXT_OS_SCREENS_COMMON_H
 
 #include <lvgl.h>
+#include <stdbool.h>
 
 #include "screens/screen_manager.h"
 
@@ -34,5 +35,8 @@ void next_os_common_disable_scroll(lv_obj_t *obj);
 
 lv_obj_t *next_os_common_create_hub_row(lv_obj_t *parent, const char *title, const char *status,
                                         next_os_screen_id_t target);
+
+/** Non-null widget still attached to an active screen tree. */
+bool nextos_ui_obj_alive(lv_obj_t *obj);
 
 #endif /* NEXT_OS_SCREENS_COMMON_H */

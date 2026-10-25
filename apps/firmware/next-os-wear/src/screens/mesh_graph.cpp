@@ -18,10 +18,7 @@ static bool graph_node_recent(next_os_mesh_node_id_t id) {
     return lv_tick_elaps(last) < 30000U;
 }
 
-static void graph_on_delete(lv_event_t *event) {
-    if (lv_event_get_code(event) != LV_EVENT_DELETE) {
-        return;
-    }
+void next_os_mesh_graph_dispose(void) {
     if (s_poll_timer != nullptr) {
         lv_timer_delete(s_poll_timer);
         s_poll_timer = nullptr;
@@ -30,6 +27,13 @@ static void graph_on_delete(lv_event_t *event) {
         s_nodes[i] = nullptr;
     }
     s_drn_ring = nullptr;
+}
+
+static void graph_on_delete(lv_event_t *event) {
+    if (lv_event_get_code(event) != LV_EVENT_DELETE) {
+        return;
+    }
+    next_os_mesh_graph_dispose();
 }
 
 static void graph_poll_cb(lv_timer_t *timer) {
@@ -73,7 +77,7 @@ void next_os_mesh_graph_refresh_from_mesh(void) {
     const int32_t edge_w = load > 4 ? 3 : 2;
 
     for (uint8_t i = 0; i < NEXT_OS_MESH_NODE_COUNT; i++) {
-        if (s_nodes[i] == nullptr || !lv_obj_is_in_widget_tree(s_nodes[i])) {
+        if (!nextos_ui_obj_alive(s_nodes[i])) {
             continue;
         }
         const bool recent = graph_node_recent(static_cast<next_os_mesh_node_id_t>(i));
@@ -81,17 +85,18 @@ void next_os_mesh_graph_refresh_from_mesh(void) {
         lv_obj_set_style_border_width(s_nodes[i], edge_w, 0);
     }
 
-    if (s_nodes[NEXT_OS_MESH_NODE_DRN] != nullptr && lv_obj_is_in_widget_tree(s_nodes[NEXT_OS_MESH_NODE_DRN])) {
+    if (nextos_ui_obj_alive(s_nodes[NEXT_OS_MESH_NODE_DRN])) {
         lv_obj_set_style_border_color(
             s_nodes[NEXT_OS_MESH_NODE_DRN],
             topo.drn_dispatch_pulse ? next_os_color_clay() : next_os_color_olive(), 0);
     }
-    if (s_drn_ring != nullptr && lv_obj_is_in_widget_tree(s_drn_ring)) {
+    if (nextos_ui_obj_alive(s_drn_ring)) {
         lv_obj_set_style_border_opa(s_drn_ring, topo.drn_dispatch_pulse ? LV_OPA_60 : LV_OPA_TRANSP, 0);
     }
 }
 
 void next_os_mesh_graph_create(lv_obj_t *root) {
+    next_os_mesh_graph_dispose();
     next_os_apply_black_screen_style(root);
     lv_obj_add_event_cb(root, graph_on_delete, LV_EVENT_DELETE, nullptr);
 

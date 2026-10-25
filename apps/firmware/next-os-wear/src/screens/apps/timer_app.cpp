@@ -12,7 +12,7 @@ static int32_t s_seconds = 300;
 static bool s_running = false;
 
 static void timer_refresh_label(void) {
-    if (s_display == nullptr) {
+    if (!nextos_ui_obj_alive(s_display)) {
         return;
     }
     const int32_t mm = s_seconds / 60;
@@ -24,6 +24,9 @@ static void timer_refresh_label(void) {
 
 static void timer_tick_cb(lv_timer_t *timer) {
     (void)timer;
+    if (!nextos_ui_obj_alive(s_display)) {
+        return;
+    }
     if (!s_running || s_seconds <= 0) {
         return;
     }
@@ -46,8 +49,25 @@ static void timer_btn_cb(lv_event_t *event) {
     timer_refresh_label();
 }
 
+void next_os_timer_app_dispose(void) {
+    if (s_tick != nullptr) {
+        lv_timer_delete(s_tick);
+        s_tick = nullptr;
+    }
+    s_display = nullptr;
+}
+
+static void timer_on_delete(lv_event_t *event) {
+    if (lv_event_get_code(event) != LV_EVENT_DELETE) {
+        return;
+    }
+    next_os_timer_app_dispose();
+}
+
 void next_os_timer_app_create(lv_obj_t *root) {
+    next_os_timer_app_dispose();
     next_os_apply_screen_style(root);
+    lv_obj_add_event_cb(root, timer_on_delete, LV_EVENT_DELETE, nullptr);
     next_os_common_create_header_label(root, "Timer");
 
     s_display = lv_label_create(root);
