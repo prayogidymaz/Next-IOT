@@ -6,21 +6,24 @@ static void (*s_on_finished)(void) = nullptr;
 static lv_obj_t *s_logo_arc = nullptr;
 
 static void boot_rotate_exec(void *obj, int32_t v) {
-    /* LVGL 9: rotasi via transform (0.1° per unit) */
-    lv_obj_set_style_transform_angle(static_cast<lv_obj_t *>(obj), v * 10, 0);
-    lv_obj_set_style_transform_pivot_x(static_cast<lv_obj_t *>(obj), 60, 0);
-    lv_obj_set_style_transform_pivot_y(static_cast<lv_obj_t *>(obj), 60, 0);
+    /* Rotasi arc native — aman vs transform style saat layar dihapus */
+    lv_arc_set_rotation(static_cast<lv_obj_t *>(obj), static_cast<lv_value_precise_t>(v));
 }
 
 static void boot_fade_exec(void *obj, int32_t v) {
     lv_obj_set_style_opa(static_cast<lv_obj_t *>(obj), static_cast<lv_opa_t>(v), 0);
 }
 
-static void boot_anim_ready(lv_anim_t *anim) {
+static void boot_finish_async(void *user_data) {
+    (void)user_data;
     if (s_on_finished != nullptr) {
         s_on_finished();
     }
+}
+
+static void boot_anim_ready(lv_anim_t *anim) {
     (void)anim;
+    lv_async_call(boot_finish_async, nullptr);
 }
 
 static void boot_timer_cb(lv_timer_t *timer) {

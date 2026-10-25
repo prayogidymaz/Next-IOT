@@ -1,7 +1,6 @@
 /**
  * Simulator PC — SDL2 + LVGL 9.6 (240×240)
  * Event SDL ditangani timer internal driver LVGL (lv_sdl_window); loop utama cukup lv_timer_handler().
- * Header SDL driver sudah di-pull lewat <lvgl.h> (include/lvgl/drivers/sdl/*).
  */
 #include <SDL2/SDL.h>
 
@@ -11,8 +10,6 @@
 
 #include "app.h"
 #include "config.h"
-
-static uint32_t s_last_tick = 0;
 
 int SDL_main(int argc, char **argv) {
     (void)argc;
@@ -25,20 +22,13 @@ int SDL_main(int argc, char **argv) {
     (void)lv_sdl_mouse_create();
 
     next_os_app_init();
-    s_last_tick = lv_tick_get();
 
-    /* Setelah SDL_QUIT, driver LVGL memanggil lv_deinit() — jangan panggil handler setelah itu */
-    while (lv_is_initialized()) {
+    /*
+     * Tutup jendela (X) → lv_display_delete → default display NULL.
+     * Jangan lv_timer_handler() setelah itu (access violation).
+     */
+    while (lv_is_initialized() && lv_display_get_default() != nullptr) {
         lv_timer_handler();
-        if (!lv_is_initialized()) {
-            break;
-        }
-
-        const uint32_t now = lv_tick_get();
-        if (now - s_last_tick >= 1000U) {
-            s_last_tick = now;
-            next_os_app_tick();
-        }
         lv_delay_ms(5);
     }
 
