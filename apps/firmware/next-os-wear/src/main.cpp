@@ -4,6 +4,8 @@
 #include "touch.h"
 #include "wifi.h"
 
+#include "mqtt.h"
+#include "ota.h"
 #include "screens/screen_manager.h"
 
 #include <Arduino.h>
@@ -23,18 +25,19 @@ void setup() {
 
     if (next_os_wifi_begin()) {
         Serial.println("WiFi terhubung");
+        next_os_mqtt_init();
+        if (next_os_mqtt_start()) {
+            Serial.println("MQTT terhubung");
+        }
     } else {
         Serial.println("WiFi offline (lanjut UI lokal)");
     }
 }
 
 void loop() {
+    next_os_wifi_loop();
     next_os_display_lvgl_handler();
-    static uint32_t last_second = 0;
-    const uint32_t now_ms = millis();
-    if (now_ms - last_second >= 1000U) {
-        last_second = now_ms;
-        next_os_app_tick();
-    }
+    next_os_app_tick();
+    next_os_ota_loop();
     delay(5);
 }

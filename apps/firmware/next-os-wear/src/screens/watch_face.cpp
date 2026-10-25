@@ -1,18 +1,17 @@
 #include "screens/watch_face.h"
 
+#include "mesh_state.h"
+#include "mqtt.h"
 #include "screens/common.h"
 #include "theme.h"
 
 #include <cstdio>
 #include <ctime>
 
-/* Mock KPI — Week 7–10 via MQTT */
-static constexpr uint8_t k_mock_farm = 3;
-static constexpr uint8_t k_mock_alert = 2;
-static constexpr uint8_t k_mock_irig = 1;
-
 static lv_obj_t *s_clock_label = nullptr;
 static lv_obj_t *s_date_label = nullptr;
+static lv_obj_t *s_wifi_label = nullptr;
+static lv_obj_t *s_kpi_value_labels[3] = {nullptr, nullptr, nullptr};
 static lv_timer_t *s_clock_timer = nullptr;
 
 static void watch_face_format_time(char *buf, size_t len, uint8_t hour, uint8_t minute) {
@@ -90,7 +89,7 @@ static void watch_face_on_delete(lv_event_t *event) {
 }
 
 static lv_obj_t *watch_face_create_kpi_tile(lv_obj_t *parent, const char *value, const char *unit,
-                                            lv_color_t value_color) {
+                                            lv_color_t value_color, lv_obj_t **out_value_label) {
     lv_obj_t *col = lv_obj_create(parent);
     lv_obj_set_size(col, 56, LV_SIZE_CONTENT);
     lv_obj_set_style_bg_opa(col, LV_OPA_TRANSP, 0);
@@ -112,7 +111,34 @@ static lv_obj_t *watch_face_create_kpi_tile(lv_obj_t *parent, const char *value,
     lv_obj_set_style_text_color(lbl, next_os_color_muted(), 0);
     lv_obj_set_style_text_letter_space(lbl, 1, 0);
 
+    if (out_value_label != nullptr) {
+        *out_value_label = val;
+    }
     return col;
+}
+
+void next_os_watch_face_refresh_from_mesh(void) {
+    char buf[8];
+    if (s_kpi_value_labels[0] != nullptr && lv_obj_is_in_widget_tree(s_kpi_value_labels[0])) {
+        (void)std::snprintf(buf, sizeof(buf), "%u",
+                            static_cast<unsigned>(next_os_mesh_state_farm_count()));
+        lv_label_set_text(s_kpi_value_labels[0], buf);
+    }
+    if (s_kpi_value_labels[1] != nullptr && lv_obj_is_in_widget_tree(s_kpi_value_labels[1])) {
+        (void)std::snprintf(buf, sizeof(buf), "%u",
+                            static_cast<unsigned>(next_os_mesh_state_alert_count()));
+        lv_label_set_text(s_kpi_value_labels[1], buf);
+    }
+    if (s_kpi_value_labels[2] != nullptr && lv_obj_is_in_widget_tree(s_kpi_value_labels[2])) {
+        (void)std::snprintf(buf, sizeof(buf), "%u",
+                            static_cast<unsigned>(next_os_mesh_state_irig_count()));
+        lv_label_set_text(s_kpi_value_labels[2], buf);
+    }
+    if (s_wifi_label != nullptr && lv_obj_is_in_widget_tree(s_wifi_label)) {
+        lv_obj_set_style_text_color(
+            s_wifi_label,
+            next_os_mqtt_is_connected() ? next_os_color_olive() : next_os_color_light_grey(), 0);
+    }
 }
 
 void next_os_watch_face_create(lv_obj_t *root) {
@@ -134,10 +160,10 @@ void next_os_watch_face_create(lv_obj_t *root) {
     lv_obj_set_style_text_color(farm, next_os_color_olive(), 0);
     lv_obj_align(farm, LV_ALIGN_LEFT_MID, 0, 0);
 
-    lv_obj_t *wifi = lv_label_create(top_row);
-    lv_label_set_text(wifi, LV_SYMBOL_WIFI);
-    lv_obj_set_style_text_color(wifi, next_os_color_olive(), 0);
-    lv_obj_align(wifi, LV_ALIGN_CENTER, 0, 0);
+    s_wifi_label = lv_label_create(top_row);
+    lv_label_set_text(s_wifi_label, LV_SYMBOL_WIFI);
+    lv_obj_set_style_text_color(s_wifi_label, next_os_color_olive(), 0);
+    lv_obj_align(s_wifi_label, LV_ALIGN_CENTER, 0, 0);
 
     lv_obj_t *bat = lv_label_create(top_row);
     lv_label_set_text(bat, "78%");
@@ -168,16 +194,21 @@ void next_os_watch_face_create(lv_obj_t *root) {
     char farm_buf[4];
     char alert_buf[4];
     char irig_buf[4];
-    (void)std::snprintf(farm_buf, sizeof(farm_buf), "%u", static_cast<unsigned>(k_mock_farm));
-    (void)std::snprintf(alert_buf, sizeof(alert_buf), "%u", static_cast<unsigned>(k_mock_alert));
-    (void)std::snprintf(irig_buf, sizeof(irig_buf), "%u", static_cast<unsigned>(k_mock_irig));
+    (void)std::snprintf(farm_buf, sizeof(farm_buf), "%u",
+                        static_cast<unsigned>(next_os_mesh_state_farm_count()));
+    (void)std::snprintf(alert_buf, sizeof(alert_buf), "%u",
+                        static_cast<unsigned>(next_os_mesh_state_alert_count()));
+    (void)std::snprintf(irig_buf, sizeof(irig_buf), "%u",
+                        static_cast<unsigned>(next_os_mesh_state_irig_count()));
 
-    watch_face_create_kpi_tile(kpi_row, farm_buf, "FARM", next_os_color_olive());
+    watch_face_create_kpi_tile(kpi_row, farm_buf, "FARM", next_os_color_olive(), &s_kpi_value_labels[0]);
     next_os_common_create_v_separator(kpi_row);
-    watch_face_create_kpi_tile(kpi_row, alert_buf, "ALERT", next_os_color_critical());
+    watch_face_create_kpi_tile(kpi_row, alert_buf, "ALERT", next_os_color_critical(),
+                               &s_kpi_value_labels[1]);
     next_os_common_create_v_separator(kpi_row);
-    watch_face_create_kpi_tile(kpi_row, irig_buf, "IRIG", next_os_color_clay());
+    watch_face_create_kpi_tile(kpi_row, irig_buf, "IRIG", next_os_color_clay(), &s_kpi_value_labels[2]);
 
     watch_face_refresh_clock();
+    next_os_watch_face_refresh_from_mesh();
     s_clock_timer = lv_timer_create(watch_face_timer_cb, 1000, nullptr);
 }

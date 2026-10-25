@@ -4,5 +4,6 @@
 #include <lvgl.h>
 
 void next_os_alert_center_create(lv_obj_t *root);
+void next_os_alert_center_refresh_from_mesh(void);
 
 #endif

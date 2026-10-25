@@ -1,7 +1,41 @@
 #include "screens/alert_center.h"
 
+#include "mesh_state.h"
 #include "screens/common.h"
 #include "theme.h"
+
+#include <cstdio>
+
+static lv_obj_t *s_title_label = nullptr;
+static lv_obj_t *s_badge_label = nullptr;
+static lv_obj_t *s_headline_label = nullptr;
+static lv_obj_t *s_sub_label = nullptr;
+static lv_obj_t *s_ts_label = nullptr;
+
+void next_os_alert_center_refresh_from_mesh(void) {
+    char buf[24];
+    if (s_title_label != nullptr && lv_obj_is_in_widget_tree(s_title_label)) {
+        (void)std::snprintf(buf, sizeof(buf), "%u ALERT AKTIF",
+                            static_cast<unsigned>(next_os_mesh_state_alert_count()));
+        lv_label_set_text(s_title_label, buf);
+    }
+    next_os_mesh_alert_t alert {};
+    if (!next_os_mesh_state_top_alert(&alert)) {
+        return;
+    }
+    if (s_badge_label != nullptr && lv_obj_is_in_widget_tree(s_badge_label)) {
+        lv_label_set_text(s_badge_label, alert.severity);
+    }
+    if (s_headline_label != nullptr && lv_obj_is_in_widget_tree(s_headline_label)) {
+        lv_label_set_text(s_headline_label, alert.title);
+    }
+    if (s_sub_label != nullptr && lv_obj_is_in_widget_tree(s_sub_label)) {
+        lv_label_set_text(s_sub_label, alert.subtitle);
+    }
+    if (s_ts_label != nullptr && lv_obj_is_in_widget_tree(s_ts_label)) {
+        lv_label_set_text(s_ts_label, alert.ago);
+    }
+}
 
 void next_os_alert_center_create(lv_obj_t *root) {
     next_os_apply_screen_style(root);
@@ -18,11 +52,14 @@ void next_os_alert_center_create(lv_obj_t *root) {
     lv_obj_set_style_text_color(alert_icon, next_os_color_critical(), 0);
     lv_obj_align(alert_icon, LV_ALIGN_LEFT_MID, 0, 0);
 
-    lv_obj_t *title = lv_label_create(top);
-    lv_label_set_text(title, "3 ALERT AKTIF");
-    lv_obj_set_style_text_font(title, &lv_font_montserrat_12, 0);
-    lv_obj_set_style_text_color(title, next_os_color_critical(), 0);
-    lv_obj_align(title, LV_ALIGN_CENTER, 0, 0);
+    s_title_label = lv_label_create(top);
+    char title_buf[24];
+    (void)std::snprintf(title_buf, sizeof(title_buf), "%u ALERT AKTIF",
+                        static_cast<unsigned>(next_os_mesh_state_alert_count()));
+    lv_label_set_text(s_title_label, title_buf);
+    lv_obj_set_style_text_font(s_title_label, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_color(s_title_label, next_os_color_critical(), 0);
+    lv_obj_align(s_title_label, LV_ALIGN_CENTER, 0, 0);
 
     lv_obj_t *card = lv_obj_create(root);
     lv_obj_set_size(card, 200, 130);
@@ -34,29 +71,38 @@ void next_os_alert_center_create(lv_obj_t *root) {
     lv_obj_set_style_pad_all(card, 10, 0);
     next_os_common_disable_scroll(card);
 
-    lv_obj_t *badge = lv_label_create(card);
-    lv_label_set_text(badge, "CRITICAL");
-    lv_obj_set_style_text_font(badge, &lv_font_montserrat_12, 0);
-    lv_obj_set_style_text_color(badge, next_os_color_critical(), 0);
-    lv_obj_align(badge, LV_ALIGN_TOP_LEFT, 0, 0);
+    next_os_mesh_alert_t alert {};
+    if (!next_os_mesh_state_top_alert(&alert)) {
+        alert.unresolved = true;
+        (void)std::snprintf(alert.title, sizeof(alert.title), "%s", "Sprayer tank 15%");
+        (void)std::snprintf(alert.subtitle, sizeof(alert.subtitle), "%s", "Plot B • Refill required");
+        (void)std::snprintf(alert.severity, sizeof(alert.severity), "%s", "CRITICAL");
+        (void)std::snprintf(alert.ago, sizeof(alert.ago), "%s", "2m ago");
+    }
 
-    lv_obj_t *headline = lv_label_create(card);
-    lv_label_set_text(headline, "Sprayer tank 15%");
-    lv_obj_set_style_text_font(headline, &lv_font_montserrat_14, 0);
-    lv_obj_set_style_text_color(headline, next_os_color_dark(), 0);
-    lv_obj_align(headline, LV_ALIGN_TOP_LEFT, 0, 22);
+    s_badge_label = lv_label_create(card);
+    lv_label_set_text(s_badge_label, alert.severity);
+    lv_obj_set_style_text_font(s_badge_label, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_color(s_badge_label, next_os_color_critical(), 0);
+    lv_obj_align(s_badge_label, LV_ALIGN_TOP_LEFT, 0, 0);
 
-    lv_obj_t *sub = lv_label_create(card);
-    lv_label_set_text(sub, "Plot B • Refill required");
-    lv_obj_set_style_text_font(sub, &lv_font_montserrat_12, 0);
-    lv_obj_set_style_text_color(sub, next_os_color_muted(), 0);
-    lv_obj_align(sub, LV_ALIGN_TOP_LEFT, 0, 44);
+    s_headline_label = lv_label_create(card);
+    lv_label_set_text(s_headline_label, alert.title);
+    lv_obj_set_style_text_font(s_headline_label, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_color(s_headline_label, next_os_color_dark(), 0);
+    lv_obj_align(s_headline_label, LV_ALIGN_TOP_LEFT, 0, 22);
 
-    lv_obj_t *ts = lv_label_create(card);
-    lv_label_set_text(ts, "2m ago");
-    lv_obj_set_style_text_font(ts, &lv_font_montserrat_12, 0);
-    lv_obj_set_style_text_color(ts, next_os_color_muted(), 0);
-    lv_obj_align(ts, LV_ALIGN_TOP_LEFT, 0, 62);
+    s_sub_label = lv_label_create(card);
+    lv_label_set_text(s_sub_label, alert.subtitle);
+    lv_obj_set_style_text_font(s_sub_label, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_color(s_sub_label, next_os_color_muted(), 0);
+    lv_obj_align(s_sub_label, LV_ALIGN_TOP_LEFT, 0, 44);
+
+    s_ts_label = lv_label_create(card);
+    lv_label_set_text(s_ts_label, alert.ago);
+    lv_obj_set_style_text_font(s_ts_label, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_color(s_ts_label, next_os_color_muted(), 0);
+    lv_obj_align(s_ts_label, LV_ALIGN_TOP_LEFT, 0, 62);
 
     lv_obj_t *btn_row = lv_obj_create(card);
     lv_obj_set_size(btn_row, 180, 32);
