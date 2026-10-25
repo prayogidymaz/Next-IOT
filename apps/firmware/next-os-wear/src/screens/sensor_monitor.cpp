@@ -11,6 +11,16 @@ static lv_obj_t *s_ph_value = nullptr;
 static lv_obj_t *s_temp_value = nullptr;
 static lv_obj_t *s_hum_value = nullptr;
 
+static void sensor_monitor_on_delete(lv_event_t *event) {
+    if (lv_event_get_code(event) != LV_EVENT_DELETE) {
+        return;
+    }
+    s_moisture_label = nullptr;
+    s_ph_value = nullptr;
+    s_temp_value = nullptr;
+    s_hum_value = nullptr;
+}
+
 static lv_obj_t *sensor_create_metric_tile(lv_obj_t *parent, const char *value, const char *unit,
                                          lv_obj_t **out_val) {
     lv_obj_t *col = lv_obj_create(parent);
@@ -61,6 +71,7 @@ void next_os_sensor_monitor_refresh_from_mesh(void) {
 
 void next_os_sensor_monitor_create(lv_obj_t *root) {
     next_os_apply_screen_style(root);
+    lv_obj_add_event_cb(root, sensor_monitor_on_delete, LV_EVENT_DELETE, nullptr);
 
     lv_obj_t *header = next_os_common_create_header_label(root, "PLOT A • KOPI");
     lv_obj_set_style_text_align(header, LV_TEXT_ALIGN_CENTER, 0);
@@ -114,5 +125,4 @@ void next_os_sensor_monitor_create(lv_obj_t *root) {
     sensor_create_metric_tile(tiles, hum_buf, "HUM", &s_hum_value);
 
     next_os_common_create_pagination_dots(root, 3, 0);
-    next_os_common_create_nav_buttons(root);
 }

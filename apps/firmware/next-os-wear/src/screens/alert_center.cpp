@@ -12,6 +12,17 @@ static lv_obj_t *s_headline_label = nullptr;
 static lv_obj_t *s_sub_label = nullptr;
 static lv_obj_t *s_ts_label = nullptr;
 
+static void alert_center_on_delete(lv_event_t *event) {
+    if (lv_event_get_code(event) != LV_EVENT_DELETE) {
+        return;
+    }
+    s_title_label = nullptr;
+    s_badge_label = nullptr;
+    s_headline_label = nullptr;
+    s_sub_label = nullptr;
+    s_ts_label = nullptr;
+}
+
 void next_os_alert_center_refresh_from_mesh(void) {
     char buf[24];
     if (s_title_label != nullptr && lv_obj_is_in_widget_tree(s_title_label)) {
@@ -39,6 +50,7 @@ void next_os_alert_center_refresh_from_mesh(void) {
 
 void next_os_alert_center_create(lv_obj_t *root) {
     next_os_apply_screen_style(root);
+    lv_obj_add_event_cb(root, alert_center_on_delete, LV_EVENT_DELETE, nullptr);
 
     lv_obj_t *top = lv_obj_create(root);
     lv_obj_set_size(top, 220, 24);
@@ -132,5 +144,4 @@ void next_os_alert_center_create(lv_obj_t *root) {
     lv_obj_center(det_l);
 
     next_os_common_create_pagination_dots(root, 3, 2);
-    next_os_common_create_nav_buttons(root);
 }

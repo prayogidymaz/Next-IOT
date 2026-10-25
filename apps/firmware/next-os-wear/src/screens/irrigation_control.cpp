@@ -8,6 +8,15 @@ static lv_obj_t *s_countdown_label = nullptr;
 static lv_obj_t *s_status_label = nullptr;
 static lv_obj_t *s_flow_label = nullptr;
 
+static void irrigation_on_delete(lv_event_t *event) {
+    if (lv_event_get_code(event) != LV_EVENT_DELETE) {
+        return;
+    }
+    s_countdown_label = nullptr;
+    s_status_label = nullptr;
+    s_flow_label = nullptr;
+}
+
 void next_os_irrigation_control_refresh_from_mesh(void) {
     const next_os_mesh_irrig_t ir = next_os_mesh_state_irrig();
     if (s_countdown_label != nullptr && lv_obj_is_in_widget_tree(s_countdown_label)) {
@@ -25,6 +34,7 @@ void next_os_irrigation_control_refresh_from_mesh(void) {
 
 void next_os_irrigation_control_create(lv_obj_t *root) {
     next_os_apply_screen_style(root);
+    lv_obj_add_event_cb(root, irrigation_on_delete, LV_EVENT_DELETE, nullptr);
 
     const next_os_mesh_irrig_t ir = next_os_mesh_state_irrig();
     next_os_common_create_header_label(root, "IRIGASI • VALVE A1");
@@ -69,5 +79,4 @@ void next_os_irrigation_control_create(lv_obj_t *root) {
     lv_obj_set_style_text_font(actions, &lv_font_montserrat_12, 0);
     lv_obj_set_style_text_color(actions, next_os_color_olive(), 0);
     lv_obj_align(actions, LV_ALIGN_BOTTOM_MID, 0, -14);
-    next_os_common_create_nav_buttons(root);
 }

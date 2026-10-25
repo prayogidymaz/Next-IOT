@@ -86,6 +86,10 @@ static void watch_face_on_delete(lv_event_t *event) {
     }
     s_clock_label = nullptr;
     s_date_label = nullptr;
+    s_wifi_label = nullptr;
+    s_kpi_value_labels[0] = nullptr;
+    s_kpi_value_labels[1] = nullptr;
+    s_kpi_value_labels[2] = nullptr;
 }
 
 static lv_obj_t *watch_face_create_kpi_tile(lv_obj_t *parent, const char *value, const char *unit,
@@ -211,5 +215,4 @@ void next_os_watch_face_create(lv_obj_t *root) {
     watch_face_refresh_clock();
     next_os_watch_face_refresh_from_mesh();
     s_clock_timer = lv_timer_create(watch_face_timer_cb, 1000, nullptr);
-    next_os_common_create_nav_buttons(root);
 }
