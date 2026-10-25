@@ -1,10 +1,18 @@
 #include "screens/screen_manager.h"
 
 #include "screens/alert_center.h"
+#include "screens/cctv_alert.h"
 #include "screens/common.h"
 #include "screens/irrigation_control.h"
+#include "screens/irrigation_wave.h"
+#include "screens/mesh_graph.h"
+#include "screens/ndvi_heatmap.h"
 #include "screens/sensor_monitor.h"
+#include "screens/sensor_radial.h"
+#include "screens/settings.h"
+#include "screens/terminal_feed.h"
 #include "screens/watch_face.h"
+#include "screens/watch_face_square.h"
 #include "theme.h"
 
 static next_os_screen_id_t s_current = NEXT_OS_SCREEN_BOOT;
@@ -25,17 +33,41 @@ static void build_screen(next_os_screen_id_t screen_id, lv_obj_t *root) {
     case NEXT_OS_SCREEN_ALERT_CENTER:
         next_os_alert_center_create(root);
         break;
+    case NEXT_OS_SCREEN_SETTINGS:
+        next_os_settings_create(root);
+        break;
+    case NEXT_OS_SCREEN_CCTV_ALERT:
+        next_os_cctv_alert_create(root);
+        break;
+    case NEXT_OS_SCREEN_WATCH_FACE_SQUARE:
+        next_os_watch_face_square_create(root);
+        break;
+    case NEXT_OS_SCREEN_SENSOR_RADIAL:
+        next_os_sensor_radial_create(root);
+        break;
+    case NEXT_OS_SCREEN_IRRIGATION_WAVE:
+        next_os_irrigation_wave_create(root);
+        break;
+    case NEXT_OS_SCREEN_MESH_GRAPH:
+        next_os_mesh_graph_create(root);
+        break;
+    case NEXT_OS_SCREEN_NDVI_HEATMAP:
+        next_os_ndvi_heatmap_create(root);
+        break;
+    case NEXT_OS_SCREEN_TERMINAL_FEED:
+        next_os_terminal_feed_create(root);
+        break;
     case NEXT_OS_SCREEN_BOOT:
         break;
     }
 }
 
-static bool is_mvp_screen(next_os_screen_id_t screen_id) {
-    return screen_id >= NEXT_OS_SCREEN_WATCH_FACE && screen_id <= NEXT_OS_SCREEN_ALERT_CENTER;
+static bool is_nav_screen(next_os_screen_id_t screen_id) {
+    return screen_id >= NEXT_OS_SCREEN_WATCH_FACE && screen_id <= NEXT_OS_SCREEN_TERMINAL_FEED;
 }
 
 static void switch_screen(next_os_screen_id_t screen_id) {
-    if (!is_mvp_screen(screen_id)) {
+    if (!is_nav_screen(screen_id)) {
         return;
     }
     if (s_nav_enabled && screen_id == s_current) {
@@ -106,7 +138,7 @@ void next_os_screen_manager_next(void) {
         return;
     }
     int next_id = static_cast<int>(s_current) + 1;
-    if (next_id > static_cast<int>(NEXT_OS_SCREEN_ALERT_CENTER)) {
+    if (next_id > static_cast<int>(NEXT_OS_SCREEN_TERMINAL_FEED)) {
         next_id = static_cast<int>(NEXT_OS_SCREEN_WATCH_FACE);
     }
     switch_screen(static_cast<next_os_screen_id_t>(next_id));
@@ -118,7 +150,7 @@ void next_os_screen_manager_prev(void) {
     }
     int prev_id = static_cast<int>(s_current) - 1;
     if (prev_id < static_cast<int>(NEXT_OS_SCREEN_WATCH_FACE)) {
-        prev_id = static_cast<int>(NEXT_OS_SCREEN_ALERT_CENTER);
+        prev_id = static_cast<int>(NEXT_OS_SCREEN_TERMINAL_FEED);
     }
     switch_screen(static_cast<next_os_screen_id_t>(prev_id));
 }

@@ -5,7 +5,9 @@
 
 #include <ArduinoJson.h>
 
+#include <cstdio>
 #include <cstring>
+#include <ctime>
 
 static void copy_str_field(char *dest, size_t dest_len, JsonVariantConst value) {
     if (dest_len == 0) {
@@ -38,6 +40,47 @@ static void copy_json_key(char *dest, size_t dest_len, JsonObjectConst body, con
     }
 }
 
+static void mesh_format_time_hms(char *buf, size_t len) {
+    const std::time_t now = std::time(nullptr);
+    std::tm lt {};
+#if defined(_WIN32)
+    if (now == static_cast<std::time_t>(-1) || localtime_s(&lt, &now) != 0) {
+        (void)std::snprintf(buf, len, "%s", "00:00:00");
+        return;
+    }
+#else
+    std::tm *p = std::localtime(&now);
+    if (p == nullptr) {
+        (void)std::snprintf(buf, len, "%s", "00:00:00");
+        return;
+    }
+    lt = *p;
+#endif
+    (void)std::snprintf(buf, len, "%02d:%02d:%02d", lt.tm_hour, lt.tm_min, lt.tm_sec);
+}
+
+static void mesh_push_event_log(const char *domain, const char *event_type, JsonObjectConst body) {
+    next_os_mesh_log_entry_t entry {};
+    mesh_format_time_hms(entry.time, sizeof(entry.time));
+    if (domain != nullptr) {
+        (void)strncpy(entry.domain, domain, sizeof(entry.domain) - 1U);
+        entry.domain[sizeof(entry.domain) - 1U] = '\0';
+    }
+    if (event_type != nullptr) {
+        (void)strncpy(entry.event_type, event_type, sizeof(entry.event_type) - 1U);
+    }
+    char payload[72];
+    if (!body.isNull() && body["summary"].is<const char *>()) {
+        copy_str_field(payload, sizeof(payload), body["summary"]);
+    } else if (!body.isNull() && body["title"].is<const char *>()) {
+        copy_str_field(payload, sizeof(payload), body["title"]);
+    } else {
+        (void)std::snprintf(payload, sizeof(payload), "%s", event_type != nullptr ? event_type : "event");
+    }
+    (void)strncpy(entry.payload, payload, sizeof(entry.payload) - 1U);
+    next_os_mesh_state_push_log(&entry);
+}
+
 void next_os_mesh_handler_init(void) {
     next_os_mesh_state_init();
 }
@@ -61,7 +104,6 @@ void next_os_mesh_handler_on_message(const char *topic, const uint8_t *payload, 
     }
 
     (void)topic;
-    (void)domain;
 
     if (strcmp(event_type, "sensor.reading_update") == 0 || strcmp(event_type, "sensor_update") == 0) {
         next_os_mesh_sensor_t reading = next_os_mesh_state_sensor();
@@ -112,7 +154,27 @@ void next_os_mesh_handler_on_message(const char *topic, const uint8_t *payload, 
         if (body["irig_count"].is<int>()) {
             next_os_mesh_state_set_irig_count(static_cast<uint8_t>(body["irig_count"].as<int>()));
         }
+    } else if (strcmp(event_type, "motion_detected") == 0) {
+        next_os_mesh_cctv_t cctv = next_os_mesh_state_cctv();
+        cctv.live = true;
+        if (body["pest_pct"].is<int>()) {
+            cctv.pest_pct = static_cast<uint8_t>(body["pest_pct"].as<int>());
+        }
+        copy_json_key(cctv.title, sizeof(cctv.title), body, "title", cctv.title);
+        copy_json_key(cctv.subtitle, sizeof(cctv.subtitle), body, "subtitle", cctv.subtitle);
+        mesh_format_time_hms(cctv.timestamp, sizeof(cctv.timestamp));
+        next_os_mesh_state_update_cctv(&cctv);
+    } else if (strcmp(event_type, "image_captured") == 0) {
+        next_os_mesh_state_randomize_ndvi();
+    } else if (strcmp(event_type, "dispatch_requested") == 0) {
+        next_os_mesh_topology_t topo = next_os_mesh_state_topology();
+        topo.drn_dispatch_pulse = true;
+        topo.dispatch_nodes = 1;
+        topo.live_nodes = 5;
+        topo.idle_nodes = 2;
+        next_os_mesh_state_update_topology(&topo);
     }
 
+    mesh_push_event_log(domain, event_type, body);
     next_os_mesh_ui_sync_refresh();
 }

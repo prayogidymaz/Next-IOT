@@ -1,8 +1,8 @@
 #include "mesh_state.h"
 
-#include "config.h"
-
+#include <cstdio>
 #include <cstring>
+#include <ctime>
 
 static uint8_t s_farm_count = 0;
 static uint8_t s_alert_count = 0;
@@ -14,12 +14,45 @@ static next_os_mesh_alert_t s_alerts[NEXT_OS_MESH_ALERT_BUFFER_SIZE];
 static uint8_t s_alert_head = 0;
 static uint8_t s_alert_size = 0;
 
+static next_os_mesh_cctv_t s_cctv = {"07:38:44", "Ulat grayak terdeteksi", "Plot B • Edge AI YOLO v8", 87,
+                                     true};
+static next_os_mesh_ndvi_t s_ndvi {};
+static next_os_mesh_topology_t s_topology = {5, 1, 2, false};
+
+static next_os_mesh_log_entry_t s_log[NEXT_OS_MESH_EVENT_LOG_SIZE];
+static uint8_t s_log_head = 0;
+static uint8_t s_log_size = 0;
+
+static void mesh_seed_ndvi(void) {
+    static const uint8_t seed[NEXT_OS_MESH_NDVI_CELLS] = {
+        4, 4, 3, 3, 2, 2, 1, 1, 4, 4, 3, 3, 2, 2, 1, 0, 3, 3, 3, 2, 2, 2, 1, 1,
+        3, 3, 2, 2, 2, 1, 1, 0, 2, 2, 2, 1, 1, 1, 0, 0, 2, 1, 1, 1, 0, 0, 0, 0,
+        1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+    };
+    for (uint8_t i = 0; i < NEXT_OS_MESH_NDVI_CELLS; i++) {
+        s_ndvi.cells[i] = seed[i];
+    }
+    s_ndvi.avg_ndvi = 0.68F;
+    s_ndvi.stress_zones = 2;
+    (void)std::snprintf(s_ndvi.timestamp, sizeof(s_ndvi.timestamp), "%s", "07:42");
+}
+
 void next_os_mesh_state_init(void) {
     s_farm_count = 3;
     s_alert_count = 2;
     s_irig_count = 1;
     s_alert_head = 0;
     s_alert_size = 0;
+    s_log_head = 0;
+    s_log_size = 0;
+    mesh_seed_ndvi();
+
+    next_os_mesh_log_entry_t boot_log {};
+    (void)std::snprintf(boot_log.time, sizeof(boot_log.time), "%s", "07:41:02");
+    (void)std::snprintf(boot_log.domain, sizeof(boot_log.domain), "%s", "ui");
+    (void)std::snprintf(boot_log.event_type, sizeof(boot_log.event_type), "%s", "boot.ready");
+    (void)std::snprintf(boot_log.payload, sizeof(boot_log.payload), "%s", "mesh feed online");
+    next_os_mesh_state_push_log(&boot_log);
 }
 
 void next_os_mesh_state_set_farm_count(uint8_t count) {
@@ -89,5 +122,91 @@ bool next_os_mesh_state_top_alert(next_os_mesh_alert_t *out) {
     const uint8_t latest =
         static_cast<uint8_t>((s_alert_head + s_alert_size - 1U) % NEXT_OS_MESH_ALERT_BUFFER_SIZE);
     *out = s_alerts[latest];
+    return true;
+}
+
+void next_os_mesh_state_update_cctv(const next_os_mesh_cctv_t *cctv) {
+    if (cctv == nullptr) {
+        return;
+    }
+    s_cctv = *cctv;
+}
+
+next_os_mesh_cctv_t next_os_mesh_state_cctv(void) {
+    return s_cctv;
+}
+
+void next_os_mesh_state_update_ndvi(const next_os_mesh_ndvi_t *ndvi) {
+    if (ndvi == nullptr) {
+        return;
+    }
+    s_ndvi = *ndvi;
+}
+
+next_os_mesh_ndvi_t next_os_mesh_state_ndvi(void) {
+    return s_ndvi;
+}
+
+void next_os_mesh_state_randomize_ndvi(void) {
+    uint32_t sum = 0;
+    for (uint8_t i = 0; i < NEXT_OS_MESH_NDVI_CELLS; i++) {
+        s_ndvi.cells[i] = static_cast<uint8_t>((i * 7U + s_log_size * 3U) % 5U);
+        sum += s_ndvi.cells[i];
+    }
+    s_ndvi.avg_ndvi = static_cast<float>(sum) / static_cast<float>(NEXT_OS_MESH_NDVI_CELLS * 4U);
+    s_ndvi.stress_zones = static_cast<uint8_t>(2U + (s_log_size % 2U));
+    const std::time_t now = std::time(nullptr);
+    std::tm lt {};
+#if defined(_WIN32)
+    if (now != static_cast<std::time_t>(-1) && localtime_s(&lt, &now) == 0) {
+        (void)std::snprintf(s_ndvi.timestamp, sizeof(s_ndvi.timestamp), "%02d:%02d",
+                            lt.tm_hour, lt.tm_min);
+    }
+#else
+    std::tm *p = std::localtime(&now);
+    if (p != nullptr) {
+        lt = *p;
+        (void)std::snprintf(s_ndvi.timestamp, sizeof(s_ndvi.timestamp), "%02d:%02d",
+                            lt.tm_hour, lt.tm_min);
+    }
+#endif
+}
+
+void next_os_mesh_state_update_topology(const next_os_mesh_topology_t *topo) {
+    if (topo == nullptr) {
+        return;
+    }
+    s_topology = *topo;
+}
+
+next_os_mesh_topology_t next_os_mesh_state_topology(void) {
+    return s_topology;
+}
+
+void next_os_mesh_state_push_log(const next_os_mesh_log_entry_t *entry) {
+    if (entry == nullptr) {
+        return;
+    }
+    const uint8_t idx =
+        static_cast<uint8_t>((s_log_head + s_log_size) % NEXT_OS_MESH_EVENT_LOG_SIZE);
+    s_log[idx] = *entry;
+    if (s_log_size < NEXT_OS_MESH_EVENT_LOG_SIZE) {
+        s_log_size++;
+    } else {
+        s_log_head = static_cast<uint8_t>((s_log_head + 1U) % NEXT_OS_MESH_EVENT_LOG_SIZE);
+    }
+}
+
+uint8_t next_os_mesh_state_log_count(void) {
+    return s_log_size;
+}
+
+bool next_os_mesh_state_log_at(uint8_t reverse_index, next_os_mesh_log_entry_t *out) {
+    if (out == nullptr || reverse_index >= s_log_size) {
+        return false;
+    }
+    const uint8_t pos =
+        static_cast<uint8_t>((s_log_head + s_log_size - 1U - reverse_index) % NEXT_OS_MESH_EVENT_LOG_SIZE);
+    *out = s_log[pos];
     return true;
 }
