@@ -1,19 +1,32 @@
 #include "screens/screen_manager.h"
 
+#include "navigation/nav_stack.h"
+#include "screens/about.h"
 #include "screens/alert_center.h"
+#include "screens/app_launcher.h"
+#include "screens/apps/barometer_app.h"
+#include "screens/apps/compass_app.h"
+#include "screens/apps/flashlight_app.h"
+#include "screens/apps/health_app.h"
+#include "screens/apps/timer_app.h"
+#include "screens/apps/weather_app.h"
 #include "screens/cctv_alert.h"
 #include "screens/common.h"
+#include "screens/farming/harvest_calendar.h"
+#include "screens/hubs/farming_hub.h"
+#include "screens/hubs/mesh_ops_hub.h"
 #include "screens/irrigation_control.h"
-#include "screens/irrigation_wave.h"
 #include "screens/mesh_graph.h"
+#include "screens/mesh_ops/device_dispatch.h"
+#include "screens/mesh_ops/workflow_status.h"
 #include "screens/ndvi_heatmap.h"
+#include "screens/overlays/control_center.h"
+#include "screens/overlays/notification_center.h"
+#include "screens/qr_pair.h"
 #include "screens/sensor_monitor.h"
-#include "screens/sensor_radial.h"
 #include "screens/settings.h"
 #include "screens/terminal_feed.h"
 #include "screens/watch_face.h"
-#include "screens/watch_face_square.h"
-#include "screens/qr_pair.h"
 #include "layout.h"
 #include "theme.h"
 
@@ -21,6 +34,11 @@ static next_os_screen_id_t s_current = NEXT_OS_SCREEN_BOOT;
 static bool s_nav_enabled = false;
 static lv_obj_t *s_current_screen_obj = nullptr;
 static lv_obj_t *s_modal_overlay = nullptr;
+static lv_obj_t *s_sheet_overlay = nullptr;
+
+static void qr_pair_screen_dismiss(void) {
+    next_os_nav_stack_pop();
+}
 
 static void dismiss_modal_internal(void) {
     if (s_modal_overlay != nullptr) {
@@ -29,8 +47,38 @@ static void dismiss_modal_internal(void) {
     }
 }
 
+static void dismiss_sheet_internal(void) {
+    if (s_sheet_overlay != nullptr) {
+        lv_obj_delete(s_sheet_overlay);
+        s_sheet_overlay = nullptr;
+    }
+}
+
 void next_os_screen_manager_dismiss_modal(void) {
     dismiss_modal_internal();
+}
+
+void next_os_screen_manager_dismiss_overlay(void) {
+    dismiss_sheet_internal();
+}
+
+static void overlay_dismiss_cb(void) {
+    dismiss_sheet_internal();
+}
+
+bool next_os_screen_manager_is_stackable(next_os_screen_id_t screen_id) {
+    if (screen_id == NEXT_OS_SCREEN_BOOT || screen_id == NEXT_OS_SCREEN_CONTROL_CENTER ||
+        screen_id == NEXT_OS_SCREEN_NOTIFICATION_CENTER) {
+        return false;
+    }
+    return screen_id >= NEXT_OS_SCREEN_WATCH_FACE;
+}
+
+static bool screen_wants_back(next_os_screen_id_t screen_id) {
+    if (screen_id == NEXT_OS_SCREEN_WATCH_FACE) {
+        return false;
+    }
+    return next_os_screen_manager_is_stackable(screen_id);
 }
 
 static void build_screen(next_os_screen_id_t screen_id, lv_obj_t *root) {
@@ -38,46 +86,92 @@ static void build_screen(next_os_screen_id_t screen_id, lv_obj_t *root) {
     case NEXT_OS_SCREEN_WATCH_FACE:
         next_os_watch_face_create(root);
         break;
-    case NEXT_OS_SCREEN_SENSOR_MONITOR:
+    case NEXT_OS_SCREEN_APP_LAUNCHER:
+        next_os_app_launcher_create(root);
+        break;
+    case NEXT_OS_SCREEN_FARMING_HUB:
+        next_os_farming_hub_create(root);
+        break;
+    case NEXT_OS_SCREEN_FARMING_SENSOR:
         next_os_sensor_monitor_create(root);
         break;
-    case NEXT_OS_SCREEN_IRRIGATION:
+    case NEXT_OS_SCREEN_FARMING_IRRIGATION:
         next_os_irrigation_control_create(root);
         break;
-    case NEXT_OS_SCREEN_ALERT_CENTER:
-        next_os_alert_center_create(root);
-        break;
-    case NEXT_OS_SCREEN_SETTINGS:
-        next_os_settings_create(root);
-        break;
-    case NEXT_OS_SCREEN_CCTV_ALERT:
+    case NEXT_OS_SCREEN_FARMING_CCTV:
         next_os_cctv_alert_create(root);
         break;
-    case NEXT_OS_SCREEN_WATCH_FACE_SQUARE:
-        next_os_watch_face_square_create(root);
+    case NEXT_OS_SCREEN_FARMING_NDVI:
+        next_os_ndvi_heatmap_create(root);
         break;
-    case NEXT_OS_SCREEN_SENSOR_RADIAL:
-        next_os_sensor_radial_create(root);
+    case NEXT_OS_SCREEN_FARMING_HARVEST:
+        next_os_harvest_calendar_create(root);
         break;
-    case NEXT_OS_SCREEN_IRRIGATION_WAVE:
-        next_os_irrigation_wave_create(root);
+    case NEXT_OS_SCREEN_MESH_HUB:
+        next_os_mesh_ops_hub_create(root);
         break;
     case NEXT_OS_SCREEN_MESH_GRAPH:
         next_os_mesh_graph_create(root);
         break;
-    case NEXT_OS_SCREEN_NDVI_HEATMAP:
-        next_os_ndvi_heatmap_create(root);
-        break;
-    case NEXT_OS_SCREEN_TERMINAL_FEED:
+    case NEXT_OS_SCREEN_MESH_TERMINAL:
         next_os_terminal_feed_create(root);
         break;
+    case NEXT_OS_SCREEN_MESH_WORKFLOW:
+        next_os_workflow_status_create(root);
+        break;
+    case NEXT_OS_SCREEN_MESH_DISPATCH:
+        next_os_device_dispatch_create(root);
+        break;
+    case NEXT_OS_SCREEN_ALERT_CENTER:
+        next_os_alert_center_create(root);
+        break;
+    case NEXT_OS_SCREEN_APP_TIMER:
+        next_os_timer_app_create(root);
+        break;
+    case NEXT_OS_SCREEN_APP_WEATHER:
+        next_os_weather_app_create(root);
+        break;
+    case NEXT_OS_SCREEN_APP_COMPASS:
+        next_os_compass_app_create(root);
+        break;
+    case NEXT_OS_SCREEN_APP_FLASHLIGHT:
+        next_os_flashlight_app_create(root);
+        break;
+    case NEXT_OS_SCREEN_APP_HEALTH:
+        next_os_health_app_create(root);
+        break;
+    case NEXT_OS_SCREEN_APP_BAROMETER:
+        next_os_barometer_app_create(root);
+        break;
+    case NEXT_OS_SCREEN_SETTINGS:
+        next_os_settings_create(root);
+        break;
+    case NEXT_OS_SCREEN_QR_PAIR:
+        next_os_qr_pair_show(root, qr_pair_screen_dismiss);
+        break;
+    case NEXT_OS_SCREEN_ABOUT:
+        next_os_about_create(root);
+        break;
     case NEXT_OS_SCREEN_BOOT:
+    case NEXT_OS_SCREEN_CONTROL_CENTER:
+    case NEXT_OS_SCREEN_NOTIFICATION_CENTER:
         break;
     }
 }
 
-static bool is_nav_screen(next_os_screen_id_t screen_id) {
-    return screen_id >= NEXT_OS_SCREEN_WATCH_FACE && screen_id <= NEXT_OS_SCREEN_TERMINAL_FEED;
+static void apply_screen_chrome(next_os_screen_id_t screen_id, lv_obj_t *root) {
+    if (screen_id == NEXT_OS_SCREEN_WATCH_FACE) {
+        next_os_watch_face_install_input(root);
+        next_os_common_create_corner_nav_for_watch_face(root);
+        return;
+    }
+    if (screen_id == NEXT_OS_SCREEN_APP_LAUNCHER) {
+        next_os_common_create_corner_nav_for_launcher(root);
+        return;
+    }
+    if (screen_wants_back(screen_id)) {
+        next_os_common_create_back_button(root);
+    }
 }
 
 static void screen_opa_exec(void *obj, int32_t value) {
@@ -85,7 +179,6 @@ static void screen_opa_exec(void *obj, int32_t value) {
 }
 
 static next_os_screen_id_t s_pending_screen = NEXT_OS_SCREEN_BOOT;
-static bool s_pending_force = false;
 
 static lv_obj_t *ensure_shell_screen(void) {
     lv_obj_t *scr = lv_screen_active();
@@ -120,8 +213,7 @@ static void mount_screen(next_os_screen_id_t screen_id, bool fade_in) {
     next_os_common_disable_scroll(s_current_screen_obj);
 
     build_screen(screen_id, s_current_screen_obj);
-    next_os_common_attach_swipe_navigation(s_current_screen_obj);
-    next_os_common_create_nav_buttons(s_current_screen_obj);
+    apply_screen_chrome(screen_id, s_current_screen_obj);
 
     s_current = screen_id;
     s_nav_enabled = true;
@@ -139,11 +231,10 @@ static void screen_fade_out_ready(lv_anim_t *anim) {
         s_current_screen_obj = nullptr;
     }
     mount_screen(s_pending_screen, true);
-    s_pending_force = false;
 }
 
-static void switch_screen(next_os_screen_id_t screen_id, bool force_reload) {
-    if (!is_nav_screen(screen_id)) {
+static void present_internal(next_os_screen_id_t screen_id, bool animate, bool force_reload) {
+    if (!next_os_screen_manager_is_stackable(screen_id)) {
         return;
     }
     if (!force_reload && s_nav_enabled && screen_id == s_current) {
@@ -151,16 +242,20 @@ static void switch_screen(next_os_screen_id_t screen_id, bool force_reload) {
     }
 
     dismiss_modal_internal();
+    dismiss_sheet_internal();
     (void)ensure_shell_screen();
 
-    if (s_current_screen_obj == nullptr) {
+    if (s_current_screen_obj == nullptr || !animate) {
+        if (s_current_screen_obj != nullptr) {
+            lv_anim_delete(s_current_screen_obj, nullptr);
+            lv_obj_delete(s_current_screen_obj);
+            s_current_screen_obj = nullptr;
+        }
         mount_screen(screen_id, false);
         return;
     }
 
     s_pending_screen = screen_id;
-    s_pending_force = force_reload;
-
     lv_anim_t anim {};
     lv_anim_init(&anim);
     lv_anim_set_var(&anim, s_current_screen_obj);
@@ -172,8 +267,8 @@ static void switch_screen(next_os_screen_id_t screen_id, bool force_reload) {
     lv_anim_start(&anim);
 }
 
-lv_obj_t *next_os_screen_manager_get_content_root(void) {
-    return s_current_screen_obj;
+void next_os_screen_manager_present(next_os_screen_id_t screen_id, bool animate) {
+    present_internal(screen_id, animate, false);
 }
 
 static void enter_from_boot_async(void *user_data) {
@@ -190,7 +285,8 @@ static void enter_from_boot_async(void *user_data) {
         lv_obj_delete(boot_screen);
     }
 
-    switch_screen(NEXT_OS_SCREEN_WATCH_FACE, false);
+    next_os_nav_stack_init();
+    next_os_nav_stack_go_home();
 }
 
 void next_os_screen_manager_enter_from_boot(lv_obj_t *boot_screen) {
@@ -198,14 +294,14 @@ void next_os_screen_manager_enter_from_boot(lv_obj_t *boot_screen) {
 }
 
 void next_os_screen_manager_switch(next_os_screen_id_t screen_id) {
-    switch_screen(screen_id, false);
+    next_os_nav_stack_push(screen_id, true);
 }
 
 void next_os_screen_manager_reload_current(void) {
     if (!s_nav_enabled) {
         return;
     }
-    switch_screen(s_current, true);
+    present_internal(s_current, false, true);
 }
 
 void next_os_screen_manager_show_qr_pair_modal(void) {
@@ -222,35 +318,50 @@ void next_os_screen_manager_show_qr_pair_modal(void) {
     lv_obj_move_foreground(s_modal_overlay);
 }
 
+void next_os_screen_manager_show_control_center(void) {
+    if (s_sheet_overlay != nullptr) {
+        return;
+    }
+    lv_obj_t *scr = lv_screen_active();
+    if (scr == nullptr) {
+        return;
+    }
+    s_sheet_overlay = lv_obj_create(scr);
+    lv_obj_set_size(s_sheet_overlay, NEXTOS_W, NEXTOS_H);
+    lv_obj_set_style_bg_opa(s_sheet_overlay, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(s_sheet_overlay, 0, 0);
+    next_os_control_center_show(s_sheet_overlay, overlay_dismiss_cb);
+    lv_obj_move_foreground(s_sheet_overlay);
+}
+
+void next_os_screen_manager_show_notification_center(void) {
+    if (s_sheet_overlay != nullptr) {
+        return;
+    }
+    lv_obj_t *scr = lv_screen_active();
+    if (scr == nullptr) {
+        return;
+    }
+    s_sheet_overlay = lv_obj_create(scr);
+    lv_obj_set_size(s_sheet_overlay, NEXTOS_W, NEXTOS_H);
+    lv_obj_set_style_bg_opa(s_sheet_overlay, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(s_sheet_overlay, 0, 0);
+    next_os_notification_center_show(s_sheet_overlay, overlay_dismiss_cb);
+    lv_obj_move_foreground(s_sheet_overlay);
+}
+
 next_os_screen_id_t next_os_screen_manager_get_current(void) {
     return s_current;
 }
 
-void next_os_screen_manager_next(void) {
-    if (!s_nav_enabled) {
-        return;
-    }
-    int next_id = static_cast<int>(s_current) + 1;
-    if (next_id > static_cast<int>(NEXT_OS_SCREEN_TERMINAL_FEED)) {
-        next_id = static_cast<int>(NEXT_OS_SCREEN_WATCH_FACE);
-    }
-    switch_screen(static_cast<next_os_screen_id_t>(next_id), false);
+lv_obj_t *next_os_screen_manager_get_content_root(void) {
+    return s_current_screen_obj;
 }
 
-void next_os_screen_manager_prev(void) {
-    if (!s_nav_enabled) {
-        return;
-    }
-    int prev_id = static_cast<int>(s_current) - 1;
-    if (prev_id < static_cast<int>(NEXT_OS_SCREEN_WATCH_FACE)) {
-        prev_id = static_cast<int>(NEXT_OS_SCREEN_TERMINAL_FEED);
-    }
-    switch_screen(static_cast<next_os_screen_id_t>(prev_id), false);
-}
+void next_os_screen_manager_next(void) {}
+void next_os_screen_manager_prev(void) {}
 
-void next_os_screen_manager_attach_input_gestures(void) {
-    /* Gesture via next_os_common_attach_swipe_navigation per layar */
-}
+void next_os_screen_manager_attach_input_gestures(void) {}
 
 void next_os_screen_manager_tune_pointer_gesture(void) {
     lv_indev_t *indev = lv_indev_get_next(nullptr);

@@ -2,7 +2,10 @@
 
 #include "haptic.h"
 #include "layout.h"
+#include "navigation/nav_stack.h"
+#include "screens/app_launcher.h"
 #include "screens/screen_manager.h"
+#include "screens/watch_face.h"
 #include "theme.h"
 
 #include <cmath>
@@ -36,9 +39,15 @@ static void nav_btn_event_cb(lv_event_t *event) {
     if (code == LV_EVENT_CLICKED) {
         nextos_haptic_pulse(NEXTOS_HAPTIC_LIGHT);
         if (dir == 0) {
-            next_os_screen_manager_prev();
-        } else {
-            next_os_screen_manager_next();
+            if (next_os_screen_manager_get_current() == NEXT_OS_SCREEN_APP_LAUNCHER) {
+                next_os_app_launcher_page_prev();
+            } else if (next_os_screen_manager_get_current() == NEXT_OS_SCREEN_WATCH_FACE) {
+                next_os_watch_face_variant_prev();
+            }
+        } else if (next_os_screen_manager_get_current() == NEXT_OS_SCREEN_APP_LAUNCHER) {
+            next_os_app_launcher_page_next();
+        } else if (next_os_screen_manager_get_current() == NEXT_OS_SCREEN_WATCH_FACE) {
+            next_os_watch_face_variant_next();
         }
     }
 }
@@ -85,39 +94,82 @@ static void nav_place_button(lv_obj_t *btn, bool is_prev) {
     }
 }
 
-lv_obj_t *next_os_common_create_nav_buttons(lv_obj_t *screen) {
+static void place_corner_nav_pair(lv_obj_t *screen) {
     lv_obj_t *prev_btn = nav_btn_create(screen, true);
     lv_obj_t *next_btn = nav_btn_create(screen, false);
     nav_place_button(prev_btn, true);
     nav_place_button(next_btn, false);
-
     lv_obj_move_foreground(prev_btn);
     lv_obj_move_foreground(next_btn);
-    return prev_btn;
 }
 
-static void swipe_gesture_cb(lv_event_t *event) {
-    lv_indev_t *indev = lv_event_get_indev(event);
-    if (indev == nullptr) {
+void next_os_common_create_corner_nav_for_launcher(lv_obj_t *screen) {
+    place_corner_nav_pair(screen);
+}
+
+void next_os_common_create_corner_nav_for_watch_face(lv_obj_t *screen) {
+    place_corner_nav_pair(screen);
+}
+
+static void back_btn_cb(lv_event_t *event) {
+    if (lv_event_get_code(event) != LV_EVENT_CLICKED) {
         return;
     }
-    const lv_dir_t dir = lv_indev_get_gesture_dir(indev);
-    lv_indev_wait_release(indev);
+    nextos_haptic_pulse(NEXTOS_HAPTIC_LIGHT);
+    next_os_nav_stack_pop();
+}
 
-    if (dir == LV_DIR_LEFT) {
-        next_os_screen_manager_next();
-    } else if (dir == LV_DIR_RIGHT) {
-        next_os_screen_manager_prev();
+void next_os_common_create_back_button(lv_obj_t *screen) {
+    lv_obj_t *btn = lv_button_create(screen);
+    lv_obj_set_size(btn, 28, 28);
+    lv_obj_set_style_radius(btn, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_opa(btn, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_color(btn, next_os_color_olive(), 0);
+    lv_obj_set_style_border_width(btn, 1, 0);
+    lv_obj_align(btn, LV_ALIGN_TOP_LEFT, nextos_safe_padding_side(), nextos_safe_padding_top());
+    lv_obj_add_event_cb(btn, back_btn_cb, LV_EVENT_CLICKED, nullptr);
+    lv_obj_t *icon = lv_label_create(btn);
+    lv_label_set_text(icon, LV_SYMBOL_LEFT);
+    lv_obj_center(icon);
+    lv_obj_move_foreground(btn);
+}
+
+static void hub_row_click_cb(lv_event_t *event) {
+    if (lv_event_get_code(event) != LV_EVENT_CLICKED) {
+        return;
     }
+    const auto target = static_cast<next_os_screen_id_t>(reinterpret_cast<intptr_t>(lv_event_get_user_data(event)));
+    next_os_nav_stack_push(target, true);
+}
+
+lv_obj_t *next_os_common_create_hub_row(lv_obj_t *parent, const char *title, const char *status,
+                                        next_os_screen_id_t target) {
+    lv_obj_t *row = lv_button_create(parent);
+    lv_obj_set_width(row, nextos_content_width());
+    lv_obj_set_height(row, 44);
+    lv_obj_set_style_radius(row, 10, 0);
+    lv_obj_set_style_bg_color(row, NEXTOS_SURFACE, 0);
+    lv_obj_set_style_border_color(row, NEXTOS_BORDER, 0);
+    lv_obj_set_style_border_width(row, 1, 0);
+    lv_obj_add_event_cb(row, hub_row_click_cb, LV_EVENT_CLICKED,
+                        reinterpret_cast<void *>(static_cast<intptr_t>(target)));
+
+    lv_obj_t *left = lv_label_create(row);
+    lv_label_set_text(left, title);
+    lv_obj_set_style_text_color(left, NEXTOS_TEXT_PRIMARY, 0);
+    lv_obj_align(left, LV_ALIGN_LEFT_MID, 8, -6);
+
+    lv_obj_t *sub = lv_label_create(row);
+    lv_label_set_text(sub, status);
+    lv_obj_set_style_text_font(sub, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_color(sub, NEXTOS_TEXT_MUTED, 0);
+    lv_obj_align(sub, LV_ALIGN_LEFT_MID, 8, 8);
+    return row;
 }
 
 void next_os_common_disable_scroll(lv_obj_t *obj) {
     lv_obj_set_scrollbar_mode(obj, LV_SCROLLBAR_MODE_OFF);
     lv_obj_set_scrollable(obj, false);
-}
-
-void next_os_common_attach_swipe_navigation(lv_obj_t *screen) {
-    lv_obj_add_event_cb(screen, swipe_gesture_cb, LV_EVENT_GESTURE, nullptr);
 }
 
 lv_obj_t *next_os_common_create_header_label(lv_obj_t *parent, const char *text) {

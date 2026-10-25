@@ -6,37 +6,33 @@
 
 #include <lvgl.h>
 
-#include "theme.h"
+#include "screens/screen_manager.h"
 
 #define NEXT_OS_SCREEN_PAD 12
 #define NEXT_OS_SCREEN_SAFE_TOP 14
 #define NEXT_OS_TILE_GAP 6
 
-/** Label header atas (Montserrat — nanti JetBrains Mono) */
 lv_obj_t *next_os_common_create_header_label(lv_obj_t *parent, const char *text);
 
-/** Bar header inset (168×h, y=38) — clear area nav ◀ ▶ */
 lv_obj_t *next_os_common_create_inset_header_row(lv_obj_t *parent, int32_t height);
 
-/** Judul SETTINGS terpusat di bawah zona nav. */
 lv_obj_t *next_os_common_create_settings_title_row(lv_obj_t *parent);
 
-/** Kontainer bulat / kartu dengan radius penuh */
 lv_obj_t *next_os_common_create_round_container(lv_obj_t *parent, int32_t size);
 
-/** Garis pemisah vertikal tipis antar KPI */
 lv_obj_t *next_os_common_create_v_separator(lv_obj_t *parent);
 
-/** Indikator pagination (3 dot) — active_index 0..dot_count-1 */
 void next_os_common_create_pagination_dots(lv_obj_t *parent, uint8_t dot_count, uint8_t active_index);
 
-/** Tombol ◀ / ▶ di pojok atas (nav utama di simulator + touch) */
-lv_obj_t *next_os_common_create_nav_buttons(lv_obj_t *screen);
+void next_os_common_create_back_button(lv_obj_t *screen);
 
-/** Pasang deteksi swipe kiri/kanan pada layar (mouse drag di simulator) */
-void next_os_common_attach_swipe_navigation(lv_obj_t *screen);
+void next_os_common_create_corner_nav_for_launcher(lv_obj_t *screen);
 
-/** Nonaktifkan scroll pada kontainer statis (ganti remove_flag SCROLLABLE) */
+void next_os_common_create_corner_nav_for_watch_face(lv_obj_t *screen);
+
 void next_os_common_disable_scroll(lv_obj_t *obj);
+
+lv_obj_t *next_os_common_create_hub_row(lv_obj_t *parent, const char *title, const char *status,
+                                        next_os_screen_id_t target);
 
 #endif /* NEXT_OS_SCREENS_COMMON_H */
