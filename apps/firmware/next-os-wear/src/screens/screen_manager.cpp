@@ -13,11 +13,25 @@
 #include "screens/terminal_feed.h"
 #include "screens/watch_face.h"
 #include "screens/watch_face_square.h"
+#include "screens/qr_pair.h"
+#include "layout.h"
 #include "theme.h"
 
 static next_os_screen_id_t s_current = NEXT_OS_SCREEN_BOOT;
 static bool s_nav_enabled = false;
 static lv_obj_t *s_current_screen_obj = nullptr;
+static lv_obj_t *s_modal_overlay = nullptr;
+
+static void dismiss_modal_internal(void) {
+    if (s_modal_overlay != nullptr) {
+        lv_obj_delete(s_modal_overlay);
+        s_modal_overlay = nullptr;
+    }
+}
+
+void next_os_screen_manager_dismiss_modal(void) {
+    dismiss_modal_internal();
+}
 
 static void build_screen(next_os_screen_id_t screen_id, lv_obj_t *root) {
     switch (screen_id) {
@@ -66,13 +80,15 @@ static bool is_nav_screen(next_os_screen_id_t screen_id) {
     return screen_id >= NEXT_OS_SCREEN_WATCH_FACE && screen_id <= NEXT_OS_SCREEN_TERMINAL_FEED;
 }
 
-static void switch_screen(next_os_screen_id_t screen_id) {
+static void switch_screen(next_os_screen_id_t screen_id, bool force_reload) {
     if (!is_nav_screen(screen_id)) {
         return;
     }
-    if (s_nav_enabled && screen_id == s_current) {
+    if (!force_reload && s_nav_enabled && screen_id == s_current) {
         return;
     }
+
+    dismiss_modal_internal();
 
     lv_obj_t *scr = lv_screen_active();
     if (scr == nullptr) {
@@ -88,7 +104,7 @@ static void switch_screen(next_os_screen_id_t screen_id) {
     }
 
     s_current_screen_obj = lv_obj_create(scr);
-    lv_obj_set_size(s_current_screen_obj, 240, 240);
+    lv_obj_set_size(s_current_screen_obj, NEXTOS_W, NEXTOS_H);
     lv_obj_center(s_current_screen_obj);
     lv_obj_set_style_bg_color(s_current_screen_obj, next_os_color_cream(), 0);
     lv_obj_set_style_bg_opa(s_current_screen_obj, LV_OPA_COVER, 0);
@@ -118,7 +134,7 @@ static void enter_from_boot_async(void *user_data) {
         lv_obj_delete(boot_screen);
     }
 
-    switch_screen(NEXT_OS_SCREEN_WATCH_FACE);
+    switch_screen(NEXT_OS_SCREEN_WATCH_FACE, false);
 }
 
 void next_os_screen_manager_enter_from_boot(lv_obj_t *boot_screen) {
@@ -126,7 +142,28 @@ void next_os_screen_manager_enter_from_boot(lv_obj_t *boot_screen) {
 }
 
 void next_os_screen_manager_switch(next_os_screen_id_t screen_id) {
-    switch_screen(screen_id);
+    switch_screen(screen_id, false);
+}
+
+void next_os_screen_manager_reload_current(void) {
+    if (!s_nav_enabled) {
+        return;
+    }
+    switch_screen(s_current, true);
+}
+
+void next_os_screen_manager_show_qr_pair_modal(void) {
+    if (s_modal_overlay != nullptr) {
+        return;
+    }
+    lv_obj_t *scr = lv_screen_active();
+    if (scr == nullptr) {
+        return;
+    }
+    s_modal_overlay = lv_obj_create(scr);
+    lv_obj_set_scrollable(s_modal_overlay, false);
+    next_os_qr_pair_show(s_modal_overlay, next_os_screen_manager_dismiss_modal);
+    lv_obj_move_foreground(s_modal_overlay);
 }
 
 next_os_screen_id_t next_os_screen_manager_get_current(void) {
@@ -141,7 +178,7 @@ void next_os_screen_manager_next(void) {
     if (next_id > static_cast<int>(NEXT_OS_SCREEN_TERMINAL_FEED)) {
         next_id = static_cast<int>(NEXT_OS_SCREEN_WATCH_FACE);
     }
-    switch_screen(static_cast<next_os_screen_id_t>(next_id));
+    switch_screen(static_cast<next_os_screen_id_t>(next_id), false);
 }
 
 void next_os_screen_manager_prev(void) {
@@ -152,7 +189,7 @@ void next_os_screen_manager_prev(void) {
     if (prev_id < static_cast<int>(NEXT_OS_SCREEN_WATCH_FACE)) {
         prev_id = static_cast<int>(NEXT_OS_SCREEN_TERMINAL_FEED);
     }
-    switch_screen(static_cast<next_os_screen_id_t>(prev_id));
+    switch_screen(static_cast<next_os_screen_id_t>(prev_id), false);
 }
 
 void next_os_screen_manager_attach_input_gestures(void) {

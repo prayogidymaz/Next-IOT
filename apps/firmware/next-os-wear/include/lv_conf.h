@@ -42,6 +42,7 @@
 #define LV_USE_TIMER 1
 #define LV_USE_BUTTON 1
 #define LV_USE_FLEX 1
+#define LV_USE_SLIDER 1
 
 #ifdef NEXT_OS_SIMULATOR
 #define LV_USE_SDL 1

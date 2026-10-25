@@ -39,4 +39,12 @@ void next_os_screen_manager_attach_input_gestures(void);
 /** Sensitivitas swipe pointer (simulator + hardware) */
 void next_os_screen_manager_tune_pointer_gesture(void);
 
+/** Rebuild layar aktif (theme / layout refresh). */
+void next_os_screen_manager_reload_current(void);
+
+/** Modal QR pair di atas layar saat ini. */
+void next_os_screen_manager_show_qr_pair_modal(void);
+
+void next_os_screen_manager_dismiss_modal(void);
+
 #endif /* NEXT_OS_SCREEN_MANAGER_H */
