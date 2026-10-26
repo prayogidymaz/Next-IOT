@@ -15,6 +15,10 @@
 #include <cstdio>
 #include <ctime>
 
+static constexpr uint8_t WATCH_FACE_VARIANT_COUNT = 2U;
+
+static lv_obj_t *s_screen_root = nullptr;
+static lv_obj_t *s_content_host = nullptr;
 static lv_obj_t *s_clock_label = nullptr;
 static lv_obj_t *s_date_label = nullptr;
 static lv_obj_t *s_wifi_label = nullptr;
@@ -28,6 +32,10 @@ static lv_obj_t *s_variant_hint = nullptr;
 static void watch_face_kpi_shortcut_cb(lv_event_t *event);
 static void watch_face_long_press_cb(lv_timer_t *timer);
 static void watch_face_pointer_cb(lv_event_t *event);
+static void watch_face_build_content(lv_obj_t *parent, uint8_t variant);
+static void watch_face_switch_variant(int32_t direction);
+static void watch_face_start_timers(void);
+static lv_obj_t *watch_face_ensure_content_host(lv_obj_t *root);
 
 static void watch_face_format_time(char *buf, size_t len, uint8_t hour, uint8_t minute) {
     (void)std::snprintf(buf, len, "%02u:%02u", static_cast<unsigned>(hour), static_cast<unsigned>(minute));
@@ -91,6 +99,21 @@ static void watch_face_timer_cb(lv_timer_t *timer) {
     watch_face_refresh_clock();
 }
 
+static lv_obj_t *watch_face_ensure_content_host(lv_obj_t *root) {
+    s_screen_root = root;
+    if (nextos_ui_obj_alive(s_content_host) && lv_obj_get_parent(s_content_host) == root) {
+        return s_content_host;
+    }
+    s_content_host = lv_obj_create(root);
+    lv_obj_set_size(s_content_host, NEXTOS_W, NEXTOS_H);
+    lv_obj_set_pos(s_content_host, 0, 0);
+    lv_obj_set_style_bg_opa(s_content_host, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(s_content_host, 0, 0);
+    lv_obj_set_style_pad_all(s_content_host, 0, 0);
+    next_os_common_disable_scroll(s_content_host);
+    return s_content_host;
+}
+
 void next_os_watch_face_dispose(void) {
     if (s_clock_timer != nullptr) {
         lv_timer_delete(s_clock_timer);
@@ -113,9 +136,21 @@ static void watch_face_on_delete(lv_event_t *event) {
     if (lv_event_get_code(event) != LV_EVENT_DELETE) {
         return;
     }
+    (void)std::printf("[WF] screen DELETE event fired\n");
+    (void)std::fflush(stdout);
     next_os_watch_face_dispose();
+    s_screen_root = nullptr;
+    s_content_host = nullptr;
     (void)std::printf("[SCR] watch_face pointers nullified on delete\n");
     (void)std::fflush(stdout);
+}
+
+static void watch_face_start_timers(void) {
+    if (s_clock_timer != nullptr) {
+        lv_timer_delete(s_clock_timer);
+        s_clock_timer = nullptr;
+    }
+    s_clock_timer = lv_timer_create(watch_face_timer_cb, 1000, nullptr);
 }
 
 static lv_obj_t *watch_face_create_kpi_tile(lv_obj_t *parent, const char *value, const char *unit,
@@ -171,13 +206,11 @@ void next_os_watch_face_refresh_from_mesh(void) {
     }
 }
 
-void next_os_watch_face_create(lv_obj_t *root) {
-    next_os_watch_face_dispose();
-    next_os_apply_screen_style(root);
-    lv_obj_add_event_cb(root, watch_face_on_delete, LV_EVENT_DELETE, nullptr);
+static void watch_face_build_content(lv_obj_t *parent, uint8_t variant) {
+    const bool compact = variant != 0U;
 
     /* Bar atas: inset 36px kiri/kanan + di bawah nav 28×8 (y≤36) */
-    lv_obj_t *top_row = lv_obj_create(root);
+    lv_obj_t *top_row = lv_obj_create(parent);
     lv_obj_set_size(top_row, nextos_inset_header_width(), 24);
     lv_obj_align(top_row, LV_ALIGN_TOP_MID, 0, nextos_status_header_y());
     lv_obj_set_style_bg_opa(top_row, LV_OPA_TRANSP, 0);
@@ -202,20 +235,21 @@ void next_os_watch_face_create(lv_obj_t *root) {
     lv_obj_set_style_text_color(bat, next_os_color_dark(), 0);
     lv_obj_align(bat, LV_ALIGN_RIGHT_MID, 0, 0);
 
-    s_clock_label = lv_label_create(root);
-    lv_obj_set_style_text_font(s_clock_label, next_os_font_clock_large(), 0);
+    s_clock_label = lv_label_create(parent);
+    lv_obj_set_style_text_font(
+        s_clock_label, compact ? &lv_font_montserrat_48 : next_os_font_clock_large(), 0);
     lv_obj_set_style_text_color(s_clock_label, next_os_color_dark(), 0);
-    lv_obj_align(s_clock_label, LV_ALIGN_CENTER, 0, -18);
+    lv_obj_align(s_clock_label, LV_ALIGN_CENTER, 0, compact ? -6 : -18);
 
-    s_date_label = lv_label_create(root);
+    s_date_label = lv_label_create(parent);
     lv_obj_set_style_text_font(s_date_label, &lv_font_montserrat_12, 0);
     lv_obj_set_style_text_color(s_date_label, next_os_color_olive(), 0);
-    lv_obj_align(s_date_label, LV_ALIGN_CENTER, 0, 28);
+    lv_obj_align(s_date_label, LV_ALIGN_CENTER, 0, compact ? 36 : 28);
 
     /* KPI bawah */
-    lv_obj_t *kpi_row = lv_obj_create(root);
-    lv_obj_set_size(kpi_row, 210, 52);
-    lv_obj_align(kpi_row, LV_ALIGN_BOTTOM_MID, 0, -14);
+    lv_obj_t *kpi_row = lv_obj_create(parent);
+    lv_obj_set_size(kpi_row, 210, compact ? 44 : 52);
+    lv_obj_align(kpi_row, LV_ALIGN_BOTTOM_MID, 0, compact ? -22 : -14);
     lv_obj_set_style_bg_opa(kpi_row, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(kpi_row, 0, 0);
     lv_obj_set_flex_flow(kpi_row, LV_FLEX_FLOW_ROW);
@@ -247,15 +281,62 @@ void next_os_watch_face_create(lv_obj_t *root) {
     lv_obj_set_clickable(kpi2, true);
     lv_obj_add_event_cb(kpi2, watch_face_kpi_shortcut_cb, LV_EVENT_CLICKED, reinterpret_cast<void *>(2));
 
-    s_variant_hint = lv_label_create(root);
-    lv_label_set_text(s_variant_hint, s_variant == 0U ? "Classic" : "Compact");
+    s_variant_hint = lv_label_create(parent);
+    lv_label_set_text(s_variant_hint, variant == 0U ? "Classic" : "Compact");
     lv_obj_set_style_text_font(s_variant_hint, &lv_font_montserrat_12, 0);
     lv_obj_set_style_text_color(s_variant_hint, next_os_color_muted(), 0);
     lv_obj_align(s_variant_hint, LV_ALIGN_TOP_MID, 0, nextos_status_header_y() - 12);
+}
+
+static void watch_face_switch_variant(int32_t direction) {
+    (void)std::printf("[WF] variant switch request direction=%ld current=%u\n",
+                      static_cast<long>(direction), static_cast<unsigned>(s_variant));
+    (void)std::fflush(stdout);
+
+    if (!nextos_ui_obj_alive(s_screen_root)) {
+        (void)std::printf("[WF] variant switch aborted: screen root invalid\n");
+        (void)std::fflush(stdout);
+        return;
+    }
+
+    next_os_watch_face_dispose();
+
+    lv_obj_t *host = s_content_host;
+    if (!nextos_ui_obj_alive(host)) {
+        host = watch_face_ensure_content_host(s_screen_root);
+    }
+    if (nextos_ui_obj_alive(host)) {
+        lv_obj_clean(host);
+    }
+
+    const int32_t next =
+        static_cast<int32_t>((static_cast<int32_t>(s_variant) + direction + WATCH_FACE_VARIANT_COUNT) %
+                             static_cast<int32_t>(WATCH_FACE_VARIANT_COUNT));
+    s_variant = static_cast<uint8_t>(next);
+
+    if (nextos_ui_obj_alive(host)) {
+        watch_face_build_content(host, s_variant);
+    }
 
     watch_face_refresh_clock();
     next_os_watch_face_refresh_from_mesh();
-    s_clock_timer = lv_timer_create(watch_face_timer_cb, 1000, nullptr);
+    watch_face_start_timers();
+
+    (void)std::printf("[WF] variant switch done, new variant=%u\n", static_cast<unsigned>(s_variant));
+    (void)std::fflush(stdout);
+}
+
+void next_os_watch_face_create(lv_obj_t *root) {
+    next_os_watch_face_dispose();
+    next_os_apply_screen_style(root);
+    lv_obj_add_event_cb(root, watch_face_on_delete, LV_EVENT_DELETE, nullptr);
+
+    lv_obj_t *host = watch_face_ensure_content_host(root);
+    lv_obj_clean(host);
+    watch_face_build_content(host, s_variant);
+    watch_face_refresh_clock();
+    next_os_watch_face_refresh_from_mesh();
+    watch_face_start_timers();
 }
 
 static void watch_face_long_press_cb(lv_timer_t *timer) {
@@ -325,15 +406,13 @@ void next_os_watch_face_install_input(lv_obj_t *root) {
 }
 
 void next_os_watch_face_variant_next(void) {
-    s_variant = static_cast<uint8_t>((s_variant + 1U) % 2U);
-    (void)std::printf("[WF] switch variant %u\n", static_cast<unsigned>(s_variant));
+    (void)std::printf("[WF] nav_next clicked\n");
     (void)std::fflush(stdout);
-    next_os_screen_manager_reload_current();
+    watch_face_switch_variant(1);
 }
 
 void next_os_watch_face_variant_prev(void) {
-    s_variant = static_cast<uint8_t>((s_variant + 1U) % 2U);
-    (void)std::printf("[WF] switch variant %u\n", static_cast<unsigned>(s_variant));
+    (void)std::printf("[WF] nav_prev clicked\n");
     (void)std::fflush(stdout);
-    next_os_screen_manager_reload_current();
+    watch_face_switch_variant(-1);
 }
