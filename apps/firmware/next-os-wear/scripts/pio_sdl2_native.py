@@ -55,7 +55,34 @@ def _linux_header_dirs():
     return dirs
 
 
-def _append_pkg_config(link_env, module, label):
+def _linux_split_pkg_libs(libs, main_lib_token):
+    """Ambil -L dan flag selain -l<main> (mis. -pthread); -l<main> di-link terakhir."""
+    libpaths = []
+    extra = []
+    for part in libs:
+        if part.startswith("-L"):
+            libpaths.append(part[2:])
+        elif part == main_lib_token:
+            continue
+        else:
+            extra.append(part)
+    return libpaths, extra
+
+
+def _append_linux_shared_lib_end(link_env, lib_name, lib_dirs, extra_linkflags=None):
+    """Paksa -l<lib> di akhir rantai link (setelah liblvgl.a) via LINKFLAGS."""
+    if lib_dirs:
+        link_env.Append(LIBPATH=lib_dirs)
+    tail = list(extra_linkflags or [])
+    tail.extend(["-Wl,--no-as-needed", f"-l{lib_name}", "-Wl,--as-needed"])
+    link_env.Append(LINKFLAGS=tail)
+    print(
+        f"SDL link (Linux): LIBPATH+={lib_dirs or []} "
+        f"LINKFLAGS+=--no-as-needed -l{lib_name} (+ {len(extra_linkflags or [])} extra)"
+    )
+
+
+def _append_pkg_config_sdl2(link_env, module, label):
     cflags = _split_pkg_output(
         subprocess.check_output(["pkg-config", "--cflags", module], text=True)
     )
@@ -64,9 +91,20 @@ def _append_pkg_config(link_env, module, label):
     )
     if cflags:
         link_env.Append(CCFLAGS=cflags)
-    if libs:
-        link_env.Append(LINKFLAGS=libs)
-    print(f"{label} (Linux pkg-config {module}): libs={' '.join(libs) or '(none)'}")
+    if module == "sdl2":
+        lib_token = "-lSDL2"
+        lib_name = "SDL2"
+    elif module in ("SDL2_mixer", "sdl2_mixer"):
+        lib_token = "-lSDL2_mixer"
+        lib_name = "SDL2_mixer"
+    else:
+        lib_token = f"-l{module}"
+        lib_name = module
+    libpaths, extra = _linux_split_pkg_libs(libs, lib_token)
+    if not libpaths:
+        libpaths = [_linux_find_system_libpath() or "/usr/lib/x86_64-linux-gnu"]
+    _append_linux_shared_lib_end(link_env, lib_name, libpaths, extra)
+    print(f"{label} (Linux pkg-config {module}): pkg-libs={' '.join(libs) or '(none)'}")
 
 
 def _configure_sdl2_linux(link_env):
@@ -78,16 +116,12 @@ def _configure_sdl2_linux(link_env):
             lib_dir = _linux_lib_dir_from_prefix(root)
             if lib_dir:
                 link_env.Append(CPPPATH=[include])
-                link_env.Append(LIBPATH=[lib_dir])
-                link_env.Append(LIBS=["SDL2"])
-                print(
-                    f"SDL2 native (Linux SDL2_PATH): CPPPATH+={include} "
-                    f"LIBPATH+={lib_dir} LIBS+=SDL2"
-                )
+                _append_linux_shared_lib_end(link_env, "SDL2", [lib_dir])
+                print(f"SDL2 native (Linux SDL2_PATH): CPPPATH+={include}")
                 return include, lib_dir
 
     try:
-        _append_pkg_config(link_env, "sdl2", "SDL2 native")
+        _append_pkg_config_sdl2(link_env, "sdl2", "SDL2 native")
         return _linux_header_dirs()[0], _linux_find_system_libpath() or "/usr/lib/x86_64-linux-gnu"
     except (FileNotFoundError, subprocess.CalledProcessError) as err:
         print(f"WARN: pkg-config sdl2 gagal ({err}), fallback path sistem")
@@ -105,12 +139,8 @@ def _configure_sdl2_linux(link_env):
 
     include_dirs = _linux_header_dirs()
     link_env.Append(CPPPATH=include_dirs)
-    link_env.Append(LIBPATH=[lib_dir, "/usr/lib"])
-    link_env.Append(LIBS=["SDL2"])
-    print(
-        f"SDL2 native (Linux fallback): CPPPATH+={include_dirs} "
-        f"LIBPATH+={[lib_dir, '/usr/lib']} LIBS+=SDL2"
-    )
+    _append_linux_shared_lib_end(link_env, "SDL2", [lib_dir, "/usr/lib"])
+    print(f"SDL2 native (Linux fallback): CPPPATH+={include_dirs}")
     return include_dirs[0], lib_dir
 
 
@@ -124,15 +154,14 @@ def _configure_mixer_linux(link_env):
             if lib_dir:
                 link_env.Append(CPPDEFINES=[("NEXTOS_HAS_SDL_MIXER", "1")])
                 link_env.Append(CPPPATH=[os.path.join(root, "include", "SDL2")])
-                link_env.Append(LIBPATH=[lib_dir])
-                link_env.Append(LIBS=["SDL2_mixer"])
+                _append_linux_shared_lib_end(link_env, "SDL2_mixer", [lib_dir])
                 print(f"SDL2_mixer (Linux SDL2_MIXER_PATH): {root}")
                 return True
 
     for module in ("SDL2_mixer", "sdl2_mixer"):
         try:
             link_env.Append(CPPDEFINES=[("NEXTOS_HAS_SDL_MIXER", "1")])
-            _append_pkg_config(link_env, module, "SDL2_mixer")
+            _append_pkg_config_sdl2(link_env, module, "SDL2_mixer")
             return True
         except (FileNotFoundError, subprocess.CalledProcessError):
             continue
