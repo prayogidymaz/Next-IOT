@@ -12,6 +12,8 @@ from app.agriculture.models import (
     AgriSensorDevice,
     AgriYieldRecord,
 )
+from app.analytics.models import ScheduledReport
+from app.cameras.models import Camera, CameraSnapshot
 from app.models.alarm import Alarm, AlarmHistory, AlarmStatus
 from app.models.audit_log import AuditLog
 from app.models.automation_pipeline import AutomationPipeline
@@ -72,6 +74,9 @@ __all__ = [
     "MeshEventRecord",
     "MeshWorkflow",
     "MeshWorkflowExecution",
+    "Camera",
+    "CameraSnapshot",
+    "ScheduledReport",
     "User",
     "TenantMembership",
     "TenantUserFcmToken",

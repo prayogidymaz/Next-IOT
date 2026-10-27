@@ -12,6 +12,9 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from sqlalchemy import select, text
 
 from app.agriculture.router import router as agriculture_router
+from app.analytics.report_scheduler import analytics_report_scheduler_loop
+from app.analytics.router import router as analytics_router
+from app.cameras.router import router as cameras_router
 from app.agriculture.worker import agriculture_jobs_loop
 from app.alarms.maintenance import alarm_maintenance_loop
 from app.alarms.router import router as alarms_router
@@ -36,6 +39,7 @@ from app.mesh.router import router as mesh_router
 from app.mesh.workflow_executor import init_mesh_workflow_executor
 from app.mesh.scheduler import mesh_schedule_loop
 from app.mesh.workflow_listener import mesh_workflow_listener_loop
+from app.mesh.ai_copilot.router import router as mesh_copilot_router
 from app.mesh.workflow_router import router as mesh_workflow_router
 from app.mission.router import router as mission_router
 from app.mission.sar_emergency_router import router as sar_emergency_ws_router
@@ -139,6 +143,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             asyncio.create_task(agriculture_jobs_loop(redis, stop_event)),
             asyncio.create_task(mesh_workflow_listener_loop(redis, stop_event)),
             asyncio.create_task(mesh_schedule_loop(redis, stop_event)),
+            asyncio.create_task(analytics_report_scheduler_loop(stop_event)),
         ]
     mqtt_publisher: MqttPublisherService | NoopMqttPublisher
     if settings.mqtt_publisher_enabled and settings.run_background_workers:
@@ -232,6 +237,9 @@ app.include_router(support_router)
 app.include_router(agriculture_router)
 app.include_router(mesh_router)
 app.include_router(mesh_workflow_router)
+app.include_router(mesh_copilot_router)
+app.include_router(cameras_router)
+app.include_router(analytics_router)
 app.include_router(tenants_router)
 app.include_router(users_router)
 app.include_router(audit_router)

@@ -95,6 +95,12 @@ class Settings(BaseModel):
     fcm_private_key_json_b64: str = ""
     mesh_scheduler_enabled: bool = True
     mesh_scheduler_tick_seconds: float = 30.0
+
+    anthropic_api_key: str = ""
+    llm_model: str = "claude-sonnet-4-5"
+
+    analytics_reports_scheduler_enabled: bool = True
+    analytics_reports_tick_seconds: float = 60.0
     notification_email_smtp_host: str = ""
     notification_email_smtp_port: int = 587
     notification_email_smtp_user: str = ""
