@@ -16,6 +16,7 @@ from app.analytics.ml.scheduler import ml_anomaly_scheduler_loop
 from app.analytics.report_scheduler import analytics_report_scheduler_loop
 from app.analytics.router import router as analytics_router
 from app.cameras.router import router as cameras_router
+from app.vision.router import router as vision_router
 from app.agriculture.worker import agriculture_jobs_loop
 from app.alarms.maintenance import alarm_maintenance_loop
 from app.alarms.router import router as alarms_router
@@ -241,6 +242,7 @@ app.include_router(mesh_router)
 app.include_router(mesh_workflow_router)
 app.include_router(mesh_copilot_router)
 app.include_router(cameras_router)
+app.include_router(vision_router)
 app.include_router(analytics_router)
 app.include_router(tenants_router)
 app.include_router(users_router)

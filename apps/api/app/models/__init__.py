@@ -13,6 +13,7 @@ from app.agriculture.models import (
     AgriYieldRecord,
 )
 from app.analytics.ml.models import AnomalyEventRow, OptimizationReportRow, YieldForecastRow
+from app.vision.models import VisionDetection, VisionFeedback, VisionTenantConfig
 from app.analytics.models import ScheduledReport
 from app.cameras.models import Camera, CameraSnapshot
 from app.models.alarm import Alarm, AlarmHistory, AlarmStatus
@@ -81,6 +82,9 @@ __all__ = [
     "YieldForecastRow",
     "AnomalyEventRow",
     "OptimizationReportRow",
+    "VisionDetection",
+    "VisionFeedback",
+    "VisionTenantConfig",
     "User",
     "TenantMembership",
     "TenantUserFcmToken",

@@ -31,6 +31,7 @@ DOMAIN_EVENT_TYPES: dict[MeshDomain, frozenset[str]] = {
             "motion_detected",
             "object_detected",
             "anomaly_detected",
+            "detection",
         }
     ),
     MeshDomain.MOTION: frozenset(
