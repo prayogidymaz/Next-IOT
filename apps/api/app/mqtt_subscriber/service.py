@@ -14,6 +14,7 @@ from app.attributes.client_ingest import persist_client_attributes_from_mqtt
 from app.attributes.mqtt_topics import parse_client_attributes_topic
 from app.config import settings
 from app.database import async_session
+from app.mesh.mqtt_ingest import ingest_mesh_event_from_mqtt
 from app.mqtt_auth.subscriber_auth import (
     SUBSCRIBER_ATTRIBUTES_SHARE_FILTER,
     SUBSCRIBER_RPC_RESPONSE_SHARE_FILTER,
@@ -27,7 +28,6 @@ from app.rules.attribute_event import AttributeChangeEvent
 from app.rules.executor import RuleExecutor
 from app.rules.hooks import apply_attribute_change_rules, apply_telemetry_rules
 from app.rules.telemetry_event import TelemetryRuleEvent
-from app.mesh.mqtt_ingest import ingest_mesh_event_from_mqtt
 from app.telemetry.mqtt_payload import parse_telemetry_payload_bytes
 from app.types.redis_client import RedisClient
 

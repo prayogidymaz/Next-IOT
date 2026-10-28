@@ -52,7 +52,7 @@ class YieldPredictor:
                 ]
             ]
         )
-        predict = getattr(self._model, "predict")
+        predict = self._model.predict
         estimated = float(predict(features)[0] * horizon_factor)
         margin = 1.96 * self._residual_std
         ci = (max(0.0, estimated - margin), estimated + margin)

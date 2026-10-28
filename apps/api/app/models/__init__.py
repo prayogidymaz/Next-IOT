@@ -13,11 +13,10 @@ from app.agriculture.models import (
     AgriYieldRecord,
 )
 from app.analytics.ml.models import AnomalyEventRow, OptimizationReportRow, YieldForecastRow
-from app.devices.edge_agent.models import EdgeDeviceToken, FirmwareVersionRow
-from app.mesh.federation.models import FederationEventsLog, FederationPeer
-from app.vision.models import VisionDetection, VisionFeedback, VisionTenantConfig
 from app.analytics.models import ScheduledReport
 from app.cameras.models import Camera, CameraSnapshot
+from app.devices.edge_agent.models import EdgeDeviceToken, FirmwareVersionRow
+from app.mesh.federation.models import FederationEventsLog, FederationPeer
 from app.models.alarm import Alarm, AlarmHistory, AlarmStatus
 from app.models.audit_log import AuditLog
 from app.models.automation_pipeline import AutomationPipeline
@@ -54,10 +53,11 @@ from app.models.telemetry_anomaly import TelemetryAnomaly
 from app.models.telemetry_reading import TelemetryReading
 from app.models.tenant import Tenant
 from app.models.tenant_membership import TenantMembership
-from app.models.tenant_user_fcm_token import TenantUserFcmToken
 from app.models.tenant_subscription import TenantSubscription
 from app.models.tenant_usage_daily import TenantUsageDaily
+from app.models.tenant_user_fcm_token import TenantUserFcmToken
 from app.models.user import User
+from app.vision.models import VisionDetection, VisionFeedback, VisionTenantConfig
 
 __all__ = [
     "Partner",

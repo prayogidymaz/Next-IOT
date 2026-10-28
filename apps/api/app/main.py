@@ -12,16 +12,12 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from sqlalchemy import select, text
 
 from app.agriculture.router import router as agriculture_router
-from app.analytics.ml.scheduler import ml_anomaly_scheduler_loop
-from app.analytics.report_scheduler import analytics_report_scheduler_loop
-from app.analytics.router import router as analytics_router
-from app.cameras.router import router as cameras_router
-from app.devices.edge_agent.router import devices_router as edge_devices_router
-from app.devices.edge_agent.router import firmware_router as edge_firmware_router
-from app.vision.router import router as vision_router
 from app.agriculture.worker import agriculture_jobs_loop
 from app.alarms.maintenance import alarm_maintenance_loop
 from app.alarms.router import router as alarms_router
+from app.analytics.ml.scheduler import ml_anomaly_scheduler_loop
+from app.analytics.report_scheduler import analytics_report_scheduler_loop
+from app.analytics.router import router as analytics_router
 from app.api.v1.router import router as v1_router
 from app.audit.middleware import AuditLoggingMiddleware
 from app.audit.router import router as audit_router
@@ -29,22 +25,25 @@ from app.auth.router import router as auth_router
 from app.automation.pipeline_listener import pipeline_listener_loop
 from app.automation.router import router as automation_router
 from app.billing.router import router as billing_router
+from app.cameras.router import router as cameras_router
 from app.config import settings
 from app.database import async_session, engine
 from app.device_claim_tokens.router import router as device_claim_tokens_router
 from app.device_profiles.router import router as device_profiles_router
+from app.devices.edge_agent.router import devices_router as edge_devices_router
+from app.devices.edge_agent.router import firmware_router as edge_firmware_router
 from app.devices.router import router as devices_router
 from app.devices.worker import offline_checker_loop
 from app.firmware_studio.router import router as firmware_studio_router
 from app.hardware.router import router as hardware_router
 from app.mavlink.router import router as mavlink_router
-from app.mesh.publisher import init_mesh_publisher
-from app.mesh.router import router as mesh_router
-from app.mesh.workflow_executor import init_mesh_workflow_executor
-from app.mesh.scheduler import mesh_schedule_loop
-from app.mesh.workflow_listener import mesh_workflow_listener_loop
 from app.mesh.ai_copilot.router import router as mesh_copilot_router
 from app.mesh.federation.router import router as mesh_federation_router
+from app.mesh.publisher import init_mesh_publisher
+from app.mesh.router import router as mesh_router
+from app.mesh.scheduler import mesh_schedule_loop
+from app.mesh.workflow_executor import init_mesh_workflow_executor
+from app.mesh.workflow_listener import mesh_workflow_listener_loop
 from app.mesh.workflow_router import router as mesh_workflow_router
 from app.mission.router import router as mission_router
 from app.mission.sar_emergency_router import router as sar_emergency_ws_router
@@ -54,9 +53,9 @@ from app.mqtt_auth.router import router as mqtt_auth_router
 from app.mqtt_publisher import MqttPublisherService
 from app.mqtt_publisher.noop import NoopMqttPublisher
 from app.mqtt_subscriber import MqttSubscriberService
+from app.notifications.fcm_router import router as fcm_router
 from app.notifications.gateway_router import channels_router, log_router
 from app.notifications.gateway_router import rules_router as notification_rules_router
-from app.notifications.fcm_router import router as fcm_router
 from app.notifications.router import router as notifications_router
 from app.notifications.worker import notification_dispatcher_loop
 from app.ota.router import router as ota_router
@@ -85,6 +84,7 @@ from app.types.redis_client import (
     redis_from_url,
 )
 from app.users.router import router as users_router
+from app.vision.router import router as vision_router
 
 logger = logging.getLogger(__name__)
 

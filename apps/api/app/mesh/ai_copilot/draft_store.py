@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import uuid
 
 from app.mesh.ai_copilot.workflow_draft import WorkflowDraft

@@ -132,7 +132,7 @@ async def run_ml_anomaly_tick(db: AsyncSession) -> int:
             if picked_key is None:
                 continue
             raw = metrics[picked_key]
-            if isinstance(raw, (int, float)):
+            if isinstance(raw, int | float):
                 values.append(float(raw))
                 metric_name = str(picked_key)
                 timestamps.append(reading.recorded_at)

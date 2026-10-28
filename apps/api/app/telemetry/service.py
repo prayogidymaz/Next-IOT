@@ -7,8 +7,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import CurrentUser
-
-logger = logging.getLogger(__name__)
 from app.automation.events import publish_automation_event
 from app.automation.pipeline_interpreter import pipeline_interpreter_service
 from app.commands.fail_safe import fail_safe_protocol
@@ -38,6 +36,8 @@ from app.telemetry.schemas import (
 from app.telemetry.ws_events import publish_control_center_event
 from app.types.json_types import as_json_object, as_json_str, numeric_metrics
 from app.types.redis_client import RedisClient, as_legacy_redis_stub
+
+logger = logging.getLogger(__name__)
 
 INGEST_ALLOWED_STATUSES = frozenset({DeviceStatus.ONLINE})
 

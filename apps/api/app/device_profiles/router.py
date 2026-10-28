@@ -7,13 +7,13 @@ from app.auth.context import CurrentUser
 from app.auth.dependencies import RequireTenantAdmin, require_roles
 from app.auth.rbac import UserRole
 from app.deps import DbSession, RedisDep
-from app.mesh.context_resolver import invalidate_context_for_profile
 from app.device_profiles import service
 from app.device_profiles.schemas import (
     DeviceProfileCreateRequest,
     DeviceProfileResponse,
     DeviceProfileUpdateRequest,
 )
+from app.mesh.context_resolver import invalidate_context_for_profile
 from app.models.device_profile import ProfileDomain, ProfileStatus
 
 router = APIRouter(prefix="/api/v1/device-profiles", tags=["device-profiles"])

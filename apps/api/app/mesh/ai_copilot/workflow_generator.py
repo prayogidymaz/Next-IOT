@@ -22,7 +22,8 @@ _ID_SYSTEM = """
 Anda adalah Next-IOT Copilot untuk petani Indonesia. Ubah permintaan bahasa alami menjadi JSON WorkflowDraft.
 Schema:
 - name, description (string)
-- trigger: {kind: sensor_threshold|cron|event, sensor?, operator?: lt|lte|gt|gte|eq, threshold?, device?, cron?, event_type?, domain?}
+- trigger: {kind: sensor_threshold|cron|event, sensor?, operator?: lt|lte|gt|gte|eq,
+  threshold?, device?, cron?, event_type?, domain?}
 - actions: [{actuator?, action, duration_minutes?, channels?, template?, webhook_url?, severity?}]
 
 Contoh trigger sensor: soil_moisture, soil_ph, lux, temperature, ndvi, humidity, co2.
