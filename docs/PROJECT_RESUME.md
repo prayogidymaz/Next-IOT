@@ -325,4 +325,62 @@ Permanent rules live in **`.cursorrules`** (root):
 - Mobile: strict analyzer + typed `FieldApiClient` / DTO models.
 - **Status:** P0 Step 0 **In progress** — Architect sign-off; burn down RATCHET per `docs/TECH_DEBT.md`.
 
+### Platform Smart — Combo A (2026-10-28)
+
+- **Copilot:** `WorkflowGenerator` → `WorkflowDraft`, 50 bilingual NL examples, `POST /api/v1/mesh/copilot/generate-workflow` + `commit-workflow`, Redis draft TTL, 15 pytest cases (`tests/mesh/test_workflow_generator.py`).
+- **Analytics ML:** yield forecast (LinearRegression), Isolation Forest anomalies + mesh `sensor/anomaly_detected`, cost optimizer, Alembic **041**, routes under `/api/v1/analytics/yield|anomalies|optimization`, 22+ ML tests.
+- **Web:** `apps/web/src/features/workflow-builder` (React Flow canvas, CopilotBridge, serializer), routes `/workflows`, `/workflows/new`, `/workflows/[id]`; 4 vitest cases.
+- **Commits:** `48d75cc`, `f0af8f6`, `d3e8550` (not pushed — pending kroscek).
+
+### Mesh Production — Combo B (2026-10-28)
+
+- **Vision:** `apps/api/app/vision/` — detection pipeline, mesh `vision/detection`, Alembic **042**, `tests/vision/`.
+- **Edge agent:** `apps/api/app/devices/edge_agent/` — register + OTA firmware, Alembic **043**, `libraries/NextIoTAgent/` (Arduino).
+- **Federation:** `apps/api/app/mesh/federation/` — `protocol.proto` + generated `protocol_pb2` / gRPC servicer + REST admin, Alembic **044**.
+- **Stress:** `apps/api/app/mesh_simulators/stress/` — load generators for mesh workflows.
+
+### Combo G — Cleanup Sprint (2026-10-28)
+
+- **Ruff:** `ruff check app/` clean (legacy lint burn-down).
+- **Tests:** `truncate_auth_tables()` lock/statement timeouts + `engine.dispose()` before post-test truncate; pytest markers registered in `pytest.ini`.
+- **Repo:** root `.gitignore` for `scripts/*.out`, boot logs, local dumps.
+
+## Status snapshot (2026-10-28)
+
+| Item | Value |
+| --- | --- |
+| Alembic head | **044** |
+| Migrations | **44** |
+| Tests (API) | **~666+** passing (584 baseline + ~82 Combo A/B mesh-prod); re-run full regression after Combo G |
+| Platform Smart | NL Copilot + ML Analytics + Visual Workflow Builder (`apps/web`) |
+| Mesh Production | Vision + Edge Agent + Federation (gRPC stubs) + Stress simulators |
+
+## Architecture map (API + clients)
+
+| Path | Role |
+| --- | --- |
+| `apps/api/app/mesh/ai_copilot/` | NL → workflow draft generator + commit API |
+| `apps/api/app/analytics/ml/` | Yield / anomaly / cost ML services |
+| `apps/api/app/vision/` | Vision ingest + detection events |
+| `apps/api/app/devices/edge_agent/` | Device register, firmware upload |
+| `apps/api/app/mesh/federation/` | Cross-tenant mesh federation (**gRPC** from `protocol.proto`) |
+| `apps/api/app/mesh_simulators/stress/` | Stress / soak simulators |
+| `libraries/NextIoTAgent/` | Edge Arduino agent library |
+| `apps/web/src/features/workflow-builder/` | Visual workflow editor (Web HQ) |
+
+## Roadmap (next)
+
+1. **Hardware:** LILYGO T-Watch S3 + 6 kit samples for NextWatch field trials.
+2. **Combo C — DX Hardening:** observability, CI/CD, backup, K8s manifests.
+3. **Combo D — Workflow Deep:** versioning, template marketplace.
+4. **Combo E — NextWatch Deep:** BLE pairing, haptic feedback, offline queue.
+
+## Known tech debt
+
+- [x] Flaky `truncate_auth_tables` — Combo G (timeouts + pool dispose).
+- [x] Unknown `pytest.mark.integration` — registered in `apps/api/pytest.ini`.
+- [x] Ruff legacy errors across `app/` — Combo G cleanup.
+- [ ] Confirm full regression count (~628+) on CI after Combo G.
+- [ ] CI/CD smoke test gate (`pytest -m smoke`).
+
 See also: `NOTION_UPDATE.md`, `NOTION_TASKS_BACKLOG.md`.
