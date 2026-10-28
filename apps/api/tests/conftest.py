@@ -1,4 +1,6 @@
+import logging
 import os
+import time
 import uuid
 from collections.abc import AsyncIterator, Callable
 from urllib.parse import urlparse, urlunparse
@@ -121,9 +123,13 @@ def seed_subscription_plans_sync() -> None:
 
 
 def truncate_auth_tables() -> None:
+    """Reset tenant-scoped tables between tests.
+
+    Uses TRUNCATE CASCADE with lock/statement timeouts so a stale async pool
+    connection cannot hang teardown indefinitely (parallel pytest + ASGI client).
+    """
+    log = logging.getLogger(__name__)
     settings.assert_test_database_url(_test_sync_url)
-    conn = psycopg2.connect(_test_sync_url)
-    conn.autocommit = True
     truncate_sql = (
         "TRUNCATE super_admin_actions, invoices, tenant_usage_daily, tenant_subscriptions, "
         "payment_methods, subscription_plans, audit_logs, ota_device_rollouts, "
@@ -134,9 +140,38 @@ def truncate_auth_tables() -> None:
         "telemetry_readings, device_metadata, device_credentials, device_claim_tokens, devices, device_profiles, "
         "tenant_memberships, users, tenants RESTART IDENTITY CASCADE"
     )
-    with conn.cursor() as cur:
-        cur.execute(truncate_sql)
-    conn.close()
+    for attempt in range(3):
+        conn = psycopg2.connect(_test_sync_url)
+        conn.autocommit = True
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SET lock_timeout = '5s'")
+                cur.execute("SET statement_timeout = '15s'")
+                cur.execute("SELECT pg_advisory_lock(424242)")
+                try:
+                    cur.execute(
+                        """
+                        SELECT pg_terminate_backend(pid)
+                        FROM pg_stat_activity
+                        WHERE datname = current_database()
+                          AND pid <> pg_backend_pid()
+                          AND state LIKE 'idle in transaction%'
+                        """
+                    )
+                    cur.execute(truncate_sql)
+                finally:
+                    cur.execute("SELECT pg_advisory_unlock(424242)")
+            return
+        except psycopg2.Error as exc:
+            log.warning(
+                "truncate_auth_tables attempt %s/3 failed: %s",
+                attempt + 1,
+                exc,
+            )
+            time.sleep(0.25 * (attempt + 1))
+        finally:
+            conn.close()
+    log.warning("truncate_auth_tables gave up after 3 attempts")
 
 
 def _override_get_redis(redis: RedisClient) -> Callable[[Request], RedisClient]:
@@ -185,6 +220,7 @@ async def test_redis() -> AsyncIterator[RedisClient]:
 
 @pytest.fixture
 async def client(test_redis: RedisClient) -> AsyncIterator[AsyncClient]:
+    await engine.dispose()
     truncate_auth_tables()
     seed_subscription_plans_sync()
 
@@ -208,6 +244,7 @@ async def client(test_redis: RedisClient) -> AsyncIterator[AsyncClient]:
 
     app.dependency_overrides.pop(get_redis, None)
     app.state.redis = None
+    await engine.dispose()
     truncate_auth_tables()
 
 
