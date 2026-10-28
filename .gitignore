@@ -65,3 +65,24 @@ __pycache__/
 apps/api/data/
 *.tsbuildinfo
 .build-log.txt
+
+# Script output files (local CI / debug logs)
+scripts/*.out
+scripts/*.txt
+scripts/*.err
+scripts/.*.out
+scripts/.*.txt
+scripts/.*.err
+
+# Firmware boot logs
+apps/firmware/next-os-wear/boot-log.*
+
+# Lock files duplicate (admin uses root/workspace lockfile)
+apps/admin/pnpm-lock.yaml
+
+# Python mypy cache list
+.mypy-files.txt
+
+# Local database dumps
+*.sql.gz
+*.dump
