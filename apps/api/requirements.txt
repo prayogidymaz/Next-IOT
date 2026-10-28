@@ -25,3 +25,5 @@ firebase-admin==6.6.0
 numpy>=1.26.0,<3
 pandas>=2.2.0,<3
 scikit-learn>=1.5.0,<2
+grpcio>=1.60.0,<2
+# Optional: ultralytics>=8.2.0 for real YOLOv8 pest weights (mock fallback when missing)
