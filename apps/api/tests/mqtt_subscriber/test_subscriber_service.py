@@ -23,7 +23,11 @@ from app.mqtt_auth.subscriber_auth import (
     is_platform_subscriber_auth,
 )
 from app.mqtt_subscriber.schemas import TelemetryMqttTopic
-from app.mqtt_subscriber.service import TELEMETRY_SUBSCRIBE_FILTER, MqttSubscriberService
+from app.mqtt_subscriber.service import (
+    MESH_EVENTS_SUBSCRIBE_FILTER,
+    TELEMETRY_SUBSCRIBE_FILTER,
+    MqttSubscriberService,
+)
 from app.telemetry.mqtt_payload import parse_telemetry_payload_bytes
 from app.types.redis_client import RedisClient
 from httpx import AsyncClient
@@ -391,5 +395,6 @@ async def test_subscriber_connects_and_subscribes_share_topic() -> None:
         (SUBSCRIBER_TELEMETRY_SHARE_FILTER, 1),
         (SUBSCRIBER_ATTRIBUTES_SHARE_FILTER, 1),
         (SUBSCRIBER_RPC_RESPONSE_SHARE_FILTER, 1),
+        (MESH_EVENTS_SUBSCRIBE_FILTER, 1),
     ]
     assert TELEMETRY_SUBSCRIBE_FILTER == "tenants/+/devices/+/telemetry"
