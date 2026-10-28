@@ -45,20 +45,22 @@ def _draft_trigger_to_mesh(draft: WorkflowDraft) -> WorkflowTrigger:
                 event_type=t.event_type or "threshold_exceeded",
             ),
         )
-    metric = t.sensor or "soil_moisture"
-    return WorkflowTrigger(
-        type=WorkflowTriggerType.MESH_EVENT,
-        filter=WorkflowTriggerFilter(
-            domain="sensor",
-            event_type="threshold_exceeded",
-            payload_match={
-                "metric": metric,
-                "operator": t.operator or "lt",
-                "threshold": t.threshold if t.threshold is not None else 40,
-                "device_ref": t.device,
-            },
-        ),
-    )
+    if t.kind == DraftTriggerKind.SENSOR_THRESHOLD:
+        metric = t.sensor or "soil_moisture"
+        return WorkflowTrigger(
+            type=WorkflowTriggerType.MESH_EVENT,
+            filter=WorkflowTriggerFilter(
+                domain="sensor",
+                event_type="threshold_exceeded",
+                payload_match={
+                    "metric": metric,
+                    "operator": t.operator or "lt",
+                    "threshold": t.threshold if t.threshold is not None else 40,
+                    "device_ref": t.device,
+                },
+            ),
+        )
+    raise ValueError(f"Unsupported draft trigger kind: {t.kind}")
 
 
 def _draft_action_to_mesh(action: DraftAction, index: int) -> WorkflowAction:

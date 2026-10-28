@@ -31,8 +31,8 @@ Jawab HANYA JSON object WorkflowDraft tanpa markdown (tanpa draft_id/tenant_id).
 
 
 _MOCK_PATTERNS: list[tuple[Pattern[str], DraftTriggerKind, str]] = [
-    (re.compile(r"(siram|irigasi|sirami|water|irrigate)", re.I), DraftTriggerKind.SENSOR_THRESHOLD, "irrigation"),
     (re.compile(r"(pagi|jam\s*\d|schedule|cron|setiap hari|every morning)", re.I), DraftTriggerKind.CRON, "cron"),
+    (re.compile(r"(siram|irigasi|sirami|water|irrigate)", re.I), DraftTriggerKind.SENSOR_THRESHOLD, "irrigation"),
     (re.compile(r"(notif|whatsapp|wa\b|telegram|email|alert)", re.I), DraftTriggerKind.SENSOR_THRESHOLD, "alert"),
     (re.compile(r"(lampu|lux|cahaya|light|greenhouse)", re.I), DraftTriggerKind.SENSOR_THRESHOLD, "light"),
     (re.compile(r"(ph\b|asam)", re.I), DraftTriggerKind.SENSOR_THRESHOLD, "ph"),

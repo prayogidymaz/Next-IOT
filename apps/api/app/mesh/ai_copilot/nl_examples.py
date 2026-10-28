@@ -348,8 +348,6 @@ def few_shot_block(locale: str = "id", limit: int = 6) -> str:
 def match_example_prompt(prompt: str) -> WorkflowDraft | None:
     normalized = prompt.strip().lower()
     for row in NL_EXAMPLES:
-        if row.prompt_id.lower() in normalized or normalized in row.prompt_id.lower():
-            return row.draft.model_copy(deep=True)
-        if row.prompt_en.lower() in normalized or normalized in row.prompt_en.lower():
+        if normalized == row.prompt_id.lower() or normalized == row.prompt_en.lower():
             return row.draft.model_copy(deep=True)
     return None

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class AnomalyDetector:
-    def __init__(self, z_sigma: float = 3.0) -> None:
+    def __init__(self, z_sigma: float = 2.5) -> None:
         self._z_sigma = min(max(z_sigma, 2.5), 3.5)
 
     def detect(self, sensor_series: pd.DataFrame, device_id: uuid.UUID) -> list[Anomaly]:
@@ -31,14 +31,14 @@ class AnomalyDetector:
             std = 1e-6
         from sklearn.ensemble import IsolationForest
 
-        forest = IsolationForest(contamination=0.05, random_state=42)
+        forest = IsolationForest(contamination=0.03, random_state=42)
         preds = forest.fit_predict(values.reshape(-1, 1))
         scores = -forest.score_samples(values.reshape(-1, 1))
         anomalies: list[Anomaly] = []
         now = datetime.now(tz=UTC)
         for idx, (val, pred, score) in enumerate(zip(values, preds, scores, strict=True)):
             z = abs(val - mean) / std
-            if pred == -1 or z >= self._z_sigma:
+            if pred == -1 and z >= self._z_sigma:
                 severity = _severity_from_z(z)
                 low = mean - self._z_sigma * std
                 high = mean + self._z_sigma * std
@@ -62,9 +62,7 @@ class AnomalyDetector:
 
 
 def _severity_from_z(z: float) -> AnomalySeverity:
-    if z >= 4.5:
-        return AnomalySeverity.CRITICAL
-    if z >= 3.5:
+    if z >= 4.0:
         return AnomalySeverity.HIGH
     if z >= 3.0:
         return AnomalySeverity.MEDIUM
