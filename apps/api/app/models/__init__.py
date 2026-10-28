@@ -14,6 +14,7 @@ from app.agriculture.models import (
 )
 from app.analytics.ml.models import AnomalyEventRow, OptimizationReportRow, YieldForecastRow
 from app.devices.edge_agent.models import EdgeDeviceToken, FirmwareVersionRow
+from app.mesh.federation.models import FederationEventsLog, FederationPeer
 from app.vision.models import VisionDetection, VisionFeedback, VisionTenantConfig
 from app.analytics.models import ScheduledReport
 from app.cameras.models import Camera, CameraSnapshot
@@ -88,6 +89,8 @@ __all__ = [
     "VisionTenantConfig",
     "EdgeDeviceToken",
     "FirmwareVersionRow",
+    "FederationPeer",
+    "FederationEventsLog",
     "User",
     "TenantMembership",
     "TenantUserFcmToken",

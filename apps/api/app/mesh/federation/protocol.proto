@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package mesh.federation;
+
+message MeshEvent {
+  string origin_site = 1;
+  string event_type = 2;
+  string device_id = 3;
+  string payload_json = 4;
+  int64 timestamp = 5;
+  int32 ttl = 6;
+}
+
+message SyncRequest {
+  string origin_site = 1;
+  repeated string device_ids = 2;
+}
+
+message SyncResponse {
+  repeated MeshEvent events = 1;
+}
+
+message RemoteQuery {
+  string origin_site = 1;
+  string filter_json = 2;
+}
+
+message RemoteQueryResult {
+  repeated MeshEvent events = 1;
+}
+
+service MeshFederation {
+  rpc Peer(stream MeshEvent) returns (stream MeshEvent);
+  rpc SyncDevices(SyncRequest) returns (SyncResponse);
+  rpc QueryRemote(RemoteQuery) returns (RemoteQueryResult);
+}
