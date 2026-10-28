@@ -6,12 +6,11 @@ import uuid
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Query, Response
-from pydantic import BaseModel, Field
-
 from app.auth.dependencies import RequireTenantAdmin
 from app.deps import DbSession
 from app.mesh.federation import service as federation_service
+from fastapi import APIRouter, Query, Response
+from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/api/v1/federation", tags=["mesh-federation"])
 

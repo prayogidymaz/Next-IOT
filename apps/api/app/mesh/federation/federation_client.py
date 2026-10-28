@@ -6,7 +6,10 @@ import asyncio
 from collections.abc import AsyncIterator
 from pathlib import Path
 
+import grpc
+from app.mesh.federation import protocol_pb2
 from app.mesh.federation.messages import FederationMeshEvent
+from app.mesh.federation.protocol_pb2_grpc import MeshFederationStub
 
 
 class FederationClient:
@@ -34,3 +37,15 @@ class FederationClient:
             merged.append(event)
             await self.publish_remote(event)
         return merged
+
+    def sync_devices_grpc(
+        self,
+        channel: grpc.Channel,
+        origin_site: str,
+        device_ids: list[str],
+    ) -> list[FederationMeshEvent]:
+        stub = MeshFederationStub(channel)
+        response = stub.SyncDevices(
+            protocol_pb2.SyncRequest(origin_site=origin_site, device_ids=device_ids),
+        )
+        return [FederationMeshEvent.from_proto(item) for item in response.events]

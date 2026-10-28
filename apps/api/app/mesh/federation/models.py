@@ -5,11 +5,10 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
+from app.database import Base
 from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
-
-from app.database import Base
 
 
 class FederationPeer(Base):

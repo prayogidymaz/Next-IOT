@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
-
 from app.mesh.event_bus import MeshDomain
+from pydantic import BaseModel, Field
 
 
 class FederationPeerConfig(BaseModel):

@@ -53,14 +53,19 @@ class FederationServer:
             )
             await self._inbound.put(tagged)
 
+    def validate_peer_cert(self, cert_pem: bytes | None) -> bool:
+        return self._authenticator.validate_peer(cert_pem)
+
     async def serve(self, port: int = 50051) -> None:
         try:
-            import grpc
+            from app.mesh.federation.grpc_servicer import FederationGrpcServicer
+            from app.mesh.federation.protocol_pb2_grpc import add_MeshFederationServicer_to_server
             from grpc import aio
         except ImportError:
             logger.warning("grpcio not installed; federation server running in-process only")
             return
         server = aio.server()
+        add_MeshFederationServicer_to_server(FederationGrpcServicer(self), server)
         self._server = server
         server.add_insecure_port(f"[::]:{port}")
         await server.start()

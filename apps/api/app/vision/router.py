@@ -11,9 +11,9 @@ from fastapi import APIRouter, Query
 from app.auth.dependencies import RequireAuth
 from app.deps import DbSession
 from app.vision.schemas import (
+    DetectionListItem,
     DetectRequest,
     DetectResponse,
-    DetectionListItem,
     FeedbackRequest,
     VisionStatsResponse,
 )

@@ -9,12 +9,12 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.devices.edge_agent.models import EdgeDeviceToken
-from app.devices.schemas import DeviceRegisterRequest
-from app.devices import service as device_service
 from app.auth.context import CurrentUser
 from app.auth.rbac import UserRole
 from app.auth.tiering import SecurityTier
+from app.devices import service as device_service
+from app.devices.edge_agent.models import EdgeDeviceToken
+from app.devices.schemas import DeviceRegisterRequest
 from app.models.device import Device
 from app.types.redis_client import RedisClient
 
@@ -48,7 +48,11 @@ class EdgeAgentRegistration:
             security_tier=SecurityTier.FREE,
         )
         metadata = {f"capability_{idx}": cap for idx, cap in enumerate(capabilities)}
-        payload = DeviceRegisterRequest(name=f"edge-{device_type}-{uuid.uuid4().hex[:8]}", device_type=device_type, metadata=metadata)
+        payload = DeviceRegisterRequest(
+            name=f"edge-{device_type}-{uuid.uuid4().hex[:8]}",
+            device_type=device_type,
+            metadata=metadata,
+        )
         registered = await device_service.register_device(db, redis, pseudo_user, payload)
         device = await db.get(Device, registered.device.id)
         if device is None:

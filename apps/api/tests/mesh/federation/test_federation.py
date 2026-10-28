@@ -14,6 +14,22 @@ from app.mesh.federation.messages import FederationMeshEvent
 PASSWORD = "SecurePass123!"
 
 
+def test_grpc_stubs_generated_from_proto() -> None:
+    from app.mesh.federation import protocol_pb2
+    from app.mesh.federation.protocol_pb2_grpc import MeshFederationStub
+
+    event = protocol_pb2.MeshEvent(
+        origin_site="a",
+        event_type="t",
+        device_id="d",
+        payload_json="{}",
+        timestamp=1,
+        ttl=3,
+    )
+    assert event.ttl == 3
+    assert MeshFederationStub is not None
+
+
 @pytest.mark.asyncio
 async def test_federation_server_authenticates_peer() -> None:
     cert = b"valid-cert-bytes"

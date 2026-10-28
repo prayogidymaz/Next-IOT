@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, File, Form, Query, UploadFile
@@ -58,9 +57,9 @@ async def get_firmware_versions(
 async def post_firmware_upload(
     user: RequireTenantAdmin,
     db: DbSession,
-    file: UploadFile = File(...),
-    device_type: str = Form(...),
-    version: str = Form(...),
+    file: Annotated[UploadFile, File()],
+    device_type: Annotated[str, Form()],
+    version: Annotated[str, Form()],
 ) -> FirmwareVersionView:
     data = await file.read()
     view = await OTAService().upload_firmware(db, device_type, version, data)

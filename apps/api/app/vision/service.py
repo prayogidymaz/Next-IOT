@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import base64
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 from decimal import Decimal
 
 from fastapi import HTTPException, status
@@ -20,7 +20,7 @@ from app.vision.confidence_router import ConfidenceRouter
 from app.vision.detector import PestDetector
 from app.vision.feedback_loop import FalsePositiveFeedback
 from app.vision.models import VisionDetection, VisionFeedback, VisionTenantConfig
-from app.vision.schemas import DetectResponse, DetectionListItem, VisionStatsResponse
+from app.vision.schemas import DetectionListItem, DetectResponse, VisionStatsResponse
 
 
 async def run_detection(

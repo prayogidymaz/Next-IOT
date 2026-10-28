@@ -5,14 +5,13 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from fastapi import HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.auth.dependencies import CurrentUser
 from app.mesh.federation.federation_client import FederationClient
 from app.mesh.federation.messages import FederationMeshEvent
 from app.mesh.federation.models import FederationEventsLog, FederationPeer
+from fastapi import HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def create_peer(
