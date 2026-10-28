@@ -122,24 +122,54 @@ def seed_subscription_plans_sync() -> None:
     conn.close()
 
 
+_AUTH_TRUNCATE_TABLES: tuple[str, ...] = (
+    "super_admin_actions",
+    "invoices",
+    "tenant_usage_daily",
+    "tenant_subscriptions",
+    "payment_methods",
+    "subscription_plans",
+    "audit_logs",
+    "ota_device_rollouts",
+    "firmware_releases",
+    "automation_pipelines",
+    "rule_execution_log",
+    "notification_log",
+    "notification_rules",
+    "notification_channels",
+    "alarm_history",
+    "alarms",
+    "sar_incidents",
+    "telemetry_anomalies",
+    "geofence_zones",
+    "device_rpc_requests",
+    "device_attributes",
+    "device_commands",
+    "rules",
+    "telemetry_readings",
+    "device_metadata",
+    "device_credentials",
+    "device_claim_tokens",
+    "devices",
+    "device_profiles",
+    "tenant_memberships",
+    "users",
+    "tenants",
+)
+
+
 def truncate_auth_tables() -> None:
     """Reset tenant-scoped tables between tests.
 
-    Uses TRUNCATE CASCADE with timeouts. No pg_terminate_backend
-    (would kill the app's async pool connections mid-flight).
+    Uses TRUNCATE CASCADE with lock/statement timeouts. Does NOT use
+    pg_terminate_backend (would kill the app's async pool mid-flight).
+    Fixture callers must ``await engine.dispose()`` before calling this
+    so the async pool releases connections first.
     """
     log = logging.getLogger(__name__)
     settings.assert_test_database_url(_test_sync_url)
-    truncate_sql = (
-        "TRUNCATE super_admin_actions, invoices, tenant_usage_daily, tenant_subscriptions, "
-        "payment_methods, subscription_plans, audit_logs, ota_device_rollouts, "
-        "firmware_releases, automation_pipelines, "
-        "rule_execution_log, notification_log, notification_rules, notification_channels, alarm_history, alarms, "
-        "sar_incidents, telemetry_anomalies, geofence_zones, device_rpc_requests, device_attributes, "
-        "device_commands, rules, "
-        "telemetry_readings, device_metadata, device_credentials, device_claim_tokens, devices, device_profiles, "
-        "tenant_memberships, users, tenants RESTART IDENTITY CASCADE"
-    )
+    tables_csv = ", ".join(_AUTH_TRUNCATE_TABLES)
+    truncate_sql = f"TRUNCATE {tables_csv} RESTART IDENTITY CASCADE"
     for attempt in range(3):
         conn = psycopg2.connect(_test_sync_url)
         conn.autocommit = True
