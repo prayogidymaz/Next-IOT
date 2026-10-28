@@ -16,6 +16,8 @@ from app.analytics.ml.scheduler import ml_anomaly_scheduler_loop
 from app.analytics.report_scheduler import analytics_report_scheduler_loop
 from app.analytics.router import router as analytics_router
 from app.cameras.router import router as cameras_router
+from app.devices.edge_agent.router import devices_router as edge_devices_router
+from app.devices.edge_agent.router import firmware_router as edge_firmware_router
 from app.vision.router import router as vision_router
 from app.agriculture.worker import agriculture_jobs_loop
 from app.alarms.maintenance import alarm_maintenance_loop
@@ -210,6 +212,8 @@ app.add_middleware(AuditLoggingMiddleware)
 app.include_router(auth_router)
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(v1_router)
+app.include_router(edge_devices_router)
+app.include_router(edge_firmware_router)
 app.include_router(devices_router)
 app.include_router(device_profiles_router)
 app.include_router(telemetry_router)
