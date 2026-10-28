@@ -125,8 +125,8 @@ def seed_subscription_plans_sync() -> None:
 def truncate_auth_tables() -> None:
     """Reset tenant-scoped tables between tests.
 
-    Uses TRUNCATE CASCADE with lock/statement timeouts so a stale async pool
-    connection cannot hang teardown indefinitely (parallel pytest + ASGI client).
+    Uses TRUNCATE CASCADE with timeouts. No pg_terminate_backend
+    (would kill the app's async pool connections mid-flight).
     """
     log = logging.getLogger(__name__)
     settings.assert_test_database_url(_test_sync_url)
@@ -147,22 +147,9 @@ def truncate_auth_tables() -> None:
             with conn.cursor() as cur:
                 cur.execute("SET lock_timeout = '5s'")
                 cur.execute("SET statement_timeout = '15s'")
-                cur.execute("SELECT pg_advisory_lock(424242)")
-                try:
-                    cur.execute(
-                        """
-                        SELECT pg_terminate_backend(pid)
-                        FROM pg_stat_activity
-                        WHERE datname = current_database()
-                          AND pid <> pg_backend_pid()
-                          AND state LIKE 'idle in transaction%'
-                        """
-                    )
-                    cur.execute(truncate_sql)
-                finally:
-                    cur.execute("SELECT pg_advisory_unlock(424242)")
+                cur.execute(truncate_sql)
             return
-        except psycopg2.Error as exc:
+        except psycopg2.OperationalError as exc:
             log.warning(
                 "truncate_auth_tables attempt %s/3 failed: %s",
                 attempt + 1,
@@ -220,7 +207,6 @@ async def test_redis() -> AsyncIterator[RedisClient]:
 
 @pytest.fixture
 async def client(test_redis: RedisClient) -> AsyncIterator[AsyncClient]:
-    await engine.dispose()
     truncate_auth_tables()
     seed_subscription_plans_sync()
 
