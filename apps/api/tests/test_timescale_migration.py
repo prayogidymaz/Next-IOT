@@ -11,6 +11,8 @@ from sqlalchemy import text
 
 from tests.conftest import _test_sync_url
 
+pytestmark = [pytest.mark.integration, pytest.mark.slow]
+
 
 def _timescale_installed(sync_url: str) -> bool:
     conn = psycopg2.connect(sync_url)
