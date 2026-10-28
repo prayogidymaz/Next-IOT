@@ -12,6 +12,7 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from sqlalchemy import select, text
 
 from app.agriculture.router import router as agriculture_router
+from app.analytics.ml.scheduler import ml_anomaly_scheduler_loop
 from app.analytics.report_scheduler import analytics_report_scheduler_loop
 from app.analytics.router import router as analytics_router
 from app.cameras.router import router as cameras_router
@@ -144,6 +145,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             asyncio.create_task(mesh_workflow_listener_loop(redis, stop_event)),
             asyncio.create_task(mesh_schedule_loop(redis, stop_event)),
             asyncio.create_task(analytics_report_scheduler_loop(stop_event)),
+            asyncio.create_task(ml_anomaly_scheduler_loop(stop_event)),
         ]
     mqtt_publisher: MqttPublisherService | NoopMqttPublisher
     if settings.mqtt_publisher_enabled and settings.run_background_workers:

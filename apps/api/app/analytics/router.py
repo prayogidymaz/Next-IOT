@@ -11,6 +11,8 @@ from fastapi import APIRouter, Query, Response, status
 from fastapi.responses import StreamingResponse
 
 from app.analytics.energy_service import calculate_energy, energy_summary_for_farm
+from app.analytics.ml.schemas import OptimizationReport, YieldForecast
+from app.analytics.ml.service import acknowledge_anomaly, forecast_yield, list_anomalies, optimization_report
 from app.analytics.export_service import (
     export_alerts_csv,
     export_telemetry_csv,
@@ -144,3 +146,68 @@ async def get_energy_summary(
     days = _parse_period(period)
     result = await energy_summary_for_farm(db, user.tenant_id, farm_id, days)
     return result.model_dump(mode="json")
+
+
+PlotIdQuery = Annotated[uuid.UUID, Query()]
+HorizonDaysQuery = Annotated[int, Query(ge=1, le=365)]
+SinceQuery = Annotated[datetime | None, Query()]
+SeverityQuery = Annotated[str | None, Query(min_length=2, max_length=16)]
+PeriodDaysQuery = Annotated[int, Query(ge=7, le=365)]
+
+
+@router.get("/yield/forecast", response_model=YieldForecast)
+async def get_yield_forecast(
+    user: RequireAuth,
+    db: DbSession,
+    plot_id: PlotIdQuery,
+    horizon_days: HorizonDaysQuery = 30,
+) -> YieldForecast:
+    result = await forecast_yield(db, user.tenant_id, plot_id, horizon_days)
+    await db.commit()
+    return result
+
+
+@router.get("/anomalies")
+async def get_anomalies(
+    user: RequireAuth,
+    db: DbSession,
+    device_id: Annotated[uuid.UUID | None, Query()] = None,
+    since: SinceQuery = None,
+    severity: SeverityQuery = None,
+) -> list[dict[str, object]]:
+    rows = await list_anomalies(db, user.tenant_id, device_id, since, severity)
+    return [
+        {
+            "id": str(row.id),
+            "device_id": str(row.device_id),
+            "detected_at": row.detected_at.isoformat(),
+            "metric": row.metric,
+            "value": float(row.value),
+            "expected_range": [float(row.expected_min), float(row.expected_max)],
+            "severity": row.severity,
+            "acknowledged": row.acknowledged,
+        }
+        for row in rows
+    ]
+
+
+@router.post("/anomalies/{anomaly_id}/acknowledge")
+async def post_acknowledge_anomaly(
+    user: RequireAuth,
+    db: DbSession,
+    anomaly_id: uuid.UUID,
+) -> dict[str, object]:
+    row = await acknowledge_anomaly(db, user.tenant_id, anomaly_id)
+    await db.commit()
+    return {"id": str(row.id), "acknowledged": row.acknowledged}
+
+
+@router.get("/optimization/report", response_model=OptimizationReport)
+async def get_optimization_report(
+    user: RequireAuth,
+    db: DbSession,
+    period_days: PeriodDaysQuery = 30,
+) -> OptimizationReport:
+    report = await optimization_report(db, user.tenant_id, period_days)
+    await db.commit()
+    return report

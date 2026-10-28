@@ -22,6 +22,7 @@ DOMAIN_EVENT_TYPES: dict[MeshDomain, frozenset[str]] = {
             "threshold_exceeded",
             "calibration_needed",
             "battery_low",
+            "anomaly_detected",
         }
     ),
     MeshDomain.VISION: frozenset(

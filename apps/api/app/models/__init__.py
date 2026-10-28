@@ -12,6 +12,7 @@ from app.agriculture.models import (
     AgriSensorDevice,
     AgriYieldRecord,
 )
+from app.analytics.ml.models import AnomalyEventRow, OptimizationReportRow, YieldForecastRow
 from app.analytics.models import ScheduledReport
 from app.cameras.models import Camera, CameraSnapshot
 from app.models.alarm import Alarm, AlarmHistory, AlarmStatus
@@ -77,6 +78,9 @@ __all__ = [
     "Camera",
     "CameraSnapshot",
     "ScheduledReport",
+    "YieldForecastRow",
+    "AnomalyEventRow",
+    "OptimizationReportRow",
     "User",
     "TenantMembership",
     "TenantUserFcmToken",
