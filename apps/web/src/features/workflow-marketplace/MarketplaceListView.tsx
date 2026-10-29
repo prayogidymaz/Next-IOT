@@ -15,6 +15,7 @@ export function MarketplaceListView() {
   const [sort, setSort] = useState("downloads");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const pageSize = 9;
 
   const load = useCallback(async () => {
@@ -41,9 +42,21 @@ export function MarketplaceListView() {
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
 
   return (
-    <div className="mx-auto w-full max-w-7xl p-4 md:p-6">
+    <div className="flex flex-col gap-6 p-6">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-        <aside className="w-full shrink-0 space-y-4 rounded-xl border border-stone-200 bg-white p-4 lg:sticky lg:top-4 lg:w-64">
+        <button
+          type="button"
+          className="rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 lg:hidden"
+          onClick={() => setFiltersOpen((o) => !o)}
+        >
+          {filtersOpen ? "Hide filters" : "Show filters"}
+        </button>
+
+        <aside
+          className={`w-full shrink-0 space-y-4 rounded-xl border border-stone-200 bg-white p-4 lg:block lg:w-64 ${
+            filtersOpen ? "block" : "hidden"
+          }`}
+        >
           <h2 className="text-sm font-semibold text-stone-800">Filters</h2>
           <label className="block text-xs text-stone-600">
             Category
@@ -83,24 +96,20 @@ export function MarketplaceListView() {
         </aside>
 
         <main className="min-w-0 flex-1">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h1 className="text-2xl font-semibold text-stone-900">Template marketplace</h1>
-            <input
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm sm:max-w-xs"
-              placeholder="Search templates…"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(0);
-              }}
-            />
-          </div>
+          <h1 className="mb-4 text-2xl font-semibold text-stone-900">Template marketplace</h1>
+          <input
+            className="mb-4 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            placeholder="Search templates…"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(0);
+            }}
+          />
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {pageItems.map((t) => (
-              <div key={t.id} className="min-w-0">
-                <MarketplaceCard template={t} />
-              </div>
+              <MarketplaceCard key={t.id} template={t} />
             ))}
           </div>
 

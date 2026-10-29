@@ -2,7 +2,7 @@ import { MarketplaceListView } from "@/src/features/workflow-marketplace/Marketp
 
 export default function MarketplaceRoute() {
   return (
-    <div className="w-full overflow-x-hidden">
+    <div className="relative w-full max-w-full overflow-x-hidden">
       <MarketplaceListView />
     </div>
   );
