@@ -7,11 +7,14 @@ import uuid
 import pytest
 from app.auth.context import CurrentUser
 from app.auth.tiering import SecurityTier
+from app.models.user import User
 from app.workflows.approval.models import ApprovalRequestStatus
 from app.workflows.approval.schemas import ApprovalPolicyView
+from tests.workflows.conftest import workflow_current_user
 
 
 def _user(tenant_id: uuid.UUID) -> CurrentUser:
+    """Policy-only tests that do not persist approval rows."""
     return CurrentUser(
         user_id=uuid.uuid4(),
         tenant_id=tenant_id,
@@ -52,20 +55,22 @@ async def test_check_policy_creates_default() -> None:
 
 
 @pytest.mark.asyncio
-async def test_request_approval_pending() -> None:
+async def test_request_approval_pending(workflow_seed_user: User) -> None:
     from app.database import async_session
     from app.models.mesh_workflow import MeshWorkflow
-    from app.models.tenant import Tenant
     from app.workflows.approval.service import ApprovalService
 
     async with async_session() as db:
-        tenant = Tenant(name="Req", slug=f"req-{uuid.uuid4().hex[:8]}")
-        db.add(tenant)
-        await db.flush()
-        mesh = MeshWorkflow(tenant_id=tenant.id, name="W", description="", enabled=False, definition={})
+        mesh = MeshWorkflow(
+            tenant_id=workflow_seed_user.tenant_id,
+            name="W",
+            description="",
+            enabled=False,
+            definition={},
+        )
         db.add(mesh)
         await db.flush()
-        user = _user(tenant.id)
+        user = workflow_current_user(workflow_seed_user)
         row = await ApprovalService(db).request_approval(mesh.id, user.user_id, "ship it", user)
         assert row.status == ApprovalRequestStatus.PENDING.value
 
@@ -113,84 +118,92 @@ async def test_can_activate_blocked_when_required() -> None:
 
 
 @pytest.mark.asyncio
-async def test_approve_request() -> None:
+async def test_approve_request(workflow_seed_user: User) -> None:
     from app.database import async_session
     from app.models.mesh_workflow import MeshWorkflow
-    from app.models.tenant import Tenant
     from app.workflows.approval.service import ApprovalService
 
     async with async_session() as db:
-        tenant = Tenant(name="App", slug=f"app-{uuid.uuid4().hex[:8]}")
-        db.add(tenant)
-        await db.flush()
-        mesh = MeshWorkflow(tenant_id=tenant.id, name="W", description="", enabled=False, definition={})
+        mesh = MeshWorkflow(
+            tenant_id=workflow_seed_user.tenant_id,
+            name="W",
+            description="",
+            enabled=False,
+            definition={},
+        )
         db.add(mesh)
         await db.flush()
         service = ApprovalService(db)
-        user = _user(tenant.id)
+        user = workflow_current_user(workflow_seed_user)
         req = await service.request_approval(mesh.id, user.user_id, "", user)
         approved = await service.approve(req.id, user.user_id, "ok", user)
         assert approved.status == ApprovalRequestStatus.APPROVED.value
 
 
 @pytest.mark.asyncio
-async def test_reject_request() -> None:
+async def test_reject_request(workflow_seed_user: User) -> None:
     from app.database import async_session
     from app.models.mesh_workflow import MeshWorkflow
-    from app.models.tenant import Tenant
     from app.workflows.approval.service import ApprovalService
 
     async with async_session() as db:
-        tenant = Tenant(name="Rej", slug=f"rej-{uuid.uuid4().hex[:8]}")
-        db.add(tenant)
-        await db.flush()
-        mesh = MeshWorkflow(tenant_id=tenant.id, name="W", description="", enabled=False, definition={})
+        mesh = MeshWorkflow(
+            tenant_id=workflow_seed_user.tenant_id,
+            name="W",
+            description="",
+            enabled=False,
+            definition={},
+        )
         db.add(mesh)
         await db.flush()
         service = ApprovalService(db)
-        user = _user(tenant.id)
+        user = workflow_current_user(workflow_seed_user)
         req = await service.request_approval(mesh.id, user.user_id, "", user)
         rejected = await service.reject(req.id, user.user_id, "no", user)
         assert rejected.status == ApprovalRequestStatus.REJECTED.value
 
 
 @pytest.mark.asyncio
-async def test_cancel_request() -> None:
+async def test_cancel_request(workflow_seed_user: User) -> None:
     from app.database import async_session
     from app.models.mesh_workflow import MeshWorkflow
-    from app.models.tenant import Tenant
     from app.workflows.approval.service import ApprovalService
 
     async with async_session() as db:
-        tenant = Tenant(name="Can", slug=f"can-{uuid.uuid4().hex[:8]}")
-        db.add(tenant)
-        await db.flush()
-        mesh = MeshWorkflow(tenant_id=tenant.id, name="W", description="", enabled=False, definition={})
+        mesh = MeshWorkflow(
+            tenant_id=workflow_seed_user.tenant_id,
+            name="W",
+            description="",
+            enabled=False,
+            definition={},
+        )
         db.add(mesh)
         await db.flush()
         service = ApprovalService(db)
-        user = _user(tenant.id)
+        user = workflow_current_user(workflow_seed_user)
         req = await service.request_approval(mesh.id, user.user_id, "", user)
         cancelled = await service.cancel(req.id, user.user_id, user)
         assert cancelled.status == ApprovalRequestStatus.CANCELLED.value
 
 
 @pytest.mark.asyncio
-async def test_get_pending_for_tenant() -> None:
+async def test_get_pending_for_tenant(workflow_seed_user: User) -> None:
     from app.database import async_session
     from app.models.mesh_workflow import MeshWorkflow
-    from app.models.tenant import Tenant
     from app.workflows.approval.service import ApprovalService
 
     async with async_session() as db:
-        tenant = Tenant(name="Pen", slug=f"pen-{uuid.uuid4().hex[:8]}")
-        db.add(tenant)
-        await db.flush()
-        mesh = MeshWorkflow(tenant_id=tenant.id, name="W", description="", enabled=False, definition={})
+        mesh = MeshWorkflow(
+            tenant_id=workflow_seed_user.tenant_id,
+            name="W",
+            description="",
+            enabled=False,
+            definition={},
+        )
         db.add(mesh)
         await db.flush()
         service = ApprovalService(db)
-        user = _user(tenant.id)
+        user = workflow_current_user(workflow_seed_user)
         await service.request_approval(mesh.id, user.user_id, "", user)
-        pending = await service.get_pending_for_tenant(tenant.id)
+        pending = await service.get_pending_for_tenant(workflow_seed_user.tenant_id)
         assert len(pending) == 1
