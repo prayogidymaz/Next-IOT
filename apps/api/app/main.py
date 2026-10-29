@@ -45,6 +45,10 @@ from app.mesh.scheduler import mesh_schedule_loop
 from app.mesh.workflow_executor import init_mesh_workflow_executor
 from app.mesh.workflow_listener import mesh_workflow_listener_loop
 from app.mesh.workflow_router import router as mesh_workflow_router
+from app.workflows.analytics.router import router as workflow_analytics_router
+from app.workflows.approval.router import approval_router, workflow_router as workflow_approval_workflow_router
+from app.workflows.marketplace.router import router as workflow_marketplace_router
+from app.workflows.versioning.router import router as workflow_versioning_router
 from app.mission.router import router as mission_router
 from app.mission.sar_emergency_router import router as sar_emergency_ws_router
 from app.models.user import User
@@ -246,6 +250,11 @@ app.include_router(agriculture_router)
 app.include_router(mesh_router)
 app.include_router(mesh_federation_router)
 app.include_router(mesh_workflow_router)
+app.include_router(workflow_versioning_router)
+app.include_router(workflow_approval_workflow_router)
+app.include_router(approval_router)
+app.include_router(workflow_marketplace_router)
+app.include_router(workflow_analytics_router)
 app.include_router(mesh_copilot_router)
 app.include_router(cameras_router)
 app.include_router(vision_router)

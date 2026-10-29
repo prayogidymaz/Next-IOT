@@ -58,6 +58,13 @@ from app.models.tenant_usage_daily import TenantUsageDaily
 from app.models.tenant_user_fcm_token import TenantUserFcmToken
 from app.models.user import User
 from app.vision.models import VisionDetection, VisionFeedback, VisionTenantConfig
+from app.workflows.approval.models import WorkflowApprovalPolicy, WorkflowApprovalRequest
+from app.workflows.marketplace.models import (
+    WorkflowTemplate,
+    WorkflowTemplateDownload,
+    WorkflowTemplateRating,
+)
+from app.workflows.versioning.models import WorkflowVersion
 
 __all__ = [
     "Partner",
@@ -143,4 +150,10 @@ __all__ = [
     "AgriCropCalendar",
     "AgriYieldRecord",
     "AgriSensorBatteryHistory",
+    "WorkflowVersion",
+    "WorkflowApprovalRequest",
+    "WorkflowApprovalPolicy",
+    "WorkflowTemplate",
+    "WorkflowTemplateRating",
+    "WorkflowTemplateDownload",
 ]
