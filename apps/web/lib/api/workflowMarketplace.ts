@@ -19,13 +19,11 @@ export type WorkflowTemplateRecord = {
 
 export async function listMarketplaceTemplates(params: {
   category?: string;
-  locale?: string;
   sort?: string;
   limit?: number;
 }): Promise<WorkflowTemplateRecord[]> {
   const q = new URLSearchParams();
   if (params.category) q.set("category", params.category);
-  if (params.locale) q.set("locale", params.locale);
   if (params.sort) q.set("sort", params.sort);
   if (params.limit) q.set("limit", String(params.limit));
   const res = await fetch(`${getApiBaseUrl()}/api/v1/marketplace/templates?${q.toString()}`, {

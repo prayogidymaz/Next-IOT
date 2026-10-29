@@ -26,25 +26,14 @@ const desktopSelectClass = "h-9 w-full rounded-lg border border-stone-300 bg-whi
 
 type FilterControlsProps = {
   category: string;
-  locale: string;
   sort: string;
   onCategory: (value: string) => void;
-  onLocale: (value: string) => void;
   onSort: (value: string) => void;
   idPrefix: string;
   compact?: boolean;
 };
 
-function FilterControls({
-  category,
-  locale,
-  sort,
-  onCategory,
-  onLocale,
-  onSort,
-  idPrefix,
-  compact = false,
-}: FilterControlsProps) {
+function FilterControls({ category, sort, onCategory, onSort, idPrefix, compact = false }: FilterControlsProps) {
   const selectClass = compact ? compactSelectClass : desktopSelectClass;
   const labelClass = compact ? "sr-only" : "text-xs font-medium text-stone-500";
 
@@ -63,23 +52,10 @@ function FilterControls({
         >
           {CATEGORIES.map((c) => (
             <option key={c.value || "all"} value={c.value}>
-              {compact && c.value ? c.label : c.label}
+              {c.label}
             </option>
           ))}
         </select>
-      </div>
-      <div className={compact ? "" : "space-y-1.5"}>
-        <label htmlFor={`${idPrefix}-locale`} className={labelClass}>
-          Locale
-        </label>
-        <input
-          id={`${idPrefix}-locale`}
-          className={compact ? `${compactSelectClass} w-24` : `${desktopSelectClass} px-3`}
-          value={locale}
-          onChange={(e) => onLocale(e.target.value)}
-          placeholder="id, en…"
-          aria-label="Locale"
-        />
       </div>
       <div className={compact ? "" : "space-y-1.5"}>
         <label htmlFor={`${idPrefix}-sort`} className={labelClass}>
@@ -104,7 +80,6 @@ function FilterControls({
 export function MarketplaceListView() {
   const [items, setItems] = useState<WorkflowTemplateRecord[]>([]);
   const [category, setCategory] = useState<string>("");
-  const [locale, setLocale] = useState("");
   const [sort, setSort] = useState("downloads");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
@@ -113,12 +88,11 @@ export function MarketplaceListView() {
   const load = useCallback(async () => {
     const list = await listMarketplaceTemplates({
       category: category || undefined,
-      locale: locale || undefined,
       sort,
       limit: 100,
     });
     setItems(list);
-  }, [category, locale, sort]);
+  }, [category, sort]);
 
   useEffect(() => {
     void load().catch(() => setItems([]));
@@ -135,7 +109,6 @@ export function MarketplaceListView() {
 
   function resetFilters() {
     setCategory("");
-    setLocale("");
     setSort("downloads");
     setPage(0);
   }
@@ -151,14 +124,9 @@ export function MarketplaceListView() {
             <FilterControls
               idPrefix="desktop"
               category={category}
-              locale={locale}
               sort={sort}
               onCategory={(v) => {
                 setCategory(v);
-                setPage(0);
-              }}
-              onLocale={(v) => {
-                setLocale(v);
                 setPage(0);
               }}
               onSort={(v) => {
@@ -178,14 +146,9 @@ export function MarketplaceListView() {
               idPrefix="mobile"
               compact
               category={category}
-              locale={locale}
               sort={sort}
               onCategory={(v) => {
                 setCategory(v);
-                setPage(0);
-              }}
-              onLocale={(v) => {
-                setLocale(v);
                 setPage(0);
               }}
               onSort={(v) => {
