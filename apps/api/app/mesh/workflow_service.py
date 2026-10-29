@@ -120,6 +120,9 @@ async def update_workflow(
         "actions": [item.model_dump(mode="json") for item in definition.actions],
     }
     await db.flush()
+    from app.workflows.versioning.service import VersioningService
+
+    await VersioningService(db).create_version_from_mesh_row(row, user.user_id)
     await reload_workflows(db, row.tenant_id)
     return _to_view(row)
 
