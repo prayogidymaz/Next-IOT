@@ -1,6 +1,5 @@
 "use client";
 
-import { Filter } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -8,12 +7,98 @@ import { listMarketplaceTemplates, type WorkflowTemplateRecord } from "@/lib/api
 
 import { MarketplaceCard } from "./MarketplaceCard";
 
-const CATEGORIES = ["", "irrigation", "pest", "greenhouse", "livestock", "general"] as const;
+const CATEGORIES = [
+  { value: "", label: "All" },
+  { value: "irrigation", label: "Irrigation" },
+  { value: "pest", label: "Pest" },
+  { value: "greenhouse", label: "Greenhouse" },
+  { value: "aquaponics", label: "Aquaponics" },
+  { value: "energy", label: "Energy" },
+  { value: "report", label: "Report" },
+  { value: "livestock", label: "Livestock" },
+  { value: "general", label: "General" },
+] as const;
 
-function filterAsideClass(showFilters: boolean): string {
-  const base = "w-full shrink-0 lg:w-64";
-  if (showFilters) return `${base} block`;
-  return `${base} hidden lg:block`;
+const compactSelectClass =
+  "h-8 shrink-0 rounded-lg border border-stone-300 bg-white px-2 text-xs text-stone-800";
+
+const desktopSelectClass = "h-9 w-full rounded-lg border border-stone-300 bg-white px-2 text-sm";
+
+type FilterControlsProps = {
+  category: string;
+  locale: string;
+  sort: string;
+  onCategory: (value: string) => void;
+  onLocale: (value: string) => void;
+  onSort: (value: string) => void;
+  idPrefix: string;
+  compact?: boolean;
+};
+
+function FilterControls({
+  category,
+  locale,
+  sort,
+  onCategory,
+  onLocale,
+  onSort,
+  idPrefix,
+  compact = false,
+}: FilterControlsProps) {
+  const selectClass = compact ? compactSelectClass : desktopSelectClass;
+  const labelClass = compact ? "sr-only" : "text-xs font-medium text-stone-500";
+
+  return (
+    <>
+      <div className={compact ? "" : "space-y-1.5"}>
+        <label htmlFor={`${idPrefix}-category`} className={labelClass}>
+          Category
+        </label>
+        <select
+          id={`${idPrefix}-category`}
+          className={compact ? `${selectClass} min-w-[7.5rem]` : selectClass}
+          value={category}
+          onChange={(e) => onCategory(e.target.value)}
+          aria-label="Category"
+        >
+          {CATEGORIES.map((c) => (
+            <option key={c.value || "all"} value={c.value}>
+              {compact && c.value ? c.label : c.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className={compact ? "" : "space-y-1.5"}>
+        <label htmlFor={`${idPrefix}-locale`} className={labelClass}>
+          Locale
+        </label>
+        <input
+          id={`${idPrefix}-locale`}
+          className={compact ? `${compactSelectClass} w-24` : `${desktopSelectClass} px-3`}
+          value={locale}
+          onChange={(e) => onLocale(e.target.value)}
+          placeholder="id, en…"
+          aria-label="Locale"
+        />
+      </div>
+      <div className={compact ? "" : "space-y-1.5"}>
+        <label htmlFor={`${idPrefix}-sort`} className={labelClass}>
+          Sort by
+        </label>
+        <select
+          id={`${idPrefix}-sort`}
+          className={compact ? `${selectClass} min-w-[6.5rem]` : selectClass}
+          value={sort}
+          onChange={(e) => onSort(e.target.value)}
+          aria-label="Sort by"
+        >
+          <option value="downloads">Downloads</option>
+          <option value="rating">Rating</option>
+          <option value="newest">Recent</option>
+        </select>
+      </div>
+    </>
+  );
 }
 
 export function MarketplaceListView() {
@@ -23,7 +108,6 @@ export function MarketplaceListView() {
   const [sort, setSort] = useState("downloads");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
-  const [showFilters, setShowFilters] = useState(false);
   const pageSize = 9;
 
   const load = useCallback(async () => {
@@ -49,73 +133,68 @@ export function MarketplaceListView() {
   const pageItems = filtered.slice(page * pageSize, (page + 1) * pageSize);
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
 
+  function resetFilters() {
+    setCategory("");
+    setLocale("");
+    setSort("downloads");
+    setPage(0);
+  }
+
   return (
     <div className="p-6">
-      <div className="mb-4 lg:hidden">
-        <Button
-          variant="outline"
-          onClick={() => setShowFilters((open) => !open)}
-          className="w-full justify-start gap-2"
-          aria-expanded={showFilters}
-        >
-          <Filter className="h-4 w-4 shrink-0" aria-hidden />
-          {showFilters ? "Hide filters" : "Show filters"}
-        </Button>
-      </div>
+      <h1 className="mb-6 text-2xl font-bold text-stone-900">Template marketplace</h1>
 
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-        <aside className={filterAsideClass(showFilters)}>
-          <div className="space-y-4 rounded-lg border border-stone-200 bg-white p-4">
+        <aside className="hidden w-60 shrink-0 lg:block">
+          <div className="sticky top-6 space-y-3 rounded-lg border border-stone-200 bg-white p-4">
             <h3 className="text-sm font-semibold text-stone-900">Filters</h3>
-            <div className="space-y-2">
-              <label htmlFor="marketplace-category" className="text-sm font-medium text-stone-700">
-                Category
-              </label>
-              <select
-                id="marketplace-category"
-                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c || "all"} value={c}>
-                    {c || "All"}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="marketplace-locale" className="text-sm font-medium text-stone-700">
-                Locale
-              </label>
-              <input
-                id="marketplace-locale"
-                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                value={locale}
-                onChange={(e) => setLocale(e.target.value)}
-                placeholder="id, en…"
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="marketplace-sort" className="text-sm font-medium text-stone-700">
-                Sort by
-              </label>
-              <select
-                id="marketplace-sort"
-                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-              >
-                <option value="downloads">Downloads</option>
-                <option value="rating">Rating</option>
-                <option value="newest">Recent</option>
-              </select>
-            </div>
+            <FilterControls
+              idPrefix="desktop"
+              category={category}
+              locale={locale}
+              sort={sort}
+              onCategory={(v) => {
+                setCategory(v);
+                setPage(0);
+              }}
+              onLocale={(v) => {
+                setLocale(v);
+                setPage(0);
+              }}
+              onSort={(v) => {
+                setSort(v);
+                setPage(0);
+              }}
+            />
+            <Button variant="ghost" size="sm" className="mt-1 w-full" onClick={resetFilters}>
+              Reset filters
+            </Button>
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1 space-y-4">
-          <h1 className="text-2xl font-bold text-stone-900">Template marketplace</h1>
+        <div className="min-w-0 flex-1 space-y-4">
+          <div className="flex gap-2 overflow-x-auto pb-1 lg:hidden">
+            <FilterControls
+              idPrefix="mobile"
+              compact
+              category={category}
+              locale={locale}
+              sort={sort}
+              onCategory={(v) => {
+                setCategory(v);
+                setPage(0);
+              }}
+              onLocale={(v) => {
+                setLocale(v);
+                setPage(0);
+              }}
+              onSort={(v) => {
+                setSort(v);
+                setPage(0);
+              }}
+            />
+          </div>
+
           <input
             className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
             placeholder="Search templates…"
@@ -157,7 +236,7 @@ export function MarketplaceListView() {
               Next
             </button>
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );
