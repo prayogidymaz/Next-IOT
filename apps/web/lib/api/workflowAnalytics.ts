@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from "@/lib/auth/api";
+import { apiErrorMessage, jsonAuthHeaders } from "@/lib/auth/api-headers";
 
 export type WorkflowStatsRecord = {
   workflow_id: string;
@@ -30,40 +31,39 @@ export type FailureReport = {
   failure_rate: number;
 };
 
-function authHeaders(): HeadersInit {
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") ?? "" : "";
-  return { Accept: "application/json", Authorization: `Bearer ${token}` };
-}
-
 export async function fetchTopFiredWorkflows(periodDays: number): Promise<WorkflowStatsRecord[]> {
   const res = await fetch(`${getApiBaseUrl()}/api/v1/analytics/workflows/top-fired?period_days=${periodDays}`, {
-    headers: authHeaders(),
+    headers: jsonAuthHeaders(false),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (res.status === 401) return [];
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
   return res.json() as Promise<WorkflowStatsRecord[]>;
 }
 
 export async function fetchWorkflowTimeline(workflowId: string, periodDays: number): Promise<{ points: TimelinePoint[] }> {
   const res = await fetch(
     `${getApiBaseUrl()}/api/v1/analytics/workflows/${workflowId}/timeline?period_days=${periodDays}`,
-    { headers: authHeaders() },
+    { headers: jsonAuthHeaders(false) },
   );
-  if (!res.ok) throw new Error(await res.text());
+  if (res.status === 401) return { points: [] };
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
   return res.json() as Promise<{ points: TimelinePoint[] }>;
 }
 
-export async function fetchWorkflowSavings(workflowId: string): Promise<SavingsReport> {
+export async function fetchWorkflowSavings(workflowId: string): Promise<SavingsReport | null> {
   const res = await fetch(`${getApiBaseUrl()}/api/v1/analytics/workflows/${workflowId}/savings`, {
-    headers: authHeaders(),
+    headers: jsonAuthHeaders(false),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (res.status === 401) return null;
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
   return res.json() as Promise<SavingsReport>;
 }
 
-export async function fetchWorkflowFailures(workflowId: string): Promise<FailureReport> {
+export async function fetchWorkflowFailures(workflowId: string): Promise<FailureReport | null> {
   const res = await fetch(`${getApiBaseUrl()}/api/v1/analytics/workflows/${workflowId}/failures`, {
-    headers: authHeaders(),
+    headers: jsonAuthHeaders(false),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (res.status === 401) return null;
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
   return res.json() as Promise<FailureReport>;
 }

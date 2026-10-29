@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { getApiBaseUrl } from "@/lib/auth/api";
-import { readAccessTokenFromDocument } from "@/lib/auth/token-role";
+import { readApiAccessToken } from "@/lib/auth/api-headers";
 
 export type RealtimeConnectionState = "connecting" | "connected" | "degraded" | "offline";
 
@@ -21,7 +21,7 @@ export function useTenantRealtime(): UseTenantRealtimeResult {
   const windowStartRef = useRef(Date.now());
 
   useEffect(() => {
-    const token = readAccessTokenFromDocument();
+    const token = readApiAccessToken();
     if (!token) {
       setConnection("offline");
       return;

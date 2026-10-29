@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from "@/lib/auth/api";
+import { apiErrorMessage, jsonAuthHeaders, publicJsonHeaders } from "@/lib/auth/api-headers";
 
 export type WorkflowTemplateRecord = {
   id: string;
@@ -16,11 +17,6 @@ export type WorkflowTemplateRecord = {
   locale: string;
 };
 
-function authHeaders(): HeadersInit {
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") ?? "" : "";
-  return { Accept: "application/json", "Content-Type": "application/json", Authorization: `Bearer ${token}` };
-}
-
 export async function listMarketplaceTemplates(params: {
   category?: string;
   locale?: string;
@@ -33,15 +29,17 @@ export async function listMarketplaceTemplates(params: {
   if (params.sort) q.set("sort", params.sort);
   if (params.limit) q.set("limit", String(params.limit));
   const res = await fetch(`${getApiBaseUrl()}/api/v1/marketplace/templates?${q.toString()}`, {
-    headers: authHeaders(),
+    headers: publicJsonHeaders(),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
   return res.json() as Promise<WorkflowTemplateRecord[]>;
 }
 
 export async function getMarketplaceTemplate(templateId: string): Promise<WorkflowTemplateRecord> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/marketplace/templates/${templateId}`, { headers: authHeaders() });
-  if (!res.ok) throw new Error(await res.text());
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/marketplace/templates/${templateId}`, {
+    headers: publicJsonHeaders(),
+  });
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
   return res.json() as Promise<WorkflowTemplateRecord>;
 }
 
@@ -55,20 +53,20 @@ export async function publishWorkflowTemplate(body: {
 }): Promise<WorkflowTemplateRecord> {
   const res = await fetch(`${getApiBaseUrl()}/api/v1/marketplace/publish`, {
     method: "POST",
-    headers: authHeaders(),
+    headers: jsonAuthHeaders(),
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
   return res.json() as Promise<WorkflowTemplateRecord>;
 }
 
 export async function downloadMarketplaceTemplate(templateId: string): Promise<{ id: string }> {
   const res = await fetch(`${getApiBaseUrl()}/api/v1/marketplace/templates/${templateId}/download`, {
     method: "POST",
-    headers: authHeaders(),
+    headers: jsonAuthHeaders(),
     body: JSON.stringify({}),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
   const body = (await res.json()) as { id: string };
   return body;
 }
@@ -80,16 +78,16 @@ export async function rateMarketplaceTemplate(
 ): Promise<void> {
   const res = await fetch(`${getApiBaseUrl()}/api/v1/marketplace/templates/${templateId}/rate`, {
     method: "POST",
-    headers: authHeaders(),
+    headers: jsonAuthHeaders(),
     body: JSON.stringify({ rating, review }),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
 }
 
 export async function unpublishMarketplaceTemplate(templateId: string): Promise<void> {
   const res = await fetch(`${getApiBaseUrl()}/api/v1/marketplace/templates/${templateId}`, {
     method: "DELETE",
-    headers: authHeaders(),
+    headers: jsonAuthHeaders(false),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
 }

@@ -9,6 +9,7 @@ import { PublishTemplateModal } from "@/src/features/workflow-marketplace/Publis
 import { VersionHistory } from "@/src/features/workflow-versioning/VersionHistory";
 import { WorkflowCanvas } from "@/src/features/workflow-builder/WorkflowCanvas";
 import { getApiBaseUrl } from "@/lib/auth/api";
+import { readApiAccessToken } from "@/lib/auth/api-headers";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? getApiBaseUrl();
 
@@ -17,7 +18,10 @@ type TabId = "editor" | "history";
 export default function EditWorkflowPage() {
   const params = useParams<{ id: string }>();
   const workflowId = params.id;
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") ?? "" : "";
+  const [token, setToken] = useState("");
+  useEffect(() => {
+    setToken(readApiAccessToken() ?? "");
+  }, []);
   const [tab, setTab] = useState<TabId>("editor");
   const [approvalOpen, setApprovalOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);

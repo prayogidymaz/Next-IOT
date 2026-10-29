@@ -79,9 +79,15 @@ export function HqShellProvider({ children }: { children: ReactNode }) {
         const base =
           process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:8000";
         const res = await fetch(`${base}/health`, { cache: "no-store" });
-        if (!res.ok) throw new Error("bad status");
         const data = (await res.json()) as { status?: string };
-        if (!cancelled) setSystemHealth(data.status === "healthy" ? "healthy" : "degraded");
+        if (cancelled) return;
+        if (data.status === "healthy") {
+          setSystemHealth("healthy");
+        } else if (data.status === "starting") {
+          setSystemHealth("unknown");
+        } else {
+          setSystemHealth("degraded");
+        }
       } catch {
         if (!cancelled) setSystemHealth("degraded");
       }

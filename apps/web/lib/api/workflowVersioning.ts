@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from "@/lib/auth/api";
+import { apiErrorMessage, jsonAuthHeaders } from "@/lib/auth/api-headers";
 
 export type WorkflowVersionRecord = {
   id: string;
@@ -19,23 +20,21 @@ export type VersionDiff = {
   removed_edges: string[];
 };
 
-function authHeaders(): HeadersInit {
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") ?? "" : "";
-  return { Accept: "application/json", "Content-Type": "application/json", Authorization: `Bearer ${token}` };
-}
-
 export async function fetchWorkflowVersions(workflowId: string): Promise<WorkflowVersionRecord[]> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/workflows/${workflowId}/versions`, { headers: authHeaders() });
-  if (!res.ok) throw new Error(await res.text());
+  const res = await fetch(`${getApiBaseUrl()}/api/v1/workflows/${workflowId}/versions`, {
+    headers: jsonAuthHeaders(false),
+  });
+  if (res.status === 401) return [];
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
   return res.json() as Promise<WorkflowVersionRecord[]>;
 }
 
 export async function rollbackWorkflowVersion(workflowId: string, versionNumber: number): Promise<void> {
   const res = await fetch(`${getApiBaseUrl()}/api/v1/workflows/${workflowId}/versions/${versionNumber}/rollback`, {
     method: "POST",
-    headers: authHeaders(),
+    headers: jsonAuthHeaders(false),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
 }
 
 export async function fetchVersionDiff(
@@ -45,8 +44,8 @@ export async function fetchVersionDiff(
 ): Promise<VersionDiff> {
   const res = await fetch(
     `${getApiBaseUrl()}/api/v1/workflows/${workflowId}/versions/${versionAId}/diff/${versionBId}`,
-    { headers: authHeaders() },
+    { headers: jsonAuthHeaders(false) },
   );
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
   return res.json() as Promise<VersionDiff>;
 }
