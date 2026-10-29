@@ -13,6 +13,8 @@ function isActive(pathname: string, href: string) {
   if (href === "/control-center") return pathname === "/control-center";
   if (href === "/device-profiles") return pathname.startsWith("/device-profiles");
   if (href === "/settings") return pathname === "/settings";
+  if (href === "/workflows") return pathname === "/workflows" || (pathname.startsWith("/workflows/") && !pathname.startsWith("/workflows/new"));
+  if (href === "/workflows/new") return pathname === "/workflows/new";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
