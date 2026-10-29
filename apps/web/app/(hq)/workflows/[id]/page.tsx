@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { ApprovalRequestModal } from "@/src/features/workflow-approval/ApprovalRequestModal";
 import { WorkflowActivateButton } from "@/src/features/workflow-approval/WorkflowActivateButton";
+import { PublishTemplateModal } from "@/src/features/workflow-marketplace/PublishTemplateModal";
 import { VersionHistory } from "@/src/features/workflow-versioning/VersionHistory";
 import { WorkflowCanvas } from "@/src/features/workflow-builder/WorkflowCanvas";
 import { getApiBaseUrl } from "@/lib/auth/api";
@@ -19,6 +20,7 @@ export default function EditWorkflowPage() {
   const token = typeof window !== "undefined" ? localStorage.getItem("access_token") ?? "" : "";
   const [tab, setTab] = useState<TabId>("editor");
   const [approvalOpen, setApprovalOpen] = useState(false);
+  const [publishOpen, setPublishOpen] = useState(false);
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
@@ -41,6 +43,9 @@ export default function EditWorkflowPage() {
           <WorkflowActivateButton workflowId={workflowId} token={token} enabled={enabled} onToggled={setEnabled} />
           <button type="button" className="rounded border px-2 py-1 text-sm" onClick={() => setApprovalOpen(true)}>
             Request approval
+          </button>
+          <button type="button" className="rounded border px-2 py-1 text-sm" onClick={() => setPublishOpen(true)}>
+            Publish to Marketplace
           </button>
         </div>
       </div>
@@ -65,6 +70,7 @@ export default function EditWorkflowPage() {
       )}
 
       <ApprovalRequestModal workflowId={workflowId} open={approvalOpen} onClose={() => setApprovalOpen(false)} />
+      <PublishTemplateModal workflowId={workflowId} open={publishOpen} onClose={() => setPublishOpen(false)} />
     </div>
   );
 }
