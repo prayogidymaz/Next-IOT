@@ -111,6 +111,12 @@ async def update_workflow(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workflow not found")
     if not user.is_super_admin and row.tenant_id != user.tenant_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    if definition.enabled and not row.enabled:
+        from app.workflows.approval.service import ApprovalService
+
+        allowed, reason = await ApprovalService(db).can_activate(workflow_id, user)
+        if not allowed:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=reason)
     row.name = definition.name
     row.description = definition.description
     row.enabled = definition.enabled
