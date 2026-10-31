@@ -88,8 +88,13 @@ from app.types.redis_client import (
     redis_from_url,
 )
 from app.users.router import router as users_router
+from app.observability.health import router as observability_health_router
+from app.observability.logging_config import attach_correlation_middleware, configure_structured_logging
+from app.observability.metrics import setup_prometheus
+from app.observability.tracing import setup_tracing
 from app.vision.router import router as vision_router
 
+configure_structured_logging()
 logger = logging.getLogger(__name__)
 
 
@@ -201,6 +206,11 @@ app = FastAPI(
     description="Next-IOT Platform API",
     lifespan=lifespan,
 )
+
+attach_correlation_middleware(app)
+setup_prometheus(app)
+setup_tracing(app)
+app.include_router(observability_health_router)
 
 _cors_kwargs: CorsMiddlewareKwargs = {
     "allow_credentials": settings.cors_allow_credentials,
