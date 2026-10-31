@@ -1,0 +1,10 @@
+{
+  "name": "classic",
+  "elements": [
+    { "type": "analog_clock", "x": 120, "y": 90 },
+    { "type": "kpi_card", "x": 16, "y": 170, "title": "Soil", "binding": "soil_moisture", "unit": "%" },
+    { "type": "kpi_card", "x": 68, "y": 170, "title": "Temp", "binding": "air_temp", "unit": "C" },
+    { "type": "kpi_card", "x": 120, "y": 170, "title": "Batt", "binding": "battery", "unit": "%" },
+    { "type": "kpi_card", "x": 172, "y": 170, "title": "Signal", "binding": "rssi", "unit": "dBm" }
+  ]
+}

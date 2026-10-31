@@ -1,0 +1,8 @@
+{
+  "name": "farmer",
+  "elements": [
+    { "type": "progress_ring", "x": 120, "y": 100, "binding": "soil_moisture", "max": 100 },
+    { "type": "text", "x": 72, "y": 170, "binding": "irrigation_status", "static": "Irrigation" },
+    { "type": "kpi_card", "x": 150, "y": 170, "title": "Alerts", "binding": "alert_count", "unit": "" }
+  ]
+}

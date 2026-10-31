@@ -15,6 +15,10 @@
 #include "layout.h"
 #include "mqtt.h"
 #include "navigation/nav_stack.h"
+#include "features/ble/ble_pairing.h"
+#include "features/ble/notification_handler.h"
+#include "features/offline/sync_manager.h"
+#include "features/watch_face/face_switcher.h"
 #include "screens/screen_manager.h"
 
 static void simulator_handle_keyboard(void) {
@@ -24,6 +28,23 @@ static void simulator_handle_keyboard(void) {
             next_os_screen_manager_prev();
         } else if (event.key.keysym.sym == SDLK_RIGHT) {
             next_os_screen_manager_next();
+        } else if (event.key.keysym.sym == SDLK_b) {
+            next_os_ble_simulate_pair_toggle();
+        } else if (event.key.keysym.sym == SDLK_o) {
+            static bool offline = false;
+            offline = !offline;
+            next_os_sync_manager_set_offline(offline);
+        } else if (event.key.keysym.sym == SDLK_f) {
+            next_os_face_switcher_next();
+            lv_obj_t *root = next_os_screen_manager_get_content_root();
+            if (root != nullptr) {
+                next_os_face_switcher_mount(root);
+            }
+        } else if (event.key.keysym.sym == SDLK_n) {
+            static const char kSample[] =
+                "{\"type\":\"pest_detected\",\"title\":\"Hama\",\"body\":\"Terdeteksi\","
+                "\"priority\":3}";
+            next_os_notification_handler_on_ble_payload(kSample, sizeof(kSample) - 1);
         }
     }
 }

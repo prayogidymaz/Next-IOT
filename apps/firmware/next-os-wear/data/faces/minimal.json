@@ -1,0 +1,7 @@
+{
+  "name": "minimal",
+  "elements": [
+    { "type": "digital_clock", "x": 72, "y": 96, "font": "large" },
+    { "type": "kpi_card", "x": 72, "y": 150, "title": "Primary", "binding": "soil_moisture", "unit": "%" }
+  ]
+}
