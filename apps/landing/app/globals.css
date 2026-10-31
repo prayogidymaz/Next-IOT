@@ -7,7 +7,7 @@ html {
 }
 
 body {
-  @apply bg-white text-slate-900 antialiased;
+  @apply bg-white text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
 }
 
 .hero-grid {
