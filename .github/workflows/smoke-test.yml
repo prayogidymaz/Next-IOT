@@ -1,0 +1,33 @@
+name: Nightly Smoke Test
+
+on:
+  schedule:
+    - cron: "0 19 * * *"
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Production health checks
+        env:
+          API_BASE: ${{ secrets.PRODUCTION_API_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${API_BASE:-}" ]; then
+            echo "PRODUCTION_API_URL not configured; skipping."
+            exit 0
+          fi
+          curl -fsS "${API_BASE}/health/live"
+          curl -fsS "${API_BASE}/health/ready"
+
+      - name: Alert on failure
+        if: failure()
+        env:
+          WEBHOOK_URL: ${{ secrets.SMOKE_ALERT_WEBHOOK }}
+        run: |
+          if [ -n "${WEBHOOK_URL:-}" ]; then
+            curl -fsS -X POST "$WEBHOOK_URL" \
+              -H "Content-Type: application/json" \
+              -d '{"content":"Next-IoT nightly smoke test failed — check GitHub Actions."}'
+          fi
