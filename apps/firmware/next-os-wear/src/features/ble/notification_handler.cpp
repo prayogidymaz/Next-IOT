@@ -1,5 +1,7 @@
 #include "features/ble/notification_handler.h"
 
+#include "features/haptic/haptic_engine.h"
+
 #include <ArduinoJson.h>
 
 #include <cstdio>
@@ -49,4 +51,5 @@ void next_os_notification_handler_on_ble_payload(const char *json, std::size_t l
         return;
     }
     show_in_notification_center(parsed);
+    next_os_notification_apply_haptic(parsed.type, parsed.priority);
 }
