@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" role="img" aria-label="Go-to-market funnel">
+  <rect width="400" height="200" fill="#f1f5f9"/>
+  <polygon points="200,20 320,70 280,70 280,180 120,180 120,70 80,70" fill="#0ea5e9" opacity="0.2"/>
+  <text x="200" y="55" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" fill="#0c4a6e">Content / Shorts</text>
+  <text x="200" y="95" text-anchor="middle" font-size="12" fill="#0c4a6e">14-day Trial</text>
+  <text x="200" y="135" text-anchor="middle" font-size="12" fill="#0c4a6e">Pro + Kit</text>
+  <text x="200" y="165" text-anchor="middle" font-size="12" font-weight="600" fill="#0c4a6e">Enterprise</text>
+</svg>
