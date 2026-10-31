@@ -1,0 +1,47 @@
+{
+  "uid": "next-iot-mesh",
+  "title": "Next-IoT Mesh & Workflows",
+  "tags": ["next-iot", "devices"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Device message rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(device_message_rate[5m])) by (domain)",
+          "legendFormat": "{{domain}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Workflow fired total",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(workflow_fired_total[5m])) by (tenant_id)",
+          "legendFormat": "tenant {{tenant_id}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Anomalies detected",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(anomaly_detected_total[5m]))",
+          "legendFormat": "anomalies/s"
+        }
+      ]
+    }
+  ]
+}
