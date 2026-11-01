@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Next-IOT Field",
+    "slug": "next-iot-field",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "nextiot-field",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "id.nextiot.field"
+    },
+    "android": {
+      "package": "id.nextiot.field",
+      "adaptiveIcon": {
+        "backgroundColor": "#1a3d2e"
+      }
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Next-IOT Field to scan device QR codes."
+        }
+      ],
+      "expo-notifications"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "next-iot-field-local"
+      }
+    }
+  }
+}

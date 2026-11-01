@@ -1,21 +1,34 @@
-# Next-IoT Mobile Apps
+# Next-IOT Field (React Native / Expo)
 
-| Package | Role |
-| --- | --- |
-| [`apps/dashboard`](../dashboard) | Operator tablet / domain shell (onboarding, tactical map, segments) |
-| [`apps/mobile/field_app`](field_app) | **Field Execution** — BLE/Wi-Fi discovery, relay HUD, offline telemetry queue |
+Aplikasi field operator — dashboard, perangkat, alert, workflow trigger, dan scan QR.
 
-## Field Execution (`field_app`)
-
-Tactical Clean / Warm Cream Flutter app for edge operators.
+## Setup
 
 ```bash
-cd apps/mobile/field_app
-flutter pub get
-flutter test
-flutter run
+npm install -g expo-cli
+cd apps/mobile
+npm install
+npx expo start
 ```
 
-- **API base:** Android emulator default `http://10.0.2.2:8000` (set on login).
-- **Relay commands:** `POST /api/v1/devices/{id}/commands` with operator JWT (`RELAY_ON` / `RELAY_OFF`).
-- **Telemetry ingest:** `POST /api/v1/telemetry` (device Basic auth — queue flush when credentials are provisioned).
+Scan QR di terminal dengan **Expo Go** di HP (Android/iOS).
+
+## Environment
+
+```bash
+# Android emulator → API host
+EXPO_PUBLIC_API_URL=http://10.0.2.2:8000
+```
+
+## Build preview APK
+
+```bash
+eas build --platform android --profile preview
+```
+
+## Paket terkait
+
+| Path | Role |
+| --- | --- |
+| `apps/mobile/field_app` | Flutter field app (legacy BLE/HUD) |
+| `apps/mobile` | **Expo React Native** field app (Combo F) |
