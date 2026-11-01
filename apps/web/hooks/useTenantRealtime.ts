@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { getApiBaseUrl } from "@/lib/auth/api";
 import { readApiAccessToken } from "@/lib/auth/api-headers";
+import { handleUnauthorized, isAuthSessionExpired } from "@/src/lib/api/client";
 
 export type RealtimeConnectionState = "connecting" | "connected" | "degraded" | "offline";
 
@@ -22,7 +23,10 @@ export function useTenantRealtime(): UseTenantRealtimeResult {
 
   useEffect(() => {
     const token = readApiAccessToken();
-    if (!token) {
+    if (!token || isAuthSessionExpired()) {
+      if (token && isAuthSessionExpired()) {
+        handleUnauthorized();
+      }
       setConnection("offline");
       return;
     }
@@ -42,7 +46,15 @@ export function useTenantRealtime(): UseTenantRealtimeResult {
     source.addEventListener("alarms", bump);
     source.addEventListener("device_status", bump);
     source.addEventListener("rule_executions", bump);
-    source.onerror = () => setConnection("degraded");
+    source.onerror = () => {
+      if (isAuthSessionExpired()) {
+        source.close();
+        handleUnauthorized();
+        setConnection("offline");
+        return;
+      }
+      setConnection("degraded");
+    };
 
     const interval = window.setInterval(() => {
       const now = Date.now();

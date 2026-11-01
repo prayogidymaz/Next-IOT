@@ -1,5 +1,4 @@
-import { getApiBaseUrl } from "@/lib/auth/api";
-import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/constants";
+import { ApiUnauthorizedError, apiFetch, apiUrl } from "@/src/lib/api/client";
 import { z } from "zod";
 
 const alarmItemSchema = z.object({
@@ -20,14 +19,6 @@ const alarmListSchema = z.object({
 
 export type AlarmItem = z.infer<typeof alarmItemSchema>;
 
-function authHeaders(): HeadersInit {
-  const prefix = `${ACCESS_TOKEN_COOKIE}=`;
-  const match = document.cookie.split(";").map((c) => c.trim()).find((c) => c.startsWith(prefix));
-  const token = match ? decodeURIComponent(match.slice(prefix.length)) : null;
-  if (!token) throw new Error("Belum masuk");
-  return { Accept: "application/json", "Content-Type": "application/json", Authorization: `Bearer ${token}` };
-}
-
 export async function listAlarms(params?: {
   status?: string;
   severity?: string;
@@ -36,7 +27,13 @@ export async function listAlarms(params?: {
   if (params?.status) qs.set("status", params.status);
   if (params?.severity) qs.set("severity", params.severity);
   const suffix = qs.toString() ? `?${qs.toString()}` : "";
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/alarms${suffix}`, { headers: authHeaders() });
+  let res: Response;
+  try {
+    res = await apiFetch(apiUrl(`/api/v1/alarms${suffix}`));
+  } catch (err) {
+    if (err instanceof ApiUnauthorizedError) throw err;
+    throw new Error("Gagal memuat alarms");
+  }
   if (!res.ok) throw new Error(`Gagal memuat alarms (${res.status})`);
   return alarmListSchema.parse(await res.json()).items;
 }

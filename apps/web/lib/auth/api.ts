@@ -1,4 +1,5 @@
 import { authUserSchema, registerResponseSchema, tokenResponseSchema } from "@/lib/auth/schemas";
+import { apiFetch, apiUrl, ApiUnauthorizedError } from "@/src/lib/api/client";
 
 const DEFAULT_DEV_API = "http://localhost:8000";
 
@@ -75,7 +76,7 @@ export async function register(input: {
 }
 
 export async function fetchAuthMe(accessToken: string): Promise<AuthUser> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/auth/me`, {
+  const res = await apiFetch(apiUrl("/api/v1/auth/me"), {
     headers: {
       Accept: "application/json",
       Authorization: `Bearer ${accessToken}`,

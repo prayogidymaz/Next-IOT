@@ -13,6 +13,13 @@ import {
 import { listAlarms } from "@/lib/api/alarms";
 import { fetchAuthMe } from "@/lib/auth/api";
 import { readAccessTokenFromDocument } from "@/lib/auth/token-role";
+import {
+  apiFetch,
+  apiUrl,
+  ApiUnauthorizedError,
+  emitSystemDegraded,
+  SYSTEM_DEGRADED_EVENT,
+} from "@/src/lib/api/client";
 import type { HqDomainId } from "@/lib/hq/domains";
 
 const TENANTS: string[] = ["Next-IoT Platform", "Acme Agri Co", "SkyLogistics Fleet"];
@@ -68,19 +75,30 @@ export function HqShellProvider({ children }: { children: ReactNode }) {
     if (token) {
       void fetchAuthMe(token)
         .then((me) => setUserRole(me.role))
-        .catch(() => setUserRole(null));
+        .catch((err: unknown) => {
+          if (err instanceof ApiUnauthorizedError) return;
+          setUserRole(null);
+        });
     }
+  }, []);
+
+  useEffect(() => {
+    const onDegraded = () => setSystemHealth("degraded");
+    window.addEventListener(SYSTEM_DEGRADED_EVENT, onDegraded);
+    return () => window.removeEventListener(SYSTEM_DEGRADED_EVENT, onDegraded);
   }, []);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const base =
-          process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:8000";
-        const res = await fetch(`${base}/health`, { cache: "no-store" });
+        const res = await apiFetch(apiUrl("/health"), { public: true, cache: "no-store" });
         const data = (await res.json()) as { status?: string };
         if (cancelled) return;
+        if (res.status >= 500) {
+          setSystemHealth("degraded");
+          return;
+        }
         if (data.status === "healthy") {
           setSystemHealth("healthy");
         } else if (data.status === "starting") {
@@ -89,7 +107,10 @@ export function HqShellProvider({ children }: { children: ReactNode }) {
           setSystemHealth("degraded");
         }
       } catch {
-        if (!cancelled) setSystemHealth("degraded");
+        if (!cancelled) {
+          emitSystemDegraded();
+          setSystemHealth("degraded");
+        }
       }
     })();
     return () => {
@@ -100,7 +121,10 @@ export function HqShellProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void listAlarms({ status: "active" })
       .then((items) => setAlarmCount(items.length))
-      .catch(() => setAlarmCount(0));
+      .catch((err: unknown) => {
+        if (err instanceof ApiUnauthorizedError) return;
+        setAlarmCount(0);
+      });
   }, []);
 
   const toggleCollapsed = useCallback(() => setCollapsed((c) => !c), []);
