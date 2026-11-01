@@ -87,6 +87,7 @@ from app.types.redis_client import (
     close_redis,
     redis_from_url,
 )
+from app.users.push_router import router as users_push_router
 from app.users.router import router as users_router
 from app.observability.health import router as observability_health_router
 from app.observability.logging_config import attach_correlation_middleware, configure_structured_logging
@@ -271,6 +272,7 @@ app.include_router(vision_router)
 app.include_router(analytics_router)
 app.include_router(tenants_router)
 app.include_router(users_router)
+app.include_router(users_push_router)
 app.include_router(audit_router)
 app.include_router(system_router)
 

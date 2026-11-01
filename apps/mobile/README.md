@@ -26,6 +26,12 @@ EXPO_PUBLIC_API_URL=http://10.0.2.2:8000
 eas build --platform android --profile preview
 ```
 
+## Offline & push
+
+- SQLite queue: `src/features/offline/offlineQueue.ts`
+- Background flush: `src/features/offline/syncManager.ts` (60s foreground + NetInfo)
+- Push token: `POST /api/v1/users/me/push-token` (requires migration **046**)
+
 ## Paket terkait
 
 | Path | Role |
