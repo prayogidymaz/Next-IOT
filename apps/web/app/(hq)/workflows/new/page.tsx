@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { HqPageShell } from "@/components/hq/HqPageShell";
 import { WorkflowCanvas } from "@/src/features/workflow-builder/WorkflowCanvas";
 import { getApiBaseUrl } from "@/lib/auth/api";
 import { readApiAccessToken } from "@/lib/auth/api-headers";
@@ -15,9 +16,8 @@ export default function NewWorkflowPage() {
   }, []);
 
   return (
-    <div className="p-6">
-      <h1 className="mb-4 text-2xl font-semibold text-stone-900">New workflow</h1>
+    <HqPageShell>
       <WorkflowCanvas apiBase={API_BASE} token={token} />
-    </div>
+    </HqPageShell>
   );
 }

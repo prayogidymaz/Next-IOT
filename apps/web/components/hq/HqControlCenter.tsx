@@ -86,7 +86,7 @@ export function HqControlCenter() {
   }, [filterDomain, fleet]);
 
   return (
-    <HqPageContent description={`Tactical command grid · ${tenant} · live telemetry stream`}>
+    <HqPageContent>
       <CreamCard className="p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>

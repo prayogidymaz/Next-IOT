@@ -79,7 +79,7 @@ export default function MeshGraphPage() {
   }, [events]);
 
   return (
-    <HqPageContent description="Universal Mesh topology — cross-domain devices, live SSE event stream, and workflow simulation playground.">
+    <HqPageContent>
       {bootError ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{bootError}</div>
       ) : null}

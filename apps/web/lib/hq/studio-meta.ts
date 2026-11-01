@@ -15,6 +15,10 @@ const STUDIO_META: Record<string, Omit<StudioMeta, "slug">> = {
 
 export const loadStudioMeta = cache(async (slug: string): Promise<StudioMeta> => {
   await new Promise((r) => setTimeout(r, 0));
+  return getStudioMetaSync(slug);
+});
+
+export function getStudioMetaSync(slug: string): StudioMeta {
   const base = STUDIO_META[slug] ?? { deviceCount: 0, pipelineCount: 0, lastSync: "—" };
   return { slug, ...base };
-});
+}

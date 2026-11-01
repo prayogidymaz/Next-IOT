@@ -1,5 +1,10 @@
+import { HqPageShell } from "@/components/hq/HqPageShell";
 import { ApprovalPolicyPage } from "@/src/features/workflow-approval/ApprovalPolicyPage";
 
 export default function ApprovalPolicyRoute() {
-  return <ApprovalPolicyPage />;
+  return (
+    <HqPageShell>
+      <ApprovalPolicyPage />
+    </HqPageShell>
+  );
 }

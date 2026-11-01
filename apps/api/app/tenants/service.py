@@ -18,6 +18,14 @@ from app.tenants.schemas import (
 )
 
 
+def normalize_member_role(role: str) -> str:
+    return _normalize_role(role)
+
+
+async def assert_tenant_admin(db: AsyncSession, user: CurrentUser, tenant_id: uuid.UUID) -> None:
+    await _require_tenant_admin(db, user, tenant_id)
+
+
 def _normalize_role(role: str) -> str:
     value = role.lower().replace("-", "_")
     allowed = {UserRole.TENANT_ADMIN, UserRole.OPERATOR, UserRole.VIEWER}
@@ -133,6 +141,7 @@ async def list_tenant_members(
     db: AsyncSession,
     user: CurrentUser,
     tenant_id: uuid.UUID,
+    search: str | None = None,
 ) -> list[TenantMemberResponse]:
     await _require_tenant_admin(db, user, tenant_id)
 
@@ -156,7 +165,7 @@ async def list_tenant_members(
     user_ids = [m.user_id for m in memberships]
     users = (await db.scalars(select(User).where(User.id.in_(user_ids)))).all()
     role_by_user = {m.user_id: m.role for m in memberships}
-    return [
+    rows = [
         TenantMemberResponse(
             user_id=u.id,
             email=u.email,
@@ -166,6 +175,10 @@ async def list_tenant_members(
         )
         for u in sorted(users, key=lambda x: x.email.lower())
     ]
+    if search and search.strip():
+        q = search.strip().lower()
+        rows = [r for r in rows if q in r.email.lower()]
+    return rows
 
 
 async def invite_tenant_member(

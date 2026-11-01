@@ -1,0 +1,46 @@
+{
+  "nav": {
+    "command": "Command",
+    "fleet": "Fleet",
+    "intelligence": "Intelligence",
+    "developer": "Developer",
+    "integration": "Integration",
+    "settings": "Settings",
+    "dashboard": "Dashboard",
+    "alarms": "Alarms",
+    "automations": "Automations",
+    "workflowBuilder": "Workflow builder",
+    "workflowList": "Workflow list",
+    "marketplace": "Marketplace",
+    "pendingApprovals": "Pending approvals",
+    "sites": "Sites",
+    "devices": "Devices",
+    "reports": "Reports",
+    "aiDecisions": "AI Decisions",
+    "fleetAutomation": "Fleet Automation",
+    "sustainability": "Sustainability"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "create": "Create",
+    "edit": "Edit"
+  },
+  "status": {
+    "active": "Active",
+    "pending": "Pending",
+    "resolved": "Resolved"
+  },
+  "empty": {
+    "noData": "No data yet",
+    "noResults": "No results"
+  },
+  "errors": {
+    "generic": "Something went wrong",
+    "loadFailed": "Failed to load data"
+  },
+  "placeholders": {
+    "search": "Search…"
+  }
+}

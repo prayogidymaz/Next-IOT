@@ -11,12 +11,20 @@ import {
   QrCode,
   Radio,
   Receipt,
-  Sparkles,
   Tag,
   Users,
   Sprout,
   Workflow,
   Share2,
+  MapPin,
+  Leaf,
+  Code2,
+  Webhook,
+  BookOpen,
+  Store,
+  FileBarChart,
+  Sparkles,
+  Boxes,
 } from "lucide-react";
 
 export type HqNavItem = {
@@ -102,6 +110,13 @@ export const HQ_NAV_SECTIONS: HqNavSection[] = [
     collapsible: true,
     items: [
       {
+        href: "/sites",
+        label: "Sites",
+        icon: MapPin,
+        accentClass: "text-accent-emerald",
+        iconBgClass: "bg-accent-emerald-soft",
+      },
+      {
         href: "/devices",
         label: "Devices",
         icon: Radio,
@@ -138,6 +153,13 @@ export const HQ_NAV_SECTIONS: HqNavSection[] = [
         iconBgClass: "bg-accent-amber-soft",
       },
       {
+        href: "/fleet/templates",
+        label: "Fleet Automation",
+        icon: Boxes,
+        accentClass: "text-accent-cobalt",
+        iconBgClass: "bg-accent-cobalt-soft",
+      },
+      {
         href: "/agriculture",
         label: "Smart Agriculture",
         icon: Sprout,
@@ -166,18 +188,25 @@ export const HQ_NAV_SECTIONS: HqNavSection[] = [
         iconBgClass: "bg-accent-emerald-soft",
       },
       {
-        href: "/billing",
-        label: "Reports",
-        icon: FileText,
-        accentClass: "text-accent-cobalt",
-        iconBgClass: "bg-accent-cobalt-soft",
+        href: "/sustainability",
+        label: "Sustainability",
+        icon: Leaf,
+        accentClass: "text-emerald-600",
+        iconBgClass: "bg-emerald-500/10",
       },
       {
-        href: "/dashboard",
-        label: "AI Insights",
+        href: "/reports",
+        label: "Reports",
+        icon: FileBarChart,
+        accentClass: "text-accent-indigo",
+        iconBgClass: "bg-accent-indigo-soft",
+      },
+      {
+        href: "/decisions",
+        label: "AI Decisions",
         icon: Sparkles,
-        accentClass: "text-accent-amber",
-        iconBgClass: "bg-accent-amber-soft",
+        accentClass: "text-accent-violet",
+        iconBgClass: "bg-accent-violet-soft",
       },
       {
         href: "/mesh/graph",
@@ -185,6 +214,41 @@ export const HQ_NAV_SECTIONS: HqNavSection[] = [
         icon: Share2,
         accentClass: "text-[#556B4A]",
         iconBgClass: "bg-[#F5EFE0]",
+      },
+    ],
+  },
+  {
+    id: "developer",
+    label: "Developer",
+    collapsible: true,
+    items: [
+      {
+        href: "/developer/docs",
+        label: "API docs",
+        icon: BookOpen,
+        accentClass: "text-accent-indigo",
+        iconBgClass: "bg-accent-indigo-soft",
+      },
+      {
+        href: "/developer/playground",
+        label: "API playground",
+        icon: Code2,
+        accentClass: "text-accent-cobalt",
+        iconBgClass: "bg-accent-cobalt-soft",
+      },
+      {
+        href: "/developer/webhooks",
+        label: "Webhooks",
+        icon: Webhook,
+        accentClass: "text-accent-violet",
+        iconBgClass: "bg-accent-violet-soft",
+      },
+      {
+        href: "/developer/api-keys",
+        label: "API keys",
+        icon: Key,
+        accentClass: "text-accent-indigo",
+        iconBgClass: "bg-accent-indigo-soft",
       },
     ],
   },
@@ -197,20 +261,6 @@ export const HQ_NAV_SECTIONS: HqNavSection[] = [
         href: "/notification-settings",
         label: "Notifications",
         icon: Mail,
-        accentClass: "text-accent-indigo",
-        iconBgClass: "bg-accent-indigo-soft",
-      },
-      {
-        href: "/devices",
-        label: "MQTT Credentials",
-        icon: Key,
-        accentClass: "text-accent-cobalt",
-        iconBgClass: "bg-accent-cobalt-soft",
-      },
-      {
-        href: "/developer/api-keys",
-        label: "API Keys",
-        icon: Key,
         accentClass: "text-accent-indigo",
         iconBgClass: "bg-accent-indigo-soft",
       },
@@ -229,9 +279,23 @@ export const HQ_NAV_SECTIONS: HqNavSection[] = [
         iconBgClass: "bg-accent-emerald-soft",
       },
       {
-        href: "/settings",
-        label: "Users & Permissions",
+        href: "/members",
+        label: "Members & roles",
         icon: Users,
+        accentClass: "text-accent-indigo",
+        iconBgClass: "bg-accent-indigo-soft",
+      },
+      {
+        href: "/approval/policy",
+        label: "Approval policy",
+        icon: FileText,
+        accentClass: "text-accent-amber",
+        iconBgClass: "bg-accent-amber-soft",
+      },
+      {
+        href: "/sso",
+        label: "Security & SSO",
+        icon: Key,
         accentClass: "text-accent-indigo",
         iconBgClass: "bg-accent-indigo-soft",
       },
@@ -243,7 +307,7 @@ export const HQ_NAV_SECTIONS: HqNavSection[] = [
         iconBgClass: "bg-accent-amber-soft",
       },
       {
-        href: "/settings",
+        href: "/audit-log",
         label: "Audit Log",
         icon: FileText,
         accentClass: "text-ink-secondary",
@@ -253,9 +317,22 @@ export const HQ_NAV_SECTIONS: HqNavSection[] = [
   },
 ];
 
-export function hqNavSectionsForRole(role: string | null): HqNavSection[] {
+const SELLER_NAV_ITEM: HqNavItem = {
+  href: "/marketplace/seller/dashboard",
+  label: "Seller dashboard",
+  icon: Store,
+  accentClass: "text-accent-amber",
+  iconBgClass: "bg-accent-amber-soft",
+};
+
+export function hqNavSectionsForRole(role: string | null, isSeller = false): HqNavSection[] {
   void role;
-  return HQ_NAV_SECTIONS;
+  if (!isSeller) return HQ_NAV_SECTIONS;
+  return HQ_NAV_SECTIONS.map((section) =>
+    section.id === "integration"
+      ? { ...section, items: [...section.items, SELLER_NAV_ITEM] }
+      : section,
+  );
 }
 
 export const HQ_NAV_ITEMS: HqNavItem[] = HQ_NAV_SECTIONS.flatMap((s) => s.items);
@@ -283,14 +360,24 @@ export const HQ_PAGE_TITLES: Record<string, string> = {
   "/analytics/yield": "Yield forecast",
   "/studio/missions": "Mission Studio",
   "/developer/api-keys": "API Keys",
+  "/developer/docs": "API docs",
+  "/developer/playground": "API playground",
+  "/developer/webhooks": "Webhooks",
+  "/sites": "Sites",
+  "/sustainability": "Sustainability",
+  "/marketplace/seller/dashboard": "Seller dashboard",
+  "/marketplace/seller/payouts": "Seller payouts",
   "/settings/tenant-branding": "Tenant Settings",
-  "/settings": "Settings",
+  "/members": "Members & roles",
+  "/audit-log": "Audit Log",
+  "/profile": "My profile",
 };
 
 export function titleForPath(pathname: string): string {
   if (HQ_PAGE_TITLES[pathname]) return HQ_PAGE_TITLES[pathname];
-  for (const [path, title] of Object.entries(HQ_PAGE_TITLES)) {
-    if (pathname.startsWith(path)) return title;
+  const sorted = Object.entries(HQ_PAGE_TITLES).sort((a, b) => b[0].length - a[0].length);
+  for (const [path, title] of sorted) {
+    if (pathname === path || pathname.startsWith(`${path}/`)) return title;
   }
   return "Web HQ";
 }

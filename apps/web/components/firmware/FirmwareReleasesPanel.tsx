@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { CreamCard } from "@/components/ui/CreamCard";
+import { Button } from "@/components/ui/button";
+import { useHqToast } from "@/hooks/useHqToast";
 import {
   listFirmwareReleases,
   listReleaseRollouts,
@@ -11,8 +12,13 @@ import {
   type FirmwareRelease,
   type OtaRollout,
 } from "@/lib/api/firmware-releases";
+import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
+import { EmptyState } from "@/src/components/ui/EmptyState";
+import { Input } from "@/src/components/ui/input";
+import { Label } from "@/src/components/ui/label";
 
 export function FirmwareReleasesPanel() {
+  const { showToast } = useHqToast();
   const [releases, setReleases] = useState<FirmwareRelease[]>([]);
   const [version, setVersion] = useState("1.0.0");
   const [category, setCategory] = useState("SENSOR");
@@ -56,7 +62,7 @@ export function FirmwareReleasesPanel() {
       const result = await publishFirmwareRelease(releaseId);
       await refresh();
       setExpandedId(releaseId);
-      alert(`Rollout: ${result.rollouts_created} baru, ${result.targeted_devices} device`);
+      showToast(`Rollout: ${result.rollouts_created} baru, ${result.targeted_devices} device`, "success");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Publish gagal");
     } finally {
@@ -80,91 +86,78 @@ export function FirmwareReleasesPanel() {
 
   return (
     <div className="space-y-6">
-      <CreamCard title="Upload release">
-        <div className="grid gap-3 md:grid-cols-3">
-          <label className="text-sm">
-            Version
-            <input
-              className="mt-1 w-full rounded border border-cream-border px-2 py-1"
-              value={version}
-              onChange={(e) => setVersion(e.target.value)}
-            />
-          </label>
-          <label className="text-sm">
-            Device category
-            <input
-              className="mt-1 w-full rounded border border-cream-border px-2 py-1"
-              value={category}
-              onChange={(e) => setCategory(e.target.value.toUpperCase())}
-            />
-          </label>
-          <label className="text-sm">
-            Firmware file
-            <input
-              type="file"
-              className="mt-1 block w-full text-sm"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
-          </label>
-        </div>
-        <button
-          type="button"
-          disabled={busy}
-          className="mt-4 rounded bg-accent-violet px-4 py-2 text-sm text-white disabled:opacity-50"
-          onClick={() => void onUpload()}
-        >
-          Upload
-        </button>
-      </CreamCard>
+      <Card>
+        <CardHeader>
+          <CardTitle>Upload release</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="fw-version">Version</Label>
+              <Input id="fw-version" value={version} onChange={(e) => setVersion(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="fw-category">Device category</Label>
+              <Input id="fw-category" value={category} onChange={(e) => setCategory(e.target.value.toUpperCase())} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="fw-file">Firmware file</Label>
+              <Input id="fw-file" type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+            </div>
+          </div>
+          <Button disabled={busy} onClick={() => void onUpload()}>
+            Upload
+          </Button>
+        </CardContent>
+      </Card>
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
-      <CreamCard title="Releases">
-        <ul className="divide-y divide-cream-border">
-          {releases.map((r) => (
-            <li key={r.id} className="py-3 text-sm">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <span className="font-medium">{r.version}</span>
-                  <span className="ml-2 text-ink-secondary">{r.target_device_category}</span>
-                  <span className="ml-2 rounded bg-cream-muted px-2 py-0.5 text-xs">{r.status}</span>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={busy}
-                    className="rounded border border-cream-border px-3 py-1 text-xs"
-                    onClick={() => void onPublish(r.id)}
-                  >
-                    Rollout (MQTT)
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded border border-cream-border px-3 py-1 text-xs"
-                    onClick={() => void onExpandRollouts(r.id)}
-                  >
-                    {expandedId === r.id ? "Hide" : "Rollouts"}
-                  </button>
-                </div>
-              </div>
-              {expandedId === r.id ? (
-                <ul className="mt-2 space-y-1 pl-2 text-xs text-ink-secondary">
-                  {rollouts.length === 0 ? (
-                    <li>No rollouts yet</li>
-                  ) : (
-                    rollouts.map((o) => (
-                      <li key={o.id}>
-                        {o.device_name}: {o.status}
-                      </li>
-                    ))
-                  )}
-                </ul>
-              ) : null}
-            </li>
-          ))}
-          {releases.length === 0 ? <li className="py-4 text-ink-secondary">Belum ada release</li> : null}
-        </ul>
-      </CreamCard>
+      <Card>
+        <CardHeader>
+          <CardTitle>Releases</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {releases.length === 0 ? (
+            <EmptyState title="Belum ada release" description="Upload firmware baru untuk mulai" />
+          ) : (
+            <ul className="divide-y divide-border">
+              {releases.map((r) => (
+                <li key={r.id} className="py-3 text-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <span className="font-medium text-foreground">{r.version}</span>
+                      <span className="ml-2 text-muted-foreground">{r.target_device_category}</span>
+                      <span className="ml-2 rounded bg-muted px-2 py-0.5 text-xs">{r.status}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" disabled={busy} onClick={() => void onPublish(r.id)}>
+                        Rollout (MQTT)
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => void onExpandRollouts(r.id)}>
+                        {expandedId === r.id ? "Hide" : "Rollouts"}
+                      </Button>
+                    </div>
+                  </div>
+                  {expandedId === r.id ? (
+                    <ul className="mt-2 space-y-1 pl-2 text-xs text-muted-foreground">
+                      {rollouts.length === 0 ? (
+                        <li>No rollouts yet</li>
+                      ) : (
+                        rollouts.map((o) => (
+                          <li key={o.id}>
+                            {o.device_name}: {o.status}
+                          </li>
+                        ))
+                      )}
+                    </ul>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

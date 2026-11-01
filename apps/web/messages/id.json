@@ -1,0 +1,46 @@
+{
+  "nav": {
+    "command": "Command",
+    "fleet": "Fleet",
+    "intelligence": "Intelligence",
+    "developer": "Developer",
+    "integration": "Integration",
+    "settings": "Settings",
+    "dashboard": "Dashboard",
+    "alarms": "Alarms",
+    "automations": "Automations",
+    "workflowBuilder": "Workflow builder",
+    "workflowList": "Workflow list",
+    "marketplace": "Marketplace",
+    "pendingApprovals": "Pending approvals",
+    "sites": "Sites",
+    "devices": "Devices",
+    "reports": "Reports",
+    "aiDecisions": "AI Decisions",
+    "fleetAutomation": "Fleet Automation",
+    "sustainability": "Sustainability"
+  },
+  "actions": {
+    "save": "Simpan",
+    "cancel": "Batal",
+    "delete": "Hapus",
+    "create": "Buat",
+    "edit": "Ubah"
+  },
+  "status": {
+    "active": "Aktif",
+    "pending": "Menunggu",
+    "resolved": "Selesai"
+  },
+  "empty": {
+    "noData": "Belum ada data",
+    "noResults": "Tidak ada hasil"
+  },
+  "errors": {
+    "generic": "Terjadi kesalahan",
+    "loadFailed": "Gagal memuat data"
+  },
+  "placeholders": {
+    "search": "Cari…"
+  }
+}

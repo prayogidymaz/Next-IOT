@@ -13,7 +13,7 @@ const KEYS = [
 
 export default function DeveloperApiKeysPage() {
   return (
-    <HqPageContent description="Manage PAT keys, webhook endpoints, and rate-limit monitors for the Open API segment.">
+    <HqPageContent>
       <div className="grid gap-4 md:grid-cols-3">
         <CreamCard hover className="p-5">
           <div className="flex items-center gap-3">

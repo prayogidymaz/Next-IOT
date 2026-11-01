@@ -47,6 +47,9 @@ class AgriPlot(Base):
     crop_variety: Mapped[str] = mapped_column(String(128), nullable=False, default="")
     planted_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    enterprise_plot_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("plots.id", ondelete="SET NULL"), nullable=True
+    )
 
 
 class AgriLoraGateway(Base):

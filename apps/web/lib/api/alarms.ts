@@ -22,10 +22,12 @@ export type AlarmItem = z.infer<typeof alarmItemSchema>;
 export async function listAlarms(params?: {
   status?: string;
   severity?: string;
+  search?: string;
 }): Promise<AlarmItem[]> {
   const qs = new URLSearchParams();
   if (params?.status) qs.set("status", params.status);
   if (params?.severity) qs.set("severity", params.severity);
+  if (params?.search) qs.set("search", params.search);
   const suffix = qs.toString() ? `?${qs.toString()}` : "";
   let res: Response;
   try {

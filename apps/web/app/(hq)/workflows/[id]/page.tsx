@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { HqPageShell } from "@/components/hq/HqPageShell";
 import { ApprovalRequestModal } from "@/src/features/workflow-approval/ApprovalRequestModal";
 import { WorkflowActivateButton } from "@/src/features/workflow-approval/WorkflowActivateButton";
 import { PublishTemplateModal } from "@/src/features/workflow-marketplace/PublishTemplateModal";
@@ -40,26 +41,26 @@ export default function EditWorkflowPage() {
   }, [workflowId, token]);
 
   return (
-    <div className="p-6">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-stone-900">Workflow {workflowId}</h1>
+    <HqPageShell
+      action={
         <div className="flex flex-wrap items-center gap-2">
           <WorkflowActivateButton workflowId={workflowId} token={token} enabled={enabled} onToggled={setEnabled} />
-          <button type="button" className="rounded border px-2 py-1 text-sm" onClick={() => setApprovalOpen(true)}>
+          <button type="button" className="rounded-lg border border-border bg-card px-2 py-1 text-sm text-foreground" onClick={() => setApprovalOpen(true)}>
             Request approval
           </button>
-          <button type="button" className="rounded border px-2 py-1 text-sm" onClick={() => setPublishOpen(true)}>
+          <button type="button" className="rounded-lg border border-border bg-card px-2 py-1 text-sm text-foreground" onClick={() => setPublishOpen(true)}>
             Publish to Marketplace
           </button>
         </div>
-      </div>
+      }
+    >
 
-      <div className="mb-4 flex gap-2 border-b border-stone-200">
+      <div className="mb-4 flex gap-2 border-b border-border">
         {(["editor", "history"] as const).map((t) => (
           <button
             key={t}
             type="button"
-            className={`border-b-2 px-3 py-2 text-sm capitalize ${tab === t ? "border-stone-900 font-medium" : "border-transparent text-stone-500"}`}
+            className={`border-b-2 px-3 py-2 text-sm capitalize ${tab === t ? "border-foreground font-medium text-foreground" : "border-transparent text-muted-foreground"}`}
             onClick={() => setTab(t)}
           >
             {t === "editor" ? "Editor" : "History"}
@@ -75,6 +76,6 @@ export default function EditWorkflowPage() {
 
       <ApprovalRequestModal workflowId={workflowId} open={approvalOpen} onClose={() => setApprovalOpen(false)} />
       <PublishTemplateModal workflowId={workflowId} open={publishOpen} onClose={() => setPublishOpen(false)} />
-    </div>
+    </HqPageShell>
   );
 }

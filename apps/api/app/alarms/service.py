@@ -9,7 +9,7 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
 from pydantic import JsonValue
-from sqlalchemy import delete, select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.alarms.fingerprint import alarm_fingerprint, dedup_key_from_details
@@ -200,6 +200,7 @@ async def list_alarms(
     severity_filter: str | None,
     device_id: uuid.UUID | None,
     since_hours: int | None,
+    search: str | None = None,
 ) -> AlarmListResponse:
     query = select(Alarm)
     if not user.is_super_admin:
@@ -213,6 +214,9 @@ async def list_alarms(
     if since_hours is not None and since_hours > 0:
         cutoff = datetime.now(UTC) - timedelta(hours=since_hours)
         query = query.where(Alarm.occurred_at >= cutoff)
+    if search and search.strip():
+        pattern = f"%{search.strip()}%"
+        query = query.where(or_(Alarm.title.ilike(pattern), Alarm.message.ilike(pattern)))
     rows = list(await db.scalars(query.order_by(Alarm.occurred_at.desc()).limit(200)))
     return AlarmListResponse(items=[_to_alarm_item(r) for r in rows], total=len(rows))
 

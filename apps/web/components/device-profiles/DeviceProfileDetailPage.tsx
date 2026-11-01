@@ -140,7 +140,7 @@ export function DeviceProfileDetailPage({ profileId }: DeviceProfileDetailPagePr
   }
 
   return (
-    <HqPageContent description={`Thing model · ${profile.key} v${profile.version}`}>
+    <HqPageContent>
       <CreamCard className="flex flex-wrap items-start justify-between gap-4 p-5">
         <div>
           <div className="flex flex-wrap items-center gap-2">

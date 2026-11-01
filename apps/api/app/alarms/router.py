@@ -35,6 +35,7 @@ async def list_alarms(
     severity: Annotated[AlarmSeverityParam | None, Query()] = None,
     device_id: Annotated[uuid.UUID | None, Query()] = None,
     since: SinceHours = None,
+    search: Annotated[str | None, Query(max_length=120)] = None,
 ) -> AlarmListResponse:
     return await service.list_alarms(
         db,
@@ -43,6 +44,7 @@ async def list_alarms(
         severity_filter=severity.value if severity else None,
         device_id=device_id,
         since_hours=since,
+        search=search,
     )
 
 

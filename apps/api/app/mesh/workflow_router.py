@@ -12,6 +12,7 @@ from app.auth.dependencies import RequireAuth
 from app.deps import DbSession, RedisDep
 from app.mesh.workflow_schema import (
     MeshWorkflowDefinition,
+    MeshWorkflowListItemView,
     MeshWorkflowRecordView,
     WorkflowDryRunRequest,
     WorkflowDryRunResponse,
@@ -45,13 +46,17 @@ async def post_workflow(
     return await create_workflow(db, redis, user, payload)
 
 
-@router.get("/workflows", response_model=list[MeshWorkflowRecordView])
+SearchQuery = Annotated[str | None, Query(max_length=120)]
+
+
+@router.get("/workflows", response_model=list[MeshWorkflowListItemView])
 async def get_workflows(
     user: RequireAuth,
     db: DbSession,
     enabled: bool | None = None,
-) -> list[MeshWorkflowRecordView]:
-    return await list_workflows(db, user, enabled)
+    search: SearchQuery = None,
+) -> list[MeshWorkflowListItemView]:
+    return await list_workflows(db, user, enabled, search)
 
 
 @router.get("/workflows/{workflow_id}", response_model=MeshWorkflowRecordView)

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
+import { StatCard } from "@/src/components/ui/StatCard";
 import {
   fetchWorkflowFailures,
   fetchWorkflowSavings,
@@ -20,23 +21,40 @@ export function WorkflowAnalyticsDetail({ workflowId }: Props) {
   const [points, setPoints] = useState<TimelinePoint[]>([]);
   const [savings, setSavings] = useState<SavingsReport | null>(null);
   const [failures, setFailures] = useState<FailureReport | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    void fetchWorkflowTimeline(workflowId, period).then((d) => setPoints(d.points));
-    void fetchWorkflowSavings(workflowId).then(setSavings);
-    void fetchWorkflowFailures(workflowId).then(setFailures);
+    setLoading(true);
+    void Promise.all([
+      fetchWorkflowTimeline(workflowId, period).then((d) => setPoints(d.points)),
+      fetchWorkflowSavings(workflowId).then(setSavings),
+      fetchWorkflowFailures(workflowId).then(setFailures),
+    ]).finally(() => setLoading(false));
   }, [workflowId, period]);
 
+  const fireCount = points.reduce((sum, p) => sum + p.fire_count, 0);
+  const successRate = failures ? `${((1 - failures.failure_rate) * 100).toFixed(0)}%` : "—";
+
   return (
-    <div className="space-y-6 p-6">
-      <Link href="/analytics/workflows" className="text-sm text-stone-600 hover:text-stone-900">
+    <div className="container mx-auto space-y-6 px-4 py-6 md:px-6 lg:px-8">
+      <Link href="/analytics/workflows" className="text-sm text-muted-foreground hover:text-foreground">
         ← Workflow analytics
       </Link>
-      <h1 className="text-2xl font-semibold text-stone-900">Workflow {workflowId.slice(0, 8)}…</h1>
 
-      <section className="rounded-xl border border-stone-200 bg-white p-4">
-        <h2 className="text-sm font-semibold text-stone-800">Fires per day ({period}d)</h2>
-        <div className="mt-4 h-64">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard title="Total fires" value={fireCount} loading={loading} />
+        <StatCard title="Success rate" value={successRate} loading={loading} />
+        <StatCard
+          title="Savings (IDR)"
+          value={savings ? savings.idr_total.toLocaleString("id-ID") : "—"}
+          loading={loading}
+          empty={!loading && !savings}
+        />
+      </div>
+
+      <section className="rounded-xl border border-border bg-card p-4">
+        <h2 className="text-sm font-semibold text-foreground">Fires per day ({period}d)</h2>
+        <div className="mt-4 h-64 w-full md:h-72">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={points}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -50,33 +68,24 @@ export function WorkflowAnalyticsDetail({ workflowId }: Props) {
       </section>
 
       {savings ? (
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="rounded-xl border border-stone-200 bg-emerald-50 p-4">
-            <p className="text-xs text-stone-600">Water saved</p>
-            <p className="text-xl font-semibold text-stone-900">{savings.water_liters_saved.toLocaleString()} L</p>
-          </div>
-          <div className="rounded-xl border border-stone-200 bg-sky-50 p-4">
-            <p className="text-xs text-stone-600">Energy saved</p>
-            <p className="text-xl font-semibold text-stone-900">{savings.kwh_saved.toLocaleString()} kWh</p>
-          </div>
-          <div className="rounded-xl border border-stone-200 bg-amber-50 p-4">
-            <p className="text-xs text-stone-600">Total savings</p>
-            <p className="text-xl font-semibold text-stone-900">Rp {savings.idr_total.toLocaleString("id-ID")}</p>
-          </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <StatCard title="Water saved" value={savings.water_liters_saved.toLocaleString()} unit="L" />
+          <StatCard title="Energy saved" value={savings.kwh_saved.toLocaleString()} unit="kWh" />
+          <StatCard title="Total savings" value={savings.idr_total.toLocaleString("id-ID")} unit="IDR" />
         </div>
       ) : null}
 
       {failures ? (
-        <section className="rounded-xl border border-stone-200 p-4">
-          <h2 className="text-sm font-semibold text-stone-800">Failure analysis</h2>
-          <p className="mt-1 text-sm text-stone-600">Failure rate: {(failures.failure_rate * 100).toFixed(1)}%</p>
-          {failures.failed_at_step ? <p className="text-sm text-stone-600">Often fails at: {failures.failed_at_step}</p> : null}
-          <ul className="mt-2 list-inside list-disc text-sm text-stone-700">
+        <section className="rounded-xl border border-border bg-card p-4">
+          <h2 className="text-sm font-semibold text-foreground">Failure analysis</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Failure rate: {(failures.failure_rate * 100).toFixed(1)}%</p>
+          {failures.failed_at_step ? <p className="text-sm text-muted-foreground">Often fails at: {failures.failed_at_step}</p> : null}
+          <ul className="mt-2 list-inside list-disc text-sm text-foreground">
             {failures.common_errors.map((err) => (
               <li key={err}>{err}</li>
             ))}
           </ul>
-          <p className="mt-3 rounded-lg bg-stone-50 p-3 text-sm text-stone-800">
+          <p className="mt-3 rounded-lg bg-muted p-3 text-sm text-foreground">
             <span className="font-medium">Suggested fix:</span> {failures.suggested_fix}
           </p>
         </section>

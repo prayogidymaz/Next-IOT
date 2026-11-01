@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from fastapi import APIRouter, Response, status
-from pydantic import BaseModel, Field, Literal
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from app.auth.dependencies import RequireAuth

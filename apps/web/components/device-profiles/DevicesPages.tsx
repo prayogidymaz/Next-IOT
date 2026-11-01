@@ -48,26 +48,35 @@ export function DevicesIndexPage() {
   }, [devices, query, statusFilter]);
 
   return (
-    <HqPageContent description="Perangkat tenant — buka detail untuk assign device profile.">
+    <HqPageContent
+      action={
+        <Link
+          href="/claim-tokens"
+          className="inline-flex rounded-lg bg-accent-cobalt px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+        >
+          Onboard device
+        </Link>
+      }
+    >
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search name or type…"
-          className="min-w-[200px] flex-1 rounded-xl border border-cream-border bg-white px-3 py-2 text-sm"
+          className="min-w-[200px] flex-1 rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground"
           aria-label="Search devices"
         />
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-xl border border-cream-border bg-white px-3 py-2 text-sm"
+          className="rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground"
           aria-label="Filter by status"
         >
           <option value="">All status</option>
           <option value="online">Online</option>
           <option value="offline">Offline</option>
         </select>
-        <div className="flex rounded-xl border border-cream-border bg-white p-1">
+        <div className="flex rounded-xl border border-border bg-card p-1">
           {(
             [
               ["table", LayoutList],
@@ -184,7 +193,7 @@ export function DeviceDetailPage({ deviceId }: { deviceId: string }) {
   }
 
   return (
-    <HqPageContent description={`Perangkat · ${device.name}`}>
+    <HqPageContent>
       <CreamCard className="p-5">
         <h2 className="text-lg font-semibold text-ink-primary">{device.name}</h2>
         <p className="mt-1 text-sm text-ink-secondary">

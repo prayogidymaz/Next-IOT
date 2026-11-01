@@ -188,6 +188,10 @@ function CanvasInner({ apiBase, token, workflowId }: Props) {
                 setSelectedId(node.id);
                 form.setValue("selectedNode", node.data);
               }}
+              panOnScroll
+              panOnDrag
+              selectionOnDrag
+              zoomOnPinch
               fitView
             >
               <Background />

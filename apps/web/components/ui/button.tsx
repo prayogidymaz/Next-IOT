@@ -22,9 +22,9 @@ export function Button({
     sm: "px-3 py-1.5 text-xs",
   };
   const variants: Record<ButtonVariant, string> = {
-    default: "bg-ink-primary text-white hover:bg-black/90",
-    outline: "border border-cream-border bg-white text-ink-primary shadow-sm hover:bg-cream-muted",
-    ghost: "text-ink-secondary hover:bg-cream-muted hover:text-ink-primary",
+    default: "bg-foreground text-background hover:opacity-90",
+    outline: "border border-border bg-card text-foreground shadow-sm hover:bg-muted",
+    ghost: "text-muted-foreground hover:bg-muted hover:text-foreground",
   };
   return (
     <button type={type} className={`${base} ${sizes[size]} ${variants[variant]} ${className}`.trim()} {...props} />

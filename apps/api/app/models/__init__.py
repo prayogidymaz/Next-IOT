@@ -59,7 +59,18 @@ from app.models.tenant_user_fcm_token import TenantUserFcmToken
 from app.models.user import User
 from app.vision.models import VisionDetection, VisionFeedback, VisionTenantConfig
 from app.workflows.approval.models import WorkflowApprovalPolicy, WorkflowApprovalRequest
+from app.auth.sso.models import SsoConfig
+from app.decision.models import AutoActionPolicy, DecisionRecommendation
+from app.fleet.models import BulkProvisioningJob, DeviceConfigTemplate, DeviceGroup
+from app.reports.models import ReportGeneration, ReportSchedule, ReportTemplate
+from app.sites.models import Plot, Site, SiteMember
+from app.tenants.models import TenantMemberInvitation
+from app.sustainability.models import CarbonEntry, EsgScorecard, WaterUsage
+from app.webhooks.models import Webhook, WebhookDelivery
 from app.workflows.marketplace.models import (
+    MarketplacePayout,
+    MarketplaceSeller,
+    MarketplaceTemplatePurchase,
     WorkflowTemplate,
     WorkflowTemplateDownload,
     WorkflowTemplateRating,
@@ -156,4 +167,25 @@ __all__ = [
     "WorkflowTemplate",
     "WorkflowTemplateRating",
     "WorkflowTemplateDownload",
+    "Site",
+    "Plot",
+    "SiteMember",
+    "CarbonEntry",
+    "WaterUsage",
+    "EsgScorecard",
+    "Webhook",
+    "WebhookDelivery",
+    "SsoConfig",
+    "TenantMemberInvitation",
+    "MarketplaceSeller",
+    "MarketplacePayout",
+    "MarketplaceTemplatePurchase",
+    "ReportTemplate",
+    "ReportSchedule",
+    "ReportGeneration",
+    "DecisionRecommendation",
+    "AutoActionPolicy",
+    "DeviceConfigTemplate",
+    "BulkProvisioningJob",
+    "DeviceGroup",
 ]

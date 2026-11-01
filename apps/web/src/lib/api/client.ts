@@ -42,7 +42,13 @@ export async function apiFetch(url: string, init: ApiFetchInit = {}): Promise<Re
     Object.entries(publicJsonHeaders()).forEach(([key, value]) => headers.set(key, value));
   }
 
-  const res = await fetch(url, { ...init, headers });
+  let res: Response;
+  try {
+    res = await fetch(url, { ...init, headers });
+  } catch {
+    emitSystemDegraded();
+    throw new Error("Network error");
+  }
 
   if (res.status === 401 && !init.public) {
     handleUnauthorized();

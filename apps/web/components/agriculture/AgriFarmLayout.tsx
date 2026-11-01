@@ -20,12 +20,13 @@ export function AgriFarmLayout({ farmId, title, children }: { farmId: string; ti
     <div className="flex min-h-0 flex-1 flex-col gap-4 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <nav className="text-xs text-ink-tertiary">
-            <Link href="/agriculture" className="text-emerald-600 hover:underline">Agriculture</Link>
+          <nav className="text-xs text-muted-foreground">
+            <Link href="/agriculture" className="text-emerald-600 hover:underline dark:text-emerald-400">
+              Agriculture
+            </Link>
             <span> / </span>
-            <span>{title}</span>
+            <span className="text-foreground">{title}</span>
           </nav>
-          <h1 className="text-xl font-semibold text-ink-primary">{title}</h1>
         </div>
       </div>
       <div className="sticky top-0 z-10 flex flex-wrap gap-2 border-b border-border-subtle bg-surface pb-2">

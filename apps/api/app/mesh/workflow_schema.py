@@ -141,6 +141,12 @@ class MeshWorkflowRecordView(BaseModel):
     updated_at: datetime
 
 
+class MeshWorkflowListItemView(MeshWorkflowRecordView):
+    last_fired_at: datetime | None = None
+    success_rate_percent: float = 0.0
+    action_count: int = 0
+
+
 class WorkflowExecutionResult(BaseModel):
     id: uuid.UUID
     workflow_id: uuid.UUID

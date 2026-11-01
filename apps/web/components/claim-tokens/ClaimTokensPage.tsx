@@ -48,9 +48,9 @@ export function ClaimTokensPage() {
   }
 
   return (
-    <HqPageContent description="QR claim tokens untuk onboarding perangkat mobile.">
-      <div className="mb-4 flex justify-end">
-        {canAdminClaimTokens ? (
+    <HqPageContent
+      action={
+        canAdminClaimTokens ? (
           <button
             type="button"
             className="rounded-lg bg-accent-cobalt px-4 py-2 text-sm text-white"
@@ -58,8 +58,9 @@ export function ClaimTokensPage() {
           >
             + Generate Claim Token
           </button>
-        ) : null}
-      </div>
+        ) : null
+      }
+    >
       <CreamCard className="overflow-x-auto p-0">
         {loading ? (
           <p className="px-4 py-6 text-sm text-ink-secondary">Memuat…</p>

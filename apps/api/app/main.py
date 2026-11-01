@@ -12,6 +12,18 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from sqlalchemy import select, text
 
 from app.agriculture.router import router as agriculture_router
+from app.auth.sso.router import router as sso_router
+from app.dashboard.router import router as dashboard_router
+from app.reports.router import router as reports_router
+from app.reports.scheduler import report_scheduler_loop
+from app.decision.router import router as decision_router
+from app.decision.scheduler import decision_tick_loop
+from app.fleet.router import router as fleet_router
+from app.i18n.middleware import LocaleMiddleware
+from app.docs.openapi_customization import attach_custom_openapi
+from app.sustainability.carbon_ingestor import carbon_ingest_loop
+from app.webhooks.retry_queue import retry_worker_loop
+from app.workflows.marketplace.scheduler import marketplace_payout_scheduler_loop
 from app.agriculture.worker import agriculture_jobs_loop
 from app.alarms.maintenance import alarm_maintenance_loop
 from app.alarms.router import router as alarms_router
@@ -47,6 +59,7 @@ from app.mesh.workflow_listener import mesh_workflow_listener_loop
 from app.mesh.workflow_router import router as mesh_workflow_router
 from app.workflows.analytics.router import router as workflow_analytics_router
 from app.workflows.approval.router import approval_router, workflow_router as workflow_approval_workflow_router
+from app.agents.router import router as agents_router
 from app.workflows.marketplace.router import router as workflow_marketplace_router
 from app.workflows.versioning.router import router as workflow_versioning_router
 from app.mission.router import router as mission_router
@@ -94,6 +107,9 @@ from app.observability.logging_config import attach_correlation_middleware, conf
 from app.observability.metrics import setup_prometheus
 from app.observability.tracing import setup_tracing
 from app.vision.router import router as vision_router
+from app.sites.router import router as sites_router
+from app.sustainability.router import router as sustainability_router
+from app.webhooks.router import router as webhooks_router
 
 configure_structured_logging()
 logger = logging.getLogger(__name__)
@@ -160,6 +176,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             asyncio.create_task(mesh_schedule_loop(redis, stop_event)),
             asyncio.create_task(analytics_report_scheduler_loop(stop_event)),
             asyncio.create_task(ml_anomaly_scheduler_loop(stop_event)),
+            asyncio.create_task(carbon_ingest_loop(stop_event)),
+            asyncio.create_task(marketplace_payout_scheduler_loop(stop_event)),
+            asyncio.create_task(retry_worker_loop(redis, stop_event)),
+            asyncio.create_task(report_scheduler_loop(stop_event)),
+            asyncio.create_task(decision_tick_loop(stop_event)),
         ]
     mqtt_publisher: MqttPublisherService | NoopMqttPublisher
     if settings.mqtt_publisher_enabled and settings.run_background_workers:
@@ -206,6 +227,7 @@ app = FastAPI(
     version="0.10.0",
     description="Next-IOT Platform API",
     lifespan=lifespan,
+    openapi_url="/api/v1/openapi.json",
 )
 
 attach_correlation_middleware(app)
@@ -224,6 +246,7 @@ if settings.cors_allow_origin_regex:
 _cors_kwargs["allow_origins"] = settings.cors_origins_list
 app.add_middleware(CORSMiddleware, **_cors_kwargs)
 app.add_middleware(AuditLoggingMiddleware)
+app.add_middleware(LocaleMiddleware)
 
 app.include_router(auth_router)
 app.include_router(auth_router, prefix="/api/v1")
@@ -265,6 +288,7 @@ app.include_router(workflow_versioning_router)
 app.include_router(workflow_approval_workflow_router)
 app.include_router(approval_router)
 app.include_router(workflow_marketplace_router)
+app.include_router(agents_router)
 app.include_router(workflow_analytics_router)
 app.include_router(mesh_copilot_router)
 app.include_router(cameras_router)
@@ -275,6 +299,16 @@ app.include_router(users_router)
 app.include_router(users_push_router)
 app.include_router(audit_router)
 app.include_router(system_router)
+app.include_router(sites_router)
+app.include_router(sustainability_router)
+app.include_router(webhooks_router)
+app.include_router(dashboard_router)
+app.include_router(sso_router)
+app.include_router(reports_router)
+app.include_router(decision_router)
+app.include_router(fleet_router)
+
+attach_custom_openapi(app)
 
 
 @app.get("/metrics")

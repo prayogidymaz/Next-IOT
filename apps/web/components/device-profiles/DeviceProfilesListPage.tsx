@@ -54,7 +54,7 @@ export function DeviceProfilesListPage() {
   }
 
   return (
-    <HqPageContent description="Thing model per tenant — telemetry, attributes, dan commands dengan versioning.">
+    <HqPageContent>
       <CreamCard className="p-4">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex flex-wrap gap-3">

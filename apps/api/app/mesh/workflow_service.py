@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import cast
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import CurrentUser
@@ -16,6 +16,7 @@ from app.mesh.workflow_executor import get_mesh_workflow_executor
 from app.mesh.workflow_registry import definition_from_row, reload_workflows
 from app.mesh.workflow_schema import (
     MeshWorkflowDefinition,
+    MeshWorkflowListItemView,
     MeshWorkflowRecordView,
     WorkflowDryRunResponse,
     WorkflowExecutionResult,
@@ -82,12 +83,39 @@ async def list_workflows(
     db: AsyncSession,
     user: CurrentUser,
     enabled: bool | None,
-) -> list[MeshWorkflowRecordView]:
+    search: str | None = None,
+) -> list[MeshWorkflowListItemView]:
     query = select(MeshWorkflow).where(MeshWorkflow.tenant_id == user.tenant_id)
     if enabled is not None:
         query = query.where(MeshWorkflow.enabled.is_(enabled))
-    rows = await db.scalars(query.order_by(MeshWorkflow.created_at.desc()))
-    return [_to_view(row) for row in rows.all()]
+    if search and search.strip():
+        pattern = f"%{search.strip()}%"
+        query = query.where(or_(MeshWorkflow.name.ilike(pattern), MeshWorkflow.description.ilike(pattern)))
+    rows = list((await db.scalars(query.order_by(MeshWorkflow.created_at.desc()))).all())
+    out: list[MeshWorkflowListItemView] = []
+    for row in rows:
+        base = _to_view(row)
+        action_count = len(base.definition.actions)
+        stats = await db.execute(
+            select(
+                func.max(MeshWorkflowExecution.started_at),
+                func.count(),
+                func.sum(case((MeshWorkflowExecution.status == "success", 1), else_=0)),
+            ).where(MeshWorkflowExecution.workflow_id == row.id)
+        )
+        last_fired, total, success = stats.one()
+        total_i = int(total or 0)
+        success_i = int(success or 0)
+        rate = (success_i / total_i * 100.0) if total_i else 0.0
+        out.append(
+            MeshWorkflowListItemView(
+                **base.model_dump(),
+                last_fired_at=last_fired,
+                success_rate_percent=round(rate, 1),
+                action_count=action_count,
+            )
+        )
+    return out
 
 
 async def get_workflow(db: AsyncSession, user: CurrentUser, workflow_id: uuid.UUID) -> MeshWorkflowRecordView:

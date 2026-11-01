@@ -1,0 +1,46 @@
+{
+  "nav": {
+    "command": "指挥",
+    "fleet": "设备群",
+    "intelligence": "智能",
+    "developer": "开发者",
+    "integration": "集成",
+    "settings": "设置",
+    "dashboard": "仪表盘",
+    "alarms": "告警",
+    "automations": "自动化",
+    "workflowBuilder": "工作流构建",
+    "workflowList": "工作流列表",
+    "marketplace": "市场",
+    "pendingApprovals": "待审批",
+    "sites": "站点",
+    "devices": "设备",
+    "reports": "报表",
+    "aiDecisions": "AI 决策",
+    "fleetAutomation": "舰队自动化",
+    "sustainability": "可持续"
+  },
+  "actions": {
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "create": "创建",
+    "edit": "编辑"
+  },
+  "status": {
+    "active": "活跃",
+    "pending": "待处理",
+    "resolved": "已解决"
+  },
+  "empty": {
+    "noData": "暂无数据",
+    "noResults": "无结果"
+  },
+  "errors": {
+    "generic": "发生错误",
+    "loadFailed": "加载失败"
+  },
+  "placeholders": {
+    "search": "搜索…"
+  }
+}

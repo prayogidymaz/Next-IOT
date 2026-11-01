@@ -55,7 +55,7 @@ export function DeviceProfileCreatePage() {
   }
 
   return (
-    <HqPageContent description="Buat device profile draft baru. Publish setelah spec siap.">
+    <HqPageContent>
       <CreamCard className="grid gap-4 p-5 sm:grid-cols-2">
         <label className="text-sm text-ink-secondary">
           Key

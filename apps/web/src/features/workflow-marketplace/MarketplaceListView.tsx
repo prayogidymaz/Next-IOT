@@ -5,7 +5,18 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { listMarketplaceTemplates, type WorkflowTemplateRecord } from "@/lib/api/workflowMarketplace";
 
+import { GridSkeleton } from "@/src/components/LoadingSkeleton";
+
+import { marketplaceLocaleParam, readClientLocale } from "@/lib/i18n/readClientLocale";
+
 import { MarketplaceCard } from "./MarketplaceCard";
+
+const LOCALES = [
+  { value: "", label: "All languages" },
+  { value: "id", label: "Indonesian" },
+  { value: "en", label: "English" },
+  { value: "zh-CN", label: "Chinese (Simplified)" },
+] as const;
 
 const CATEGORIES = [
   { value: "", label: "All" },
@@ -20,22 +31,24 @@ const CATEGORIES = [
 ] as const;
 
 const compactSelectClass =
-  "h-8 shrink-0 rounded-lg border border-stone-300 bg-white px-2 text-xs text-stone-800";
+  "h-8 shrink-0 rounded-lg border border-border bg-card px-2 text-xs text-foreground";
 
-const desktopSelectClass = "h-9 w-full rounded-lg border border-stone-300 bg-white px-2 text-sm";
+const desktopSelectClass = "h-9 w-full rounded-lg border border-border bg-card px-2 text-sm text-foreground";
 
 type FilterControlsProps = {
   category: string;
   sort: string;
+  locale: string;
   onCategory: (value: string) => void;
   onSort: (value: string) => void;
+  onLocale: (value: string) => void;
   idPrefix: string;
   compact?: boolean;
 };
 
-function FilterControls({ category, sort, onCategory, onSort, idPrefix, compact = false }: FilterControlsProps) {
+function FilterControls({ category, sort, locale, onCategory, onSort, onLocale, idPrefix, compact = false }: FilterControlsProps) {
   const selectClass = compact ? compactSelectClass : desktopSelectClass;
-  const labelClass = compact ? "sr-only" : "text-xs font-medium text-stone-500";
+  const labelClass = compact ? "sr-only" : "text-xs font-medium text-muted-foreground";
 
   return (
     <>
@@ -53,6 +66,24 @@ function FilterControls({ category, sort, onCategory, onSort, idPrefix, compact 
           {CATEGORIES.map((c) => (
             <option key={c.value || "all"} value={c.value}>
               {c.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className={compact ? "" : "space-y-1.5"}>
+        <label htmlFor={`${idPrefix}-locale`} className={labelClass}>
+          Language
+        </label>
+        <select
+          id={`${idPrefix}-locale`}
+          className={compact ? `${selectClass} min-w-[7rem]` : selectClass}
+          value={locale}
+          onChange={(e) => onLocale(e.target.value)}
+          aria-label="Language"
+        >
+          {LOCALES.map((l) => (
+            <option key={l.value || "all"} value={l.value}>
+              {l.label}
             </option>
           ))}
         </select>
@@ -80,22 +111,32 @@ function FilterControls({ category, sort, onCategory, onSort, idPrefix, compact 
 export function MarketplaceListView() {
   const [items, setItems] = useState<WorkflowTemplateRecord[]>([]);
   const [category, setCategory] = useState<string>("");
+  const [locale, setLocale] = useState(() => marketplaceLocaleParam(readClientLocale()));
   const [sort, setSort] = useState("downloads");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(true);
   const pageSize = 9;
 
   const load = useCallback(async () => {
-    const list = await listMarketplaceTemplates({
-      category: category || undefined,
-      sort,
-      limit: 100,
-    });
-    setItems(list);
-  }, [category, sort]);
+    setLoading(true);
+    try {
+      const list = await listMarketplaceTemplates({
+        category: category || undefined,
+        locale: locale || undefined,
+        sort,
+        limit: 100,
+      });
+      setItems(list);
+    } catch {
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [category, locale, sort]);
 
   useEffect(() => {
-    void load().catch(() => setItems([]));
+    void load();
   }, [load]);
 
   const filtered = useMemo(() => {
@@ -109,28 +150,32 @@ export function MarketplaceListView() {
 
   function resetFilters() {
     setCategory("");
+    setLocale(marketplaceLocaleParam(readClientLocale()));
     setSort("downloads");
     setPage(0);
   }
 
   return (
-    <div className="p-6">
-      <h1 className="mb-6 text-2xl font-bold text-stone-900">Template marketplace</h1>
-
+    <div>
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
         <aside className="hidden w-60 shrink-0 lg:block">
-          <div className="sticky top-6 space-y-3 rounded-lg border border-stone-200 bg-white p-4">
-            <h3 className="text-sm font-semibold text-stone-900">Filters</h3>
+          <div className="sticky top-6 space-y-3 rounded-lg border border-border bg-card p-4">
+            <h3 className="text-sm font-semibold text-foreground">Filters</h3>
             <FilterControls
               idPrefix="desktop"
               category={category}
               sort={sort}
+              locale={locale}
               onCategory={(v) => {
                 setCategory(v);
                 setPage(0);
               }}
               onSort={(v) => {
                 setSort(v);
+                setPage(0);
+              }}
+              onLocale={(v) => {
+                setLocale(v);
                 setPage(0);
               }}
             />
@@ -147,6 +192,7 @@ export function MarketplaceListView() {
               compact
               category={category}
               sort={sort}
+              locale={locale}
               onCategory={(v) => {
                 setCategory(v);
                 setPage(0);
@@ -155,11 +201,15 @@ export function MarketplaceListView() {
                 setSort(v);
                 setPage(0);
               }}
+              onLocale={(v) => {
+                setLocale(v);
+                setPage(0);
+              }}
             />
           </div>
 
           <input
-            className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground"
             placeholder="Search templates…"
             value={search}
             onChange={(e) => {
@@ -168,31 +218,35 @@ export function MarketplaceListView() {
             }}
           />
 
-          <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {pageItems.map((t) => (
-              <MarketplaceCard key={t.id} template={t} />
-            ))}
-          </div>
+          {loading ? (
+            <GridSkeleton count={6} />
+          ) : (
+            <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {pageItems.map((t) => (
+                <MarketplaceCard key={t.id} template={t} />
+              ))}
+            </div>
+          )}
 
           {pageItems.length === 0 ? (
-            <p className="text-center text-sm text-stone-500">No templates match your filters.</p>
+            <p className="text-center text-sm text-muted-foreground">No templates match your filters.</p>
           ) : null}
 
           <div className="flex items-center justify-center gap-2 pt-2">
             <button
               type="button"
-              className="rounded border border-stone-300 px-3 py-1 text-sm disabled:opacity-40"
+              className="rounded-lg border border-border bg-card px-3 py-1 text-sm text-foreground disabled:opacity-40"
               disabled={page === 0}
               onClick={() => setPage((p) => p - 1)}
             >
               Prev
             </button>
-            <span className="text-sm text-stone-600">
+            <span className="text-sm text-muted-foreground">
               Page {page + 1} / {pageCount}
             </span>
             <button
               type="button"
-              className="rounded border border-stone-300 px-3 py-1 text-sm disabled:opacity-40"
+              className="rounded-lg border border-border bg-card px-3 py-1 text-sm text-foreground disabled:opacity-40"
               disabled={page + 1 >= pageCount}
               onClick={() => setPage((p) => p + 1)}
             >

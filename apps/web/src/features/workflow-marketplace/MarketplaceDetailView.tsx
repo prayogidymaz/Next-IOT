@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
+  checkoutMarketplaceTemplate,
   downloadMarketplaceTemplate,
+  formatPriceIdr,
   getMarketplaceTemplate,
   rateMarketplaceTemplate,
   unpublishMarketplaceTemplate,
@@ -13,6 +15,8 @@ import {
 import { useHqToast } from "@/hooks/useHqToast";
 import { fetchAuthMe } from "@/lib/auth/api";
 import { readApiAccessToken } from "@/lib/auth/api-headers";
+
+import { SlideFadeModal } from "@/components/motion/SlideFadeModal";
 
 import { MarketplacePreviewPanel } from "./MarketplacePreviewPanel";
 
@@ -26,6 +30,8 @@ export function MarketplaceDetailView({ templateId }: Props) {
   const [downloaded, setDownloaded] = useState(false);
   const [rating, setRating] = useState(5);
   const [review, setReview] = useState("");
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [checkoutUrl, setCheckoutUrl] = useState("");
 
   const load = useCallback(async () => {
     setTpl(await getMarketplaceTemplate(templateId));
@@ -44,6 +50,20 @@ export function MarketplaceDetailView({ templateId }: Props) {
   }, []);
 
   const isAuthor = tpl?.author_tenant_id === tenantId;
+
+  async function onBuy() {
+    try {
+      const result = await checkoutMarketplaceTemplate(templateId);
+      if (result.checkout_url) {
+        setCheckoutUrl(result.checkout_url);
+        setCheckoutOpen(true);
+        return;
+      }
+      showToast(result.provider === "owned" ? "Already purchased" : "Ready to download", "success");
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Checkout failed", "error");
+    }
+  }
 
   async function onDownload() {
     try {
@@ -76,28 +96,32 @@ export function MarketplaceDetailView({ templateId }: Props) {
     }
   }
 
-  if (!tpl) return <p className="p-6 text-sm text-stone-500">Loading…</p>;
+  if (!tpl) return <p className="p-6 text-sm text-muted-foreground">Loading…</p>;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
-      <Link href="/marketplace" className="text-sm text-stone-600 hover:text-stone-900">
+      <Link href="/marketplace" className="text-sm text-muted-foreground hover:text-foreground">
         ← Marketplace
       </Link>
-      <header>
-        <h1 className="text-2xl font-semibold text-stone-900">{tpl.name}</h1>
-        <p className="mt-2 text-sm text-stone-600">{tpl.description}</p>
-        <p className="mt-1 text-xs text-stone-500">
-          {tpl.category} · {tpl.downloads_count} downloads · ★ {tpl.rating_avg.toFixed(1)} ({tpl.rating_count})
-          {tpl.author_tenant_name ? ` · by ${tpl.author_tenant_name}` : null}
-        </p>
-      </header>
+      <p className="font-medium text-foreground">{tpl.name}</p>
+      <p className="text-sm text-muted-foreground">
+        {tpl.description} · {tpl.category} · {formatPriceIdr(tpl.price_idr)} · {tpl.downloads_count} downloads · ★{" "}
+        {tpl.rating_avg.toFixed(1)} ({tpl.rating_count})
+        {tpl.author_tenant_name ? ` · by ${tpl.author_tenant_name}` : null}
+      </p>
 
       <MarketplacePreviewPanel snapshot={tpl.snapshot_json} onDownload={() => void onDownload()} />
 
       <div className="flex flex-wrap gap-2">
-        <button type="button" className="rounded-lg bg-stone-900 px-4 py-2 text-sm text-white" onClick={() => void onDownload()}>
-          Download to My Workspace
-        </button>
+        {(tpl.price_idr ?? 0) > 0 ? (
+          <button type="button" className="rounded-lg bg-foreground px-4 py-2 text-sm text-background" onClick={() => void onBuy()}>
+            Buy &amp; Download
+          </button>
+        ) : (
+          <button type="button" className="rounded-lg bg-foreground px-4 py-2 text-sm text-background" onClick={() => void onDownload()}>
+            Download to My Workspace
+          </button>
+        )}
         {isAuthor ? (
           <button type="button" className="rounded-lg border border-red-300 px-4 py-2 text-sm text-red-700" onClick={() => void onUnpublish()}>
             Unpublish
@@ -123,6 +147,21 @@ export function MarketplaceDetailView({ templateId }: Props) {
           <p className="mt-2 text-xs text-stone-500">Download this template to leave a rating.</p>
         )}
       </section>
+
+      <SlideFadeModal open={checkoutOpen} onClose={() => setCheckoutOpen(false)}>
+        <p className="text-sm font-medium text-foreground">Complete payment (Midtrans)</p>
+        <p className="mt-2 text-xs text-muted-foreground">You will be redirected to complete checkout in IDR.</p>
+        {checkoutUrl ? (
+          <a
+            href={checkoutUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-4 inline-block rounded-lg bg-foreground px-4 py-2 text-sm text-background"
+          >
+            Open checkout
+          </a>
+        ) : null}
+      </SlideFadeModal>
     </div>
   );
 }

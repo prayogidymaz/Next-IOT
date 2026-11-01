@@ -15,6 +15,7 @@ from app.models.mesh_workflow import MeshWorkflow
 from app.models.tenant import Tenant
 from app.types.json_types import JsonObject
 from app.workflows.marketplace.models import WorkflowTemplate, WorkflowTemplateDownload, WorkflowTemplateRating
+from app.workflows.marketplace.payments import assert_download_allowed
 from app.workflows.marketplace.schemas import WorkflowTemplateView
 
 
@@ -37,6 +38,8 @@ def _template_view(row: WorkflowTemplate, author_tenant_name: str = "") -> Workf
         published=row.published,
         created_at=row.created_at,
         locale=row.locale,
+        price_idr=row.price_idr,
+        author_user_id=row.author_user_id,
     )
 
 
@@ -77,6 +80,7 @@ class MarketplaceService:
             snapshot_json=snapshot,
             published=True,
             locale=str(locale_raw) if isinstance(locale_raw, str) else "id",
+            author_user_id=user.user_id,
         )
         self._db.add(row)
         await self._db.flush()
@@ -131,6 +135,7 @@ class MarketplaceService:
         target_tenant_id: uuid.UUID | None,
     ) -> MeshWorkflow:
         template, _author = await self.get(template_id)
+        await assert_download_allowed(self._db, template, user)
         tenant_id = target_tenant_id or user.tenant_id
         if tenant_id != user.tenant_id and not user.is_super_admin:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")

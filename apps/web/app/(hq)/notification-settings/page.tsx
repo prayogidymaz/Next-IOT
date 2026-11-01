@@ -28,7 +28,7 @@ export default function NotificationSettingsPage() {
   }, [reload]);
 
   return (
-    <HqPageContent description="Channels, rules, delivery log">
+    <HqPageContent>
       <CreamCard className="p-4">
         <h2 className="font-semibold">Channels</h2>
         <ul className="mt-2 space-y-1 text-sm">

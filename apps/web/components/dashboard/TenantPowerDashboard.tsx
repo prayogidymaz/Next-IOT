@@ -11,10 +11,10 @@ import { DeviceStatusHeatmap } from "@/components/dashboard/DeviceStatusHeatmap"
 import { CreamCard } from "@/components/ui/CreamCard";
 import { useTenantRealtime } from "@/hooks/useTenantRealtime";
 import { acknowledgeAlarm, listAlarms, type AlarmItem } from "@/lib/api/alarms";
+import { fetchDashboardKpi } from "@/lib/api/dashboardKpi";
 import { listDevices } from "@/lib/api/devices";
 import type { DeviceResponse } from "@/lib/api/devices-schemas";
 import { HqPageContent } from "@/components/hq/HqPageContent";
-import { useHqShell } from "@/lib/hq/hq-shell-context";
 
 function devicesOnline(devices: DeviceResponse[]): number {
   return devices.filter((d) => d.status === "online").length;
@@ -29,18 +29,19 @@ function severityBreakdown(alarms: AlarmItem[]): Record<string, number> {
 }
 
 export function TenantPowerDashboard() {
-  const { tenant } = useHqShell();
   const { connection, messagesPerMin } = useTenantRealtime();
   const [devices, setDevices] = useState<DeviceResponse[]>([]);
   const [alarms, setAlarms] = useState<AlarmItem[]>([]);
   const [streamRows, setStreamRows] = useState<{ t: string; v: number }[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [kpi, setKpi] = useState<Awaited<ReturnType<typeof fetchDashboardKpi>> | null>(null);
 
   useEffect(() => {
-    void Promise.all([listDevices(), listAlarms({ status: "active" })])
-      .then(([d, a]) => {
+    void Promise.all([listDevices(), listAlarms({ status: "active" }), fetchDashboardKpi()])
+      .then(([d, a, k]) => {
         setDevices(d);
         setAlarms(a);
+        setKpi(k);
       })
       .catch(() => setError("Failed to load fleet metrics"));
   }, []);
@@ -55,10 +56,13 @@ export function TenantPowerDashboard() {
     return () => window.clearInterval(id);
   }, [messagesPerMin]);
 
-  const online = useMemo(() => devicesOnline(devices), [devices]);
-  const activeAlarms = alarms.filter((a) => a.status === "active");
+  const activeAlarms = useMemo(() => alarms.filter((a) => a.status === "active"), [alarms]);
+
+  const online = kpi?.devices_online ?? devicesOnline(devices);
+  const activeAlarmCount = kpi?.active_alarms ?? activeAlarms.length;
   const sev = useMemo(() => severityBreakdown(activeAlarms), [activeAlarms]);
-  const dataVolumeGb = useMemo(() => ((devices.length * 1.2 + messagesPerMin * 0.02) / 1024).toFixed(2), [devices.length, messagesPerMin]);
+  const dataVolumeGb = (kpi?.data_volume_today_gb ?? 0).toFixed(2);
+  const msgPerMin = kpi?.messages_per_min ?? messagesPerMin;
 
   async function ack(id: string) {
     await acknowledgeAlarm(id);
@@ -66,7 +70,7 @@ export function TenantPowerDashboard() {
   }
 
   return (
-    <HqPageContent description={`Fleet command · ${tenant}`}>
+    <HqPageContent>
       {error ? <p className="mb-4 text-sm text-red-600">{error}</p> : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -90,7 +94,7 @@ export function TenantPowerDashboard() {
           <Activity className="h-5 w-5 text-accent-cobalt" />
           <p className="mt-3 text-sm text-ink-secondary">Messages / min</p>
           <p className="mt-1 text-2xl font-semibold">
-            <AnimatedStat value={messagesPerMin} />
+            <AnimatedStat value={Math.round(msgPerMin)} />
           </p>
           <p className="mt-1 text-xs text-ink-tertiary">
             SSE {connection === "connected" ? "connected" : connection}
@@ -101,7 +105,7 @@ export function TenantPowerDashboard() {
           <AlertTriangle className="h-5 w-5 text-red-600" />
           <p className="mt-3 text-sm text-ink-secondary">Active alarms</p>
           <p className="mt-1 text-2xl font-semibold">
-            <AnimatedStat value={activeAlarms.length} />
+            <AnimatedStat value={activeAlarmCount} />
           </p>
           <p className="mt-1 text-xs text-ink-tertiary">
             {Object.entries(sev)

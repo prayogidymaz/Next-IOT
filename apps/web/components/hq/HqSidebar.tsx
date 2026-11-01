@@ -5,16 +5,24 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { getApiBaseUrl } from "@/lib/auth/api";
+import { jsonAuthHeaders } from "@/lib/auth/api-headers";
 import { hqNavSectionsForRole, type HqNavSection } from "@/lib/hq/nav-config";
 import { useHqShell } from "@/lib/hq/hq-shell-context";
 
 function isActive(pathname: string, href: string) {
   if (href === "/dashboard") return pathname === "/dashboard";
   if (href === "/control-center") return pathname === "/control-center";
+  if (href === "/sites") return pathname === "/sites" || pathname.startsWith("/sites/");
   if (href === "/device-profiles") return pathname.startsWith("/device-profiles");
-  if (href === "/settings") return pathname === "/settings";
+  if (href === "/members") return pathname === "/members";
+  if (href === "/settings/tenant-branding") return pathname.startsWith("/settings/tenant-branding");
+  if (href === "/audit-log") return pathname === "/audit-log" || pathname.startsWith("/audit-log/");
   if (href === "/workflows") return pathname === "/workflows" || (pathname.startsWith("/workflows/") && !pathname.startsWith("/workflows/new"));
   if (href === "/workflows/new") return pathname === "/workflows/new";
+  if (href === "/reports") return pathname.startsWith("/reports");
+  if (href === "/decisions") return pathname.startsWith("/decisions");
+  if (href === "/fleet/templates") return pathname.startsWith("/fleet/");
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -24,10 +32,23 @@ function sectionOpenDefault(sections: HqNavSection[]): Record<string, boolean> {
   return out;
 }
 
-export function HqSidebar() {
+type HqSidebarProps = {
+  mobileOpen?: boolean;
+  onNavigate?: () => void;
+};
+
+export function HqSidebar({ mobileOpen = false, onNavigate }: HqSidebarProps) {
   const pathname = usePathname();
   const { collapsed, toggleCollapsed, tenant, setTenant, tenants, userRole, alarmCount } = useHqShell();
-  const sections = hqNavSectionsForRole(userRole);
+  const [isSeller, setIsSeller] = useState(false);
+  const sections = hqNavSectionsForRole(userRole, isSeller);
+
+  useEffect(() => {
+    void fetch(`${getApiBaseUrl()}/api/v1/marketplace/seller/me`, { headers: jsonAuthHeaders() })
+      .then((r) => (r.ok ? r.json() : { is_seller: false }))
+      .then((body: { is_seller?: boolean }) => setIsSeller(Boolean(body.is_seller)))
+      .catch(() => setIsSeller(false));
+  }, []);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => sectionOpenDefault(sections));
 
   useEffect(() => {
@@ -48,29 +69,29 @@ export function HqSidebar() {
 
   return (
     <aside
-      className={`flex shrink-0 flex-col border-r border-cream-border bg-white transition-[width] duration-200 ${
-        collapsed ? "w-[76px]" : "w-64"
-      }`}
+      className={`fixed inset-y-0 left-0 z-30 flex flex-col border-r border-border bg-card transition-[width,transform] duration-200 md:static md:translate-x-0 ${
+        mobileOpen ? "translate-x-0" : "-translate-x-full"
+      } ${collapsed ? "w-[76px]" : "w-64 max-w-[85vw]"}`}
     >
-      <div className="border-b border-cream-border p-4">
+      <div className="border-b border-border p-4">
         <Link href="/dashboard" prefetch className="flex items-center gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-emerald-soft text-sm font-bold text-accent-emerald">
             N
           </span>
           {!collapsed ? (
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-ink-primary">Next-IoT</p>
-              <p className="truncate text-xs text-ink-secondary">Enterprise HQ</p>
+              <p className="truncate text-sm font-semibold text-foreground">Next-IoT</p>
+              <p className="truncate text-xs text-muted-foreground">Enterprise HQ</p>
             </div>
           ) : null}
         </Link>
         {!collapsed ? (
-          <label className="mt-4 block text-xs text-ink-secondary">
+          <label className="mt-4 block text-xs text-muted-foreground">
             Tenant
             <select
               value={tenant}
               onChange={(e) => setTenant(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-cream-border bg-cream-alt px-2 py-2 text-sm font-medium text-ink-primary outline-none"
+              className="mt-1 w-full rounded-xl border border-border bg-muted/40 px-2 py-2 text-sm font-medium text-foreground outline-none"
             >
               {tenants.map((t) => (
                 <option key={t} value={t}>
@@ -114,14 +135,15 @@ export function HqSidebar() {
                         href={item.href}
                         prefetch
                         title={item.label}
+                        onClick={() => onNavigate?.()}
                         className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
                           active
-                            ? "bg-cream-muted font-semibold text-ink-primary shadow-sm"
-                            : "text-ink-secondary hover:bg-cream-alt hover:text-ink-primary"
+                            ? "bg-muted font-semibold text-foreground shadow-sm"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
                         }`}
                       >
-                        <span className={`rounded-lg p-1.5 ${active ? item.iconBgClass : "bg-cream-muted"}`}>
-                          <Icon className={`h-4 w-4 ${active ? item.accentClass : "text-ink-tertiary"}`} />
+                        <span className={`rounded-lg p-1.5 ${active ? item.iconBgClass : "bg-muted"}`}>
+                          <Icon className={`h-4 w-4 ${active ? item.accentClass : "text-muted-foreground"}`} />
                         </span>
                         {!collapsed ? (
                           <span className="flex min-w-0 flex-1 items-center justify-between gap-2 truncate">
@@ -146,7 +168,7 @@ export function HqSidebar() {
         })}
       </nav>
 
-      <div className="border-t border-cream-border p-3">
+      <div className="border-t border-border p-3">
         <div className={`mb-2 flex items-center gap-2 ${collapsed ? "justify-center" : ""}`}>
           <UserCircle2 className="h-8 w-8 shrink-0 text-accent-cobalt" />
           {!collapsed ? (

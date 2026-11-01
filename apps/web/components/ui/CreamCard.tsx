@@ -12,7 +12,7 @@ type CreamCardProps = {
 export function CreamCard({ children, className = "", hover = false, title }: CreamCardProps) {
   return (
     <div className={`${hover ? "cream-card-hover" : "cream-card"} ${className}`}>
-      {title ? <h2 className="mb-3 text-sm font-semibold text-ink-primary">{title}</h2> : null}
+      {title ? <h2 className="mb-3 text-sm font-semibold text-foreground">{title}</h2> : null}
       {children}
     </div>
   );

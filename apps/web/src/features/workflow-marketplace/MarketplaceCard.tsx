@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import type { WorkflowTemplateRecord } from "@/lib/api/workflowMarketplace";
+import { formatPriceIdr, type WorkflowTemplateRecord } from "@/lib/api/workflowMarketplace";
 
 function RatingStars({ value }: { value: number }) {
   const full = Math.round(value);
@@ -30,7 +30,7 @@ function categoryIcon(category: string): string {
 
 function TagBadge({ tag }: { tag: string }) {
   return (
-    <span className="rounded-full border border-stone-200 bg-stone-50 px-2 py-0.5 text-[10px] font-medium text-stone-600">
+    <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
       {tag}
     </span>
   );
@@ -45,14 +45,17 @@ export function MarketplaceCard({ template: t }: Props) {
 
   return (
     <Link href={`/marketplace/${t.id}`} className="block h-full min-w-0 text-inherit no-underline">
-      <article className="flex h-full min-h-[220px] flex-col gap-3 rounded-lg border border-stone-200 bg-white p-4 shadow-sm transition hover:border-stone-400 hover:shadow-md">
+      <article className="flex h-full min-h-[220px] flex-col gap-3 rounded-lg border border-border bg-card p-4 shadow-sm transition hover:border-primary/40 hover:shadow-md">
         <div className="flex min-w-0 items-start gap-2">
           <span className="shrink-0 text-2xl leading-none" aria-hidden>
             {categoryIcon(t.category)}
           </span>
-          <h3 className="min-w-0 flex-1 truncate text-base font-semibold text-stone-900">{t.name}</h3>
+          <h3 className="min-w-0 flex-1 truncate text-base font-semibold text-foreground">{t.name}</h3>
+          <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+            {formatPriceIdr(t.price_idr)}
+          </span>
         </div>
-        <p className="min-w-0 text-sm leading-snug text-stone-600 line-clamp-3">{t.description}</p>
+        <p className="min-w-0 text-sm leading-snug text-muted-foreground line-clamp-3">{t.description}</p>
         {tags.length > 0 ? (
           <div className="flex min-w-0 flex-wrap gap-1">
             {tags.map((tag) => (
@@ -64,9 +67,9 @@ export function MarketplaceCard({ template: t }: Props) {
         )}
         <div className="mt-auto space-y-1">
           {t.author_tenant_name ? (
-            <p className="truncate text-[11px] text-stone-500">by {t.author_tenant_name}</p>
+            <p className="truncate text-[11px] text-muted-foreground">by {t.author_tenant_name}</p>
           ) : null}
-          <div className="flex min-w-0 items-center justify-between gap-2 text-xs text-stone-500">
+          <div className="flex min-w-0 items-center justify-between gap-2 text-xs text-muted-foreground">
             <span className="truncate">{t.downloads_count} downloads</span>
             <RatingStars value={t.rating_avg} />
           </div>

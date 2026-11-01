@@ -25,6 +25,8 @@ class WorkflowTemplateView(BaseModel):
     published: bool
     created_at: datetime
     locale: str
+    price_idr: int = 0
+    author_user_id: uuid.UUID | None = None
 
 
 class PublishTemplateBody(BaseModel):
@@ -43,3 +45,30 @@ class RateTemplateBody(BaseModel):
 
 class DownloadTemplateBody(BaseModel):
     target_tenant_id: uuid.UUID | None = None
+
+
+class CheckoutResponse(BaseModel):
+    provider: str
+    amount_idr: int
+    checkout_url: str
+    payment_ref: str | None = None
+
+
+class SellerDashboardView(BaseModel):
+    tier: str
+    lifetime_sales_idr: int
+    commission_rate_percent: float
+    verified_badge: bool
+    pending_payout_idr: int
+
+
+class PayoutView(BaseModel):
+    id: uuid.UUID
+    period_month: str
+    gross_sales_idr: int
+    commission_idr: int
+    status: str
+    paid_at: datetime | None
+    transaction_ref: str | None
+
+    model_config = {"from_attributes": True}

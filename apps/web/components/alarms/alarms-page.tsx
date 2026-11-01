@@ -28,7 +28,7 @@ export function AlarmsPage() {
   }, [reload]);
 
   return (
-    <HqPageContent description="Alarm lifecycle — ack, resolve, history">
+    <HqPageContent>
       <CreamCard className="p-4">
         <select className="rounded border px-2 py-1 text-sm" value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="active">Active</option>

@@ -12,7 +12,7 @@ export default function TenantBrandingPage() {
   const [domain, setDomain] = useState("ops.acme-iot.com");
 
   return (
-    <HqPageContent description="Upload brand assets, custom domains, and cream-theme tokens for white-label tenants.">
+    <HqPageContent>
       <div className="grid gap-6 lg:grid-cols-2">
         <CreamCard className="p-5">
           <h2 className="flex items-center gap-2 font-semibold text-ink-primary">

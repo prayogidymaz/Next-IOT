@@ -3,7 +3,7 @@ import { HqPageContent } from "@/components/hq/HqPageContent";
 
 export default function FirmwareStudioPage() {
   return (
-    <HqPageContent description="Generate ESP32 PlatformIO projects from Device Profiles and the Next-IOT SDK.">
+    <HqPageContent>
       <FirmwareStudioWizard />
     </HqPageContent>
   );

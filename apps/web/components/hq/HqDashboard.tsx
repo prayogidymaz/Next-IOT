@@ -14,7 +14,6 @@ import Link from "next/link";
 import { useMemo } from "react";
 
 import { CreamCard } from "@/components/ui/CreamCard";
-import { getDomain } from "@/lib/hq/domains";
 import { useHqShell } from "@/lib/hq/hq-shell-context";
 
 import { HqPageContent } from "./HqPageContent";
@@ -61,14 +60,11 @@ const ACTIVITY = [
 ];
 
 export function HqDashboard() {
-  const { domainId, tenant } = useHqShell();
-  const domain = getDomain(domainId);
+  const { domainId } = useHqShell();
   const metrics = useMemo(() => METRICS_BY_DOMAIN[domainId], [domainId]);
 
   return (
-    <HqPageContent
-      description={`${domain.emoji} ${domain.label} operations · ${tenant}`}
-    >
+    <HqPageContent>
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map((m) => (
           <CreamCard key={m.label} hover className="p-5">
