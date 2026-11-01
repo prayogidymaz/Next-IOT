@@ -81,6 +81,37 @@ PRESEEDED_TEMPLATES: list[SeedTemplateSpec] = [
 ]
 
 
+async def main() -> None:
+    from sqlalchemy import select
+
+    from app.database import async_session
+    from app.models.tenant import Tenant
+    from app.workflows.marketplace.models import WorkflowTemplate
+
+    async with async_session() as db:
+        tenant = await db.scalar(select(Tenant).order_by(Tenant.created_at.asc()).limit(1))
+        if tenant is None:
+            print("WARNING: No tenant in database — create a tenant before seeding marketplace templates.")
+            return
+
+        rows = seed_template_rows(tenant.id)
+        inserted = 0
+        for row in rows:
+            name = str(row["name"])
+            exists = await db.scalar(
+                select(WorkflowTemplate.id).where(
+                    WorkflowTemplate.author_tenant_id == tenant.id,
+                    WorkflowTemplate.name == name,
+                )
+            )
+            if exists is not None:
+                continue
+            db.add(WorkflowTemplate(**row))
+            inserted += 1
+        await db.commit()
+        print(f"Seeded {inserted} templates (tenant {tenant.id})")
+
+
 def seed_template_rows(author_tenant_id: uuid.UUID) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
     for spec in PRESEEDED_TEMPLATES:
@@ -101,3 +132,9 @@ def seed_template_rows(author_tenant_id: uuid.UUID) -> list[dict[str, object]]:
             }
         )
     return rows
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    asyncio.run(main())
