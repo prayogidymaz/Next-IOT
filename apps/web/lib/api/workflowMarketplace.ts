@@ -8,6 +8,7 @@ export type WorkflowTemplateRecord = {
   category: string;
   tags_json: string[];
   author_tenant_id: string;
+  author_tenant_name?: string;
   snapshot_json: Record<string, unknown>;
   downloads_count: number;
   rating_avg: number;

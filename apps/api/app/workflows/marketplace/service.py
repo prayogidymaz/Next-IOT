@@ -12,12 +12,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import CurrentUser
 from app.mesh.workflow_registry import reload_workflows
 from app.models.mesh_workflow import MeshWorkflow
+from app.models.tenant import Tenant
 from app.types.json_types import JsonObject
 from app.workflows.marketplace.models import WorkflowTemplate, WorkflowTemplateDownload, WorkflowTemplateRating
 from app.workflows.marketplace.schemas import WorkflowTemplateView
 
 
-def _template_view(row: WorkflowTemplate) -> WorkflowTemplateView:
+def _template_view(row: WorkflowTemplate, author_tenant_name: str = "") -> WorkflowTemplateView:
     tags = row.tags_json if isinstance(row.tags_json, list) else []
     tag_strings = [str(item) for item in tags]
     snap = row.snapshot_json if isinstance(row.snapshot_json, dict) else {}
@@ -28,6 +29,7 @@ def _template_view(row: WorkflowTemplate) -> WorkflowTemplateView:
         category=row.category,
         tags_json=tag_strings,
         author_tenant_id=row.author_tenant_id,
+        author_tenant_name=author_tenant_name,
         snapshot_json=cast(JsonObject, snap),
         downloads_count=row.downloads_count,
         rating_avg=row.rating_avg,
@@ -93,11 +95,16 @@ class MarketplaceService:
     async def list_templates(
         self,
         category: str | None,
-        locale: str,
+        locale: str | None,
         sort_by: str,
         limit: int,
-    ) -> list[WorkflowTemplate]:
-        query = select(WorkflowTemplate).where(WorkflowTemplate.published.is_(True))
+    ) -> list[tuple[WorkflowTemplate, str]]:
+        """Global published catalog — not scoped to requesting tenant."""
+        query = (
+            select(WorkflowTemplate, Tenant.name)
+            .join(Tenant, WorkflowTemplate.author_tenant_id == Tenant.id)
+            .where(WorkflowTemplate.published.is_(True))
+        )
         if category:
             query = query.where(WorkflowTemplate.category == category)
         if locale:
@@ -107,14 +114,15 @@ class MarketplaceService:
         else:
             query = query.order_by(WorkflowTemplate.downloads_count.desc())
         query = query.limit(limit)
-        rows = await self._db.scalars(query)
-        return list(rows.all())
+        rows = await self._db.execute(query)
+        return [(row[0], str(row[1])) for row in rows.all()]
 
-    async def get(self, template_id: uuid.UUID) -> WorkflowTemplate:
+    async def get(self, template_id: uuid.UUID) -> tuple[WorkflowTemplate, str]:
         row = await self._db.get(WorkflowTemplate, template_id)
         if row is None or not row.published:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template not found")
-        return row
+        author_name = await self._db.scalar(select(Tenant.name).where(Tenant.id == row.author_tenant_id))
+        return row, str(author_name or "")
 
     async def download(
         self,
@@ -122,7 +130,7 @@ class MarketplaceService:
         user: CurrentUser,
         target_tenant_id: uuid.UUID | None,
     ) -> MeshWorkflow:
-        template = await self.get(template_id)
+        template, _author = await self.get(template_id)
         tenant_id = target_tenant_id or user.tenant_id
         if tenant_id != user.tenant_id and not user.is_super_admin:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
@@ -159,7 +167,7 @@ class MarketplaceService:
     ) -> WorkflowTemplateRating:
         if rating < 1 or rating > 5:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Rating must be 1-5")
-        template = await self.get(template_id)
+        template, _author = await self.get(template_id)
         existing = await self._db.scalar(
             select(WorkflowTemplateRating).where(
                 WorkflowTemplateRating.template_id == template_id,

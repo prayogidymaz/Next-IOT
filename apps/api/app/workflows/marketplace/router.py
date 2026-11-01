@@ -25,20 +25,20 @@ router = APIRouter(prefix="/api/v1/marketplace", tags=["workflow-marketplace"])
 async def list_templates(
     db: DbSession,
     category: str | None = None,
-    locale: str = "id",
+    locale: str | None = Query(default=None),
     sort: str = Query(default="downloads", alias="sort"),
     limit: int = Query(default=20, ge=1, le=100),
 ) -> list[WorkflowTemplateView]:
     service = MarketplaceService(db)
     rows = await service.list_templates(category, locale, sort, limit)
-    return [_template_view(row) for row in rows]
+    return [_template_view(row, author_name) for row, author_name in rows]
 
 
 @router.get("/templates/{template_id}", response_model=WorkflowTemplateView)
 async def get_template(db: DbSession, template_id: uuid.UUID) -> WorkflowTemplateView:
     service = MarketplaceService(db)
-    row = await service.get(template_id)
-    return _template_view(row)
+    row, author_name = await service.get(template_id)
+    return _template_view(row, author_name)
 
 
 @router.post("/publish", response_model=WorkflowTemplateView, status_code=201)

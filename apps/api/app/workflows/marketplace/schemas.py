@@ -17,6 +17,7 @@ class WorkflowTemplateView(BaseModel):
     category: str
     tags_json: list[str]
     author_tenant_id: uuid.UUID
+    author_tenant_name: str = ""
     snapshot_json: JsonObject
     downloads_count: int
     rating_avg: float

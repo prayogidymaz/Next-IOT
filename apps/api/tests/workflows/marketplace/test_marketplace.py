@@ -55,7 +55,7 @@ async def test_list_published_templates_empty() -> None:
     from app.workflows.marketplace.service import MarketplaceService
 
     async with async_session() as db:
-        rows = await MarketplaceService(db).list_templates(None, "id", "downloads", 20)
+        rows = await MarketplaceService(db).list_templates(None, None, "downloads", 20)
         assert isinstance(rows, list)
 
 
