@@ -62,9 +62,14 @@ export function MarketplaceCard({ template: t }: Props) {
         ) : (
           <div className="h-0" aria-hidden />
         )}
-        <div className="mt-auto flex min-w-0 items-center justify-between gap-2 text-xs text-stone-500">
-          <span className="truncate">{t.downloads_count} downloads</span>
-          <RatingStars value={t.rating_avg} />
+        <div className="mt-auto space-y-1">
+          {t.author_tenant_name ? (
+            <p className="truncate text-[11px] text-stone-500">by {t.author_tenant_name}</p>
+          ) : null}
+          <div className="flex min-w-0 items-center justify-between gap-2 text-xs text-stone-500">
+            <span className="truncate">{t.downloads_count} downloads</span>
+            <RatingStars value={t.rating_avg} />
+          </div>
         </div>
       </article>
     </Link>

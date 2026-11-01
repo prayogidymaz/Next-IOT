@@ -39,18 +39,16 @@ export async function listAlarms(params?: {
 }
 
 export async function acknowledgeAlarm(id: string, note?: string): Promise<void> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/alarms/${id}/acknowledge`, {
+  const res = await apiFetch(apiUrl(`/api/v1/alarms/${id}/acknowledge`), {
     method: "POST",
-    headers: authHeaders(),
     body: JSON.stringify({ note: note ?? null }),
   });
   if (!res.ok) throw new Error("Ack gagal");
 }
 
 export async function resolveAlarm(id: string, note?: string): Promise<void> {
-  const res = await fetch(`${getApiBaseUrl()}/api/v1/alarms/${id}/resolve`, {
+  const res = await apiFetch(apiUrl(`/api/v1/alarms/${id}/resolve`), {
     method: "POST",
-    headers: authHeaders(),
     body: JSON.stringify({ note: note ?? null }),
   });
   if (!res.ok) throw new Error("Resolve gagal");

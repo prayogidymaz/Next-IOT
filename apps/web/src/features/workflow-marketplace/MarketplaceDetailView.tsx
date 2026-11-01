@@ -3,9 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Background, Controls, ReactFlow, ReactFlowProvider } from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-
 import {
   downloadMarketplaceTemplate,
   getMarketplaceTemplate,
@@ -14,33 +11,17 @@ import {
   type WorkflowTemplateRecord,
 } from "@/lib/api/workflowMarketplace";
 import { useHqToast } from "@/hooks/useHqToast";
-import { useHqShell } from "@/lib/hq/hq-shell-context";
+import { fetchAuthMe } from "@/lib/auth/api";
+import { readApiAccessToken } from "@/lib/auth/api-headers";
 
-function PreviewCanvas({ snapshot }: { snapshot: Record<string, unknown> }) {
-  const def = snapshot.definition as { nodes?: { id: string; position?: { x: number; y: number }; data?: { label?: string } }[] } | undefined;
-  const nodes =
-    def?.nodes?.map((n, i) => ({
-      id: n.id,
-      type: "default",
-      position: n.position ?? { x: i * 80, y: 40 },
-      data: { label: n.data?.label ?? n.id },
-    })) ?? [];
-  return (
-    <div className="h-48 rounded-lg border border-stone-200 bg-stone-50">
-      <ReactFlow nodes={nodes} edges={[]} fitView nodesDraggable={false} nodesConnectable={false} elementsSelectable={false}>
-        <Background />
-        <Controls showInteractive={false} />
-      </ReactFlow>
-    </div>
-  );
-}
+import { MarketplacePreviewPanel } from "./MarketplacePreviewPanel";
 
 type Props = { templateId: string };
 
 export function MarketplaceDetailView({ templateId }: Props) {
   const router = useRouter();
   const { showToast } = useHqToast();
-  const { tenant } = useHqShell();
+  const [tenantId, setTenantId] = useState<string | null>(null);
   const [tpl, setTpl] = useState<WorkflowTemplateRecord | null>(null);
   const [downloaded, setDownloaded] = useState(false);
   const [rating, setRating] = useState(5);
@@ -54,7 +35,15 @@ export function MarketplaceDetailView({ templateId }: Props) {
     void load().catch((e: unknown) => showToast(e instanceof Error ? e.message : "Load failed", "error"));
   }, [load, showToast]);
 
-  const isAuthor = tpl?.author_tenant_id === tenant;
+  useEffect(() => {
+    const token = readApiAccessToken();
+    if (!token) return;
+    void fetchAuthMe(token)
+      .then((me) => setTenantId(me.tenant_id))
+      .catch(() => setTenantId(null));
+  }, []);
+
+  const isAuthor = tpl?.author_tenant_id === tenantId;
 
   async function onDownload() {
     try {
@@ -99,12 +88,11 @@ export function MarketplaceDetailView({ templateId }: Props) {
         <p className="mt-2 text-sm text-stone-600">{tpl.description}</p>
         <p className="mt-1 text-xs text-stone-500">
           {tpl.category} · {tpl.downloads_count} downloads · ★ {tpl.rating_avg.toFixed(1)} ({tpl.rating_count})
+          {tpl.author_tenant_name ? ` · by ${tpl.author_tenant_name}` : null}
         </p>
       </header>
 
-      <ReactFlowProvider>
-        <PreviewCanvas snapshot={tpl.snapshot_json} />
-      </ReactFlowProvider>
+      <MarketplacePreviewPanel snapshot={tpl.snapshot_json} onDownload={() => void onDownload()} />
 
       <div className="flex flex-wrap gap-2">
         <button type="button" className="rounded-lg bg-stone-900 px-4 py-2 text-sm text-white" onClick={() => void onDownload()}>
